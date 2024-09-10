@@ -2,12 +2,32 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
+/**
+ * @property int $id
+ * @property string $name
+ * @property string $username
+ * @property string|null $email
+ * @property Carbon|null $email_verified_at
+ * @property int $parent_id
+ * @property boolean $is_active
+ * @property string $timezone
+ * @property string $api_key
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ *
+ * @property User $parent
+ * @property Collection<User> $children
+ */
 class User extends Authenticatable
 {
     use HasFactory, Notifiable, HasApiTokens, HasRoles;
@@ -21,7 +41,11 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-
+        'username',
+        'parent_id',
+        'is_active',
+        'timezone',
+        'api_key',
     ];
 
     /**
@@ -32,6 +56,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'api_key'
     ];
 
     /**
@@ -45,5 +70,15 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function parent(): HasOne
+    {
+        return $this->hasOne(User::class, "parent_id");
+    }
+
+    public function children(): HasMany
+    {
+        return $this->hasMany(User::class, "parent_id");
     }
 }
