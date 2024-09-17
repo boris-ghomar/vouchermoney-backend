@@ -14,6 +14,7 @@ use App\Types\CustomerTypes;
 use Exception;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -51,7 +52,7 @@ class CustomerController extends Controller
     public function show(Customer $customer): CustomerResource
     {
         $this->authorize('view', $customer);
-
+        $customer->load('user', 'user.children');
         return new CustomerResource($customer);
     }
 
@@ -65,7 +66,6 @@ class CustomerController extends Controller
     public function store(CustomerStoreRequest $request): CustomerResource
     {
         $this->authorize('create', [Customer::class, null]);
-
 
         $dataArray = $request->all();
         $dataArray['avatar'] = $request->hasFile('avatar') ? $this->fileUploadService->uploadFile($request->file('avatar'), 'avatars') : null;
@@ -141,10 +141,8 @@ class CustomerController extends Controller
         $this->authorize('attachUser', $customer);
 
         $data = $request->all();
-        $childUser = $this->customerService->attachCustomerChild($data, $customerId);
+        $childUser = $this->customerService->attachCustomerChild($data, $customer->user_id);
 
         return new UserResource($childUser);
     }
-
-
 }

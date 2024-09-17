@@ -148,14 +148,14 @@ class CustomerService
         return $user->save();
     }
 
-    public function attachCustomerChild(array $data, int $customerId)
+    public function attachCustomerChild(array $data, int $userId)
     {
         $childUser = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'username' => $data['username'],
             'password' => Hash::make($data['password']),
-            'parent_id' => $customerId
+            'parent_id' => $userId
         ]);
 
         if (isset($data['permissions'])) {
