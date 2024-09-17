@@ -12,7 +12,8 @@
         "pestphp/pest": "3.x-dev",
         "pestphp/pest-plugin-laravel": "v3.0.0",
         "spatie/laravel-activitylog": "^4.8",
-        "spatie/laravel-permission": "^6.9"
+        "spatie/laravel-permission": "^6.9",
+        "laravel/nova": "^4.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
@@ -64,6 +65,12 @@
             "php-http/discovery": true
         }
     },
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "https://nova.laravel.com"
+        }
+    ],
     "minimum-stability": "stable",
     "prefer-stable": true
 }

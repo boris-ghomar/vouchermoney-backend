@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Customers\CustomerIndexRequest;
 use App\Http\Requests\Customers\CustomerStoreRequest;
 use App\Http\Requests\Customers\CustomerUpdateRequest;
 use App\Http\Requests\UserRequest;
@@ -12,9 +13,8 @@ use App\Services\CustomerService;
 use App\Services\FileUploadService;
 use App\Types\CustomerTypes;
 use Exception;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -26,20 +26,19 @@ class CustomerController extends Controller
     public function __construct(
         protected CustomerService   $customerService,
         protected FileUploadService $fileUploadService
-    )
-    {
-    }
+    ) {}
 
     /**
      * Display a listing of the customers.
      *
+     * @throws AuthorizationException
      */
-    public function index()
+    public function index(CustomerIndexRequest $request)
     {
 
         $this->authorize('viewAny', Customer::class);
 
-        return CustomerResource::collection($this->customerService->getAllCustomers());
+        return $this->customerService->getAllCustomers();
     }
 
     /**
@@ -47,7 +46,7 @@ class CustomerController extends Controller
      *
      * @param Customer $customer
      * @return CustomerResource
-     * @throws NotFoundHttpException
+     * @throws NotFoundHttpException|AuthorizationException
      */
     public function show(Customer $customer): CustomerResource
     {
@@ -105,7 +104,7 @@ class CustomerController extends Controller
      *
      * @param Customer $customer
      * @return Response
-     * @throws NotFoundHttpException
+     * @throws NotFoundHttpException|AuthorizationException
      */
     public function destroy(Customer $customer): Response
     {
@@ -118,6 +117,7 @@ class CustomerController extends Controller
     /**
      * @param int $id
      * @return Response
+     * @throws AuthorizationException
      */
     public function deactivateCustomer(int $id): Response
     {
@@ -133,6 +133,7 @@ class CustomerController extends Controller
      * @param UserRequest $request
      * @param int $customerId
      * @return UserResource
+     * @throws AuthorizationException
      */
     public function attachUserToCustomer(UserRequest $request,int $customerId) : UserResource
     {
