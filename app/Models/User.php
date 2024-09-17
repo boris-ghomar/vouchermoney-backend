@@ -5,12 +5,12 @@ namespace App\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * @property int $id
@@ -27,6 +27,13 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  *
  * @property User $parent
  * @property Collection<User> $children
+ * @property Customer $customer
+ * @property Collection<Voucher> $createdVouchers
+ * @property Collection<Voucher> $updatedVouchers
+ * @property Collection<Finance> $createdFinances
+ * @property Collection<Finance> $updatedFinances
+ *
+ * @property bool is_parent
  */
 class User extends Authenticatable
 {
@@ -59,6 +66,8 @@ class User extends Authenticatable
         'api_key'
     ];
 
+    protected $with = ["roles", "permissions"];
+
     /**
      * Get the attributes that should be cast.
      *
@@ -74,11 +83,41 @@ class User extends Authenticatable
 
     public function parent(): HasOne
     {
-        return $this->hasOne(User::class, "parent_id");
+        return $this->hasOne(User::class, "parent_id", "id");
     }
 
     public function children(): HasMany
     {
         return $this->hasMany(User::class, "parent_id");
+    }
+
+    public function customer(): HasOne
+    {
+        return $this->hasOne(Customer::class);
+    }
+
+    public function createdVouchers(): HasMany
+    {
+        return $this->hasMany(Voucher::class, 'created_by');
+    }
+
+    public function updatedVouchers(): HasMany
+    {
+        return $this->hasMany(Voucher::class, 'updated_by');
+    }
+
+    public function createdFinances(): HasMany
+    {
+        return $this->hasMany(Finance::class, 'created_by');
+    }
+
+    public function updatedFinances(): HasMany
+    {
+        return $this->hasMany(Finance::class, 'updated_by');
+    }
+
+    public function addIsParentAttribute(): bool
+    {
+        return $this->parent_id === 0;
     }
 }

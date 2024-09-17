@@ -17,24 +17,24 @@ class UserSeeder extends Seeder
     {
         $now = now();
 
-        $roles = [
-            Role::SUPER_ADMIN,
-            Role::ADMIN,
-            Role::MERCHANT,
-            Role::RESELLER
-        ];
-
-        foreach ($roles as $role) {
-            Role::create(["name" => $role]);
-        }
-
-        $permissions = [
-
-        ];
-
-        foreach ($permissions as $permission) {
-            Permission::create(["name" => $permission]);
-        }
+//        $roles = [
+//            Role::SUPER_ADMIN,
+//            Role::ADMIN,
+//            Role::MERCHANT,
+//            Role::RESELLER
+//        ];
+//
+//        foreach ($roles as $role) {
+//            Role::create(["name" => $role]);
+//        }
+//
+//        $permissions = [
+//
+//        ];
+//
+//        foreach ($permissions as $permission) {
+//            Permission::create(["name" => $permission]);
+//        }
 
         $users = [
             [
