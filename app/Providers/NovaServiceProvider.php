@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Nova\Dashboards\Main as MainDashboard;
 use App\Nova\Permission;
 use App\Nova\Role;
 use Illuminate\Http\Request;
@@ -11,7 +12,6 @@ use Laravel\Nova\Menu\MenuItem;
 use Laravel\Nova\Menu\MenuSection;
 use Laravel\Nova\Nova;
 use Laravel\Nova\NovaApplicationServiceProvider;
-use App\Nova\Dashboards\Main as MainDashboard;
 
 class NovaServiceProvider extends NovaApplicationServiceProvider
 {
@@ -24,22 +24,21 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
     {
         parent::boot();
 
-        Nova::mainMenu(function (Request $request) {
-            return [
-                MenuSection::dashboard(MainDashboard::class)->icon("view-grid"),
+        Nova::footer(fn() => null);
 
-                MenuSection::make("Permissions", [
-                    MenuItem::resource(Permission::class)->canSee(function (NovaRequest $request) {
-                        return $request->user()->can("permission.view-any");
-                    }),
-                    MenuItem::resource(Role::class)->canSee(function (NovaRequest $request) {
-                        return $request->user()->can("role.view-any");
-                    })
-                ])->icon("key")->collapsable()->collapsedByDefault()->canSee(function (NovaRequest $request) {
-                    return $request->user()->can("permission.view-any", "role.view-any");
-                })
-            ];
-        });
+        function can(...$permissions): \Closure
+        {
+            return fn(NovaRequest $request) => $request->user()->can(...$permissions);
+        }
+
+        Nova::mainMenu(fn(Request $request) => [
+            MenuSection::dashboard(MainDashboard::class)->icon("view-grid"),
+
+            MenuSection::make("Permissions", [
+                MenuItem::resource(Permission::class)->canSee(can("permission.view-any")),
+                MenuItem::resource(Role::class)->canSee(can("role.view-any"))
+            ])->icon("key")->collapsable()->collapsedByDefault()->canSee(can("permission.view-any", "role.view-any"))
+        ]);
     }
 
     /**
@@ -50,9 +49,9 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
     protected function routes(): void
     {
         Nova::routes()
-                ->withAuthenticationRoutes()
-                ->withPasswordResetRoutes()
-                ->register();
+            ->withAuthenticationRoutes()
+            ->withPasswordResetRoutes()
+            ->register();
     }
 
     /**
