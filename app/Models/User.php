@@ -15,7 +15,6 @@ use Spatie\Permission\Traits\HasRoles;
 /**
  * @property int $id
  * @property string $name
- * @property string $username
  * @property string|null $email
  * @property Carbon|null $email_verified_at
  * @property int $parent_id
@@ -48,7 +47,6 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'username',
         'parent_id',
         'is_active',
         'timezone',

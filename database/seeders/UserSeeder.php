@@ -40,7 +40,6 @@ class UserSeeder extends Seeder
             [
                 "name" => "Superman",
                 "email" => "super@test.com",
-                "username" => "superman",
                 "password" => "123123123",
                 "role" => Role::SUPER_ADMIN
             ]
@@ -52,7 +51,6 @@ class UserSeeder extends Seeder
             $obj->name = $user["name"];
             $obj->email = $user["email"];
             $obj->email_verified_at = $now;
-            $obj->username = $user["username"];
             $obj->password = Hash::make($user["password"]);
             $obj->save();
 
