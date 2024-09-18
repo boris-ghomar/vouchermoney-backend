@@ -7,12 +7,12 @@ use Laravel\Nova\Fields\ID;
 use Laravel\Nova\Fields\Text;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Illuminate\Http\Request;
-use App\Models\Role as Model;
+use App\Models\Permission as Model;
 
 /**
  * @mixin Model
  */
-class Role extends Resource
+class Permission extends Resource
 {
     /**
      * The model the resource corresponds to.
@@ -32,7 +32,7 @@ class Role extends Resource
 
     public function title(): string
     {
-        return __("roles." . $this->name);
+        return __("permissions." . $this->name);
     }
 
     /**
@@ -46,10 +46,10 @@ class Role extends Resource
         return [
             ID::make()->sortable(),
 
-            Text::make("Name", fn () => __("roles." . $this->name)),
+            Text::make("Name"),
 
-            HasMany::make("Users", "users", User::class),
-            HasMany::make("Permissions", "permissions", Permission::class),
+            HasMany::make("Roles", "roles", Role::class),
+            HasMany::make("Users", "users", User::class)
         ];
     }
 

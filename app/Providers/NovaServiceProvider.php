@@ -2,9 +2,16 @@
 
 namespace App\Providers;
 
+use App\Nova\Permission;
+use App\Nova\Role;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Laravel\Nova\Http\Requests\NovaRequest;
+use Laravel\Nova\Menu\MenuItem;
+use Laravel\Nova\Menu\MenuSection;
 use Laravel\Nova\Nova;
 use Laravel\Nova\NovaApplicationServiceProvider;
+use App\Nova\Dashboards\Main as MainDashboard;
 
 class NovaServiceProvider extends NovaApplicationServiceProvider
 {
@@ -13,9 +20,26 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
      *
      * @return void
      */
-    public function boot()
+    public function boot(): void
     {
         parent::boot();
+
+        Nova::mainMenu(function (Request $request) {
+            return [
+                MenuSection::dashboard(MainDashboard::class)->icon("view-grid"),
+
+                MenuSection::make("Permissions", [
+                    MenuItem::resource(Permission::class)->canSee(function (NovaRequest $request) {
+                        return $request->user()->can("permission.view-any");
+                    }),
+                    MenuItem::resource(Role::class)->canSee(function (NovaRequest $request) {
+                        return $request->user()->can("role.view-any");
+                    })
+                ])->icon("key")->collapsable()->collapsedByDefault()->canSee(function (NovaRequest $request) {
+                    return $request->user()->can("permission.view-any", "role.view-any");
+                })
+            ];
+        });
     }
 
     /**
@@ -23,7 +47,7 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
      *
      * @return void
      */
-    protected function routes()
+    protected function routes(): void
     {
         Nova::routes()
                 ->withAuthenticationRoutes()
@@ -38,7 +62,7 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
      *
      * @return void
      */
-    protected function gate()
+    protected function gate(): void
     {
         Gate::define('viewNova', function ($user) {
             return in_array($user->email, [
@@ -52,10 +76,10 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
      *
      * @return array
      */
-    protected function dashboards()
+    protected function dashboards(): array
     {
         return [
-            new \App\Nova\Dashboards\Main,
+            new MainDashboard,
         ];
     }
 
@@ -64,7 +88,7 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
      *
      * @return array
      */
-    public function tools()
+    public function tools(): array
     {
         return [];
     }
