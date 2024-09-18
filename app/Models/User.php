@@ -64,7 +64,7 @@ class User extends Authenticatable
         'api_key'
     ];
 
-    protected $with = ["roles", "permissions"];
+    protected $with = ["parent", "roles", "permissions"];
 
     /**
      * Get the attributes that should be cast.

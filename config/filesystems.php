@@ -56,6 +56,14 @@ return [
             'throw' => false,
         ],
 
+        'nova' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public/nova'),
+            'url' => env('APP_URL').'/storage/nova',
+            'visibility' => 'public',
+            'throw' => false,
+        ],
+
     ],
 
     /*

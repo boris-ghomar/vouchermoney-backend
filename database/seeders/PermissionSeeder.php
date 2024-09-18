@@ -17,6 +17,7 @@ class PermissionSeeder extends Seeder
         $permissions = [
             'role.view-any',
             'permission.view-any',
+            'customer.view-any',
         ];
 
         foreach ($permissions as $permission) {
