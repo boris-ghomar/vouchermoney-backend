@@ -2,9 +2,13 @@
 
 namespace App\Nova;
 
+use App\Nova\Actions\CreateCustomer;
 use Laravel\Nova\Fields\Avatar;
 use Laravel\Nova\Fields\BelongsTo;
 use Laravel\Nova\Fields\Currency;
+use Laravel\Nova\Fields\HasMany;
+use Laravel\Nova\Fields\HasManyThrough;
+use Laravel\Nova\Fields\HasOne;
 use Laravel\Nova\Fields\ID;
 use Laravel\Nova\Fields\Number;
 use Laravel\Nova\Fields\Text;
@@ -48,15 +52,13 @@ class Customer extends Resource
             ID::make()->sortable(),
 
             Text::make("Name")->filterable(),
-//            Text::make("User", "user_id")->default(1)->onlyOnForms(),
-            BelongsTo::make("User", "user")->searchable()->filterable(),
-
+            HasOne::make("User", "user", User::class),
             Currency::make("Balance"),
-
-            Avatar::make("Avatar")->nullable(),
-
+            Avatar::make("Avatar")->nullable()->disableDownload()->deletable()->prunable()->acceptedTypes('.jpg,.jpeg,.png'),
             Number::make("Max vouchers count"),
             Number::make("Max voucher amount"),
+            HasMany::make("Users", "users", User::class),
+
         ];
     }
 
@@ -101,6 +103,8 @@ class Customer extends Resource
      */
     public function actions(NovaRequest $request): array
     {
-        return [];
+        return [
+            CreateCustomer::make()->standalone(),
+        ];
     }
 }

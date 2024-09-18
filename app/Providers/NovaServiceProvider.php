@@ -2,9 +2,11 @@
 
 namespace App\Providers;
 
+use App\Nova\Customer;
 use App\Nova\Dashboards\Main as MainDashboard;
 use App\Nova\Permission;
 use App\Nova\Role;
+use App\Nova\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Laravel\Nova\Http\Requests\NovaRequest;
@@ -33,6 +35,9 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
 
         Nova::mainMenu(fn(Request $request) => [
             MenuSection::dashboard(MainDashboard::class)->icon("view-grid"),
+
+            MenuSection::resource(Customer::class)->icon("user-group")->canSee(can("customer.view-any")),
+            MenuSection::resource(User::class)->icon("users")->canSee(can("user.view-any")),
 
             MenuSection::make("Permissions", [
                 MenuItem::resource(Permission::class)->canSee(can("permission.view-any")),

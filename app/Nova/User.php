@@ -2,23 +2,27 @@
 
 namespace App\Nova;
 
-use Illuminate\Http\Request;
 use Illuminate\Validation\Rules;
-use Laravel\Nova\Fields\Gravatar;
 use Laravel\Nova\Fields\ID;
 use Laravel\Nova\Fields\Password;
 use Laravel\Nova\Fields\Text;
 use Laravel\Nova\Http\Requests\NovaRequest;
-use Laravel\Nova\Notifications\NovaNotification;
+use App\Models\User as Model;
+use Illuminate\Database\Eloquent\Builder;
+use App\Models\Role as RoleModel;
 
+/**
+ * @mixin Model
+ */
 class User extends Resource
 {
+
     /**
      * The model the resource corresponds to.
      *
-     * @var class-string<\App\Models\User>
+     * @var class-string<Model>
      */
-    public static $model = \App\Models\User::class;
+    public static string $model = Model::class;
 
     /**
      * The single value that should be used to represent the resource when being displayed.
@@ -33,23 +37,31 @@ class User extends Resource
      * @var array
      */
     public static $search = [
-        'id', 'name', 'email', "username"
+        'name', 'email'
     ];
 
-    public static $perPageOptions = [10, 13, 60];
+    public static $perPageOptions = [10, 25, 50];
+
+    public static function indexQuery(NovaRequest $request, $query): Builder
+    {
+        return $query->where("parent_id", $request->user()->id);
+    }
+
+    public static function label(): string
+    {
+        return auth()->user()->hasRole(RoleModel::SUPER_ADMIN) ? "Admins" : "Users";
+    }
 
     /**
      * Get the fields displayed by the resource.
      *
-     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
+     * @param  NovaRequest  $request
      * @return array
      */
-    public function fields(NovaRequest $request)
+    public function fields(NovaRequest $request): array
     {
         return [
             ID::make()->sortable(),
-
-            Gravatar::make()->maxWidth(50),
 
             Text::make('Name')
                 ->sortable()
@@ -65,16 +77,18 @@ class User extends Resource
                 ->onlyOnForms()
                 ->creationRules('required', Rules\Password::defaults())
                 ->updateRules('nullable', Rules\Password::defaults()),
+
+//            HasOne::make("Customer", "customer", Customer::class)
         ];
     }
 
     /**
      * Get the cards available for the request.
      *
-     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
+     * @param  NovaRequest  $request
      * @return array
      */
-    public function cards(NovaRequest $request)
+    public function cards(NovaRequest $request): array
     {
         return [];
     }
@@ -82,10 +96,10 @@ class User extends Resource
     /**
      * Get the filters available for the resource.
      *
-     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
+     * @param  NovaRequest  $request
      * @return array
      */
-    public function filters(NovaRequest $request)
+    public function filters(NovaRequest $request): array
     {
         return [];
     }
@@ -93,10 +107,10 @@ class User extends Resource
     /**
      * Get the lenses available for the resource.
      *
-     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
+     * @param  NovaRequest  $request
      * @return array
      */
-    public function lenses(NovaRequest $request)
+    public function lenses(NovaRequest $request): array
     {
         return [];
     }
@@ -104,10 +118,10 @@ class User extends Resource
     /**
      * Get the actions available for the resource.
      *
-     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
+     * @param  NovaRequest  $request
      * @return array
      */
-    public function actions(NovaRequest $request)
+    public function actions(NovaRequest $request): array
     {
         return [];
     }
