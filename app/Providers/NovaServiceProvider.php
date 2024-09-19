@@ -29,10 +29,7 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
 
         Nova::footer(fn() => null);
 
-        function can(...$permissions): \Closure
-        {
-            return fn(NovaRequest $request) => $request->user()->can(...$permissions);
-        }
+        $can = fn(...$permissions) => fn(NovaRequest $request) => $request->user()->can(...$permissions);
 
         Nova::mainMenu(fn(Request $request) => [
             MenuSection::dashboard(MainDashboard::class)->icon("view-grid"),
@@ -41,14 +38,14 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
                 ->path("/resources/" . ($request->user()?->customer?->id ? "customers/" . $request->user()->customer->id : "users/" . $request->user()?->id))
                 ->icon("user-circle"),
 
-            MenuSection::resource(Customer::class)->icon("user-group")->canSee(can("customer.view-any")),
-            MenuSection::resource(OwnUsers::class)->icon("users")->canSee(can("user.view-any")),
+            MenuSection::resource(Customer::class)->icon("user-group")->canSee($can(["customer.view-any"])),
+            MenuSection::resource(OwnUsers::class)->icon("users")->canSee($can(["user.view-any"])),
 
             MenuSection::make("Permissions", [
-                MenuItem::resource(Permission::class)->canSee(can("permission.view-any")),
-                MenuItem::resource(Role::class)->canSee(can("role.view-any")),
-                MenuItem::resource(User::class)->canSee(can("user.view-any")),
-            ])->icon("key")->collapsable()->collapsedByDefault()->canSee(can("permission.view-any", "role.view-any", "user.view-any"))
+                MenuItem::resource(Permission::class)->canSee($can(["permission.view-any"])),
+                MenuItem::resource(Role::class)->canSee($can(["role.view-any"])),
+                MenuItem::resource(User::class)->canSee($can(["user.view-any"])),
+            ])->icon("key")->collapsable()->collapsedByDefault()->canSee($can(["permission.view-any", "role.view-any", "user.view-any"]))
         ]);
     }
 

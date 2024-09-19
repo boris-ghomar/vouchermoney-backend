@@ -2,14 +2,18 @@
 
 namespace App\Nova;
 
+use App\Models\User as Model;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rules;
 use Laravel\Nova\Fields\BelongsTo;
+use Laravel\Nova\Fields\BelongsToMany;
+use Laravel\Nova\Fields\HasMany;
+use Laravel\Nova\Fields\Hidden;
 use Laravel\Nova\Fields\ID;
 use Laravel\Nova\Fields\Password;
 use Laravel\Nova\Fields\Text;
 use Laravel\Nova\Http\Requests\NovaRequest;
-use App\Models\User as Model;
+use Vyuldashev\NovaPermission\RoleSelect;
 
 /**
  * @mixin Model
@@ -25,13 +29,6 @@ class User extends Resource
     public static string $model = Model::class;
 
     /**
-     * The single value that should be used to represent the resource when being displayed.
-     *
-     * @var string
-     */
-    public static $title = 'name';
-
-    /**
      * The columns that should be searched.
      *
      * @var array
@@ -40,10 +37,15 @@ class User extends Resource
         'name', 'email'
     ];
 
+    public function title(): string
+    {
+        return $this->name;
+    }
+
     /**
      * Get the fields displayed by the resource.
      *
-     * @param  NovaRequest  $request
+     * @param NovaRequest $request
      * @return array
      */
     public function fields(NovaRequest $request): array
@@ -66,8 +68,25 @@ class User extends Resource
                 ->creationRules('required', Rules\Password::defaults())
                 ->updateRules('nullable', Rules\Password::defaults()),
 
-            BelongsTo::make("Role", "role", Role::class)
+            BelongsTo::make("Customer", "customer", Customer::class)->showOnIndex(),
+
+            BelongsToMany::make("Roles", "roles", Role::class),
+
+            Hidden::make("Parent", "parent_id")->onlyOnForms()
+                ->hideWhenUpdating()->fillUsing(function ($request, $model, $attribute) {
+                    $model->{$attribute} = $request->user()->id;
+                })
         ];
+    }
+
+    public function authorizedToAttachAny(NovaRequest $request, $model): bool
+    {
+        return false;
+    }
+
+    public function authorizedToDetach(NovaRequest $request, $model, $relationship): bool
+    {
+        return false;
     }
 
     public function authorizedToReplicate(Request $request): false
@@ -88,7 +107,7 @@ class User extends Resource
     /**
      * Get the cards available for the request.
      *
-     * @param  NovaRequest  $request
+     * @param NovaRequest $request
      * @return array
      */
     public function cards(NovaRequest $request): array
@@ -99,7 +118,7 @@ class User extends Resource
     /**
      * Get the filters available for the resource.
      *
-     * @param  NovaRequest  $request
+     * @param NovaRequest $request
      * @return array
      */
     public function filters(NovaRequest $request): array
@@ -110,7 +129,7 @@ class User extends Resource
     /**
      * Get the lenses available for the resource.
      *
-     * @param  NovaRequest  $request
+     * @param NovaRequest $request
      * @return array
      */
     public function lenses(NovaRequest $request): array
@@ -121,7 +140,7 @@ class User extends Resource
     /**
      * Get the actions available for the resource.
      *
-     * @param  NovaRequest  $request
+     * @param NovaRequest $request
      * @return array
      */
     public function actions(NovaRequest $request): array

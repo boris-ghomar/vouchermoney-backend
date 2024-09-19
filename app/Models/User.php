@@ -5,6 +5,7 @@ namespace App\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -80,9 +81,9 @@ class User extends Authenticatable
         ];
     }
 
-    public function parent(): HasOne
+    public function parent(): BelongsTo
     {
-        return $this->hasOne(User::class, "parent_id", "id");
+        return $this->belongsTo(User::class, "parent_id", "id");
     }
 
     public function children(): HasMany
@@ -97,7 +98,7 @@ class User extends Authenticatable
 
     public function customer(): HasOne
     {
-        return $this->hasOne(Customer::class);
+        return $this->hasOne(Customer::class, "user_id", $this->parent_id === 0 ? "id" : "parent_id");
     }
 
     public function createdVouchers(): HasMany

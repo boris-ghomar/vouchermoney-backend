@@ -15,6 +15,7 @@ use Laravel\Nova\Fields\Number;
 use Laravel\Nova\Fields\Text;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use App\Models\Customer as Model;
+use Vyuldashev\NovaPermission\RoleSelect;
 
 class Customer extends Resource
 {
@@ -53,7 +54,7 @@ class Customer extends Resource
             ID::make()->sortable(),
 
             Text::make("Name")->filterable(),
-            HasOne::make("User", "user", User::class),
+            BelongsTo::make("User", "user", User::class),
             Currency::make("Balance"),
             Avatar::make("Avatar")->nullable()->disableDownload()->deletable()->prunable()->acceptedTypes('.jpg,.jpeg,.png'),
             Number::make("Max vouchers count", "max_vouchers_count"),
@@ -112,5 +113,10 @@ class Customer extends Resource
         return [
             CreateCustomer::make()->standalone(),
         ];
+    }
+
+    public static function authorizedToCreate(Request $request): bool
+    {
+        return false;
     }
 }

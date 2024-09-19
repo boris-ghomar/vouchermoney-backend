@@ -2,7 +2,7 @@
 
 namespace App\Nova\Actions;
 
-use \App\Models\Role;
+use App\Models\Role;
 use Illuminate\Bus\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Hash;
@@ -39,7 +39,7 @@ class CreateCustomer extends Action
         $user->save();
 
 
-        $role = Role::find($fields->role);
+        $role = Role::findByName($fields->role);
         if ($role) {
             $user->roles()->attach($role->id);
         }

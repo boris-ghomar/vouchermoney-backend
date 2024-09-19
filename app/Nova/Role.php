@@ -2,12 +2,13 @@
 
 namespace App\Nova;
 
+use App\Models\Role as Model;
+use App\Nova\Fields\PermissionBooleanGroup;
+use Illuminate\Http\Request;
 use Laravel\Nova\Fields\HasMany;
 use Laravel\Nova\Fields\ID;
 use Laravel\Nova\Fields\Text;
 use Laravel\Nova\Http\Requests\NovaRequest;
-use Illuminate\Http\Request;
-use App\Models\Role as Model;
 
 /**
  * @mixin Model
@@ -38,7 +39,7 @@ class Role extends Resource
     /**
      * Get the fields displayed by the resource.
      *
-     * @param  NovaRequest  $request
+     * @param NovaRequest $request
      * @return array
      */
     public function fields(NovaRequest $request): array
@@ -46,10 +47,11 @@ class Role extends Resource
         return [
             ID::make()->sortable(),
 
-            Text::make("Name", fn () => __("roles." . $this->name)),
+            Text::make("Name", fn() => __("roles." . $this->name)),
 
             HasMany::make("Users", "users", User::class),
-            HasMany::make("Permissions", "permissions", Permission::class),
+            PermissionBooleanGroup::make("Permissions", "permissions")->hideFalseValues()
+                ->noValueText($this->name === Model::SUPER_ADMIN ? "Full access" : "No permission")
         ];
     }
 
@@ -73,10 +75,20 @@ class Role extends Resource
         return false;
     }
 
+    public function authorizedToDetach(NovaRequest $request, $model, $relationship)
+    {
+        return false;
+    }
+
+    public function authorizedToForceDelete(Request $request)
+    {
+        return false;
+    }
+
     /**
      * Get the cards available for the request.
      *
-     * @param  NovaRequest  $request
+     * @param NovaRequest $request
      * @return array
      */
     public function cards(NovaRequest $request): array
@@ -87,7 +99,7 @@ class Role extends Resource
     /**
      * Get the filters available for the resource.
      *
-     * @param  NovaRequest  $request
+     * @param NovaRequest $request
      * @return array
      */
     public function filters(NovaRequest $request): array
@@ -98,7 +110,7 @@ class Role extends Resource
     /**
      * Get the lenses available for the resource.
      *
-     * @param  NovaRequest  $request
+     * @param NovaRequest $request
      * @return array
      */
     public function lenses(NovaRequest $request): array
@@ -109,7 +121,7 @@ class Role extends Resource
     /**
      * Get the actions available for the resource.
      *
-     * @param  NovaRequest  $request
+     * @param NovaRequest $request
      * @return array
      */
     public function actions(NovaRequest $request): array

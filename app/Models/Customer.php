@@ -44,4 +44,10 @@ class Customer extends Model
     {
         return $this->user->id === $user->id || $this->user->id === $user->parent_id;
     }
+
+    public function roles()
+    {
+        return $this->user->roles();
+    }
+
 }
