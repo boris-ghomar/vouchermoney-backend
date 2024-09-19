@@ -47,7 +47,9 @@ class Permission extends Resource
         return [
             ID::make()->sortable(),
 
-            Text::make("Name"),
+            Text::make("Name", function () {
+                return $this->title();
+            }),
 
             HasMany::make("Roles", "roles", Role::class),
             HasMany::make("Users", "users", User::class),

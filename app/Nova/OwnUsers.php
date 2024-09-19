@@ -14,7 +14,7 @@ class OwnUsers extends User
 {
     public static function label(): string
     {
-        return auth()->user()?->hasRole(RoleModel::SUPER_ADMIN) ? "Admins" : "Users";
+        return auth()->user()?->hasRole(RoleModel::SUPER_ADMIN) ? "Admins" : "Children";
     }
 
     public static function indexQuery(NovaRequest $request, $query): Builder
