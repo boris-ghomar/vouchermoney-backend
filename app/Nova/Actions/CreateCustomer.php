@@ -16,10 +16,11 @@ use Laravel\Nova\Fields\Text;
 use App\Models\User;
 use App\Models\Customer;
 use Laravel\Nova\Http\Requests\NovaRequest;
+use Lednerb\ActionButtonSelector\ShowAsButton;
 
 class CreateCustomer extends Action
 {
-    use InteractsWithQueue, Queueable;
+    use InteractsWithQueue, Queueable, ShowAsButton;
 
     public $name = 'Create Customer';
 

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "74cfbeea56ca9aca8f7f66b3be66ffc1",
+    "content-hash": "5d8cba4fca74434e56d45a5a9101a2ec",
     "packages": [
         {
             "name": "brianium/paratest",
@@ -2696,6 +2696,54 @@
                 }
             ],
             "time": "2024-01-28T23:22:08+00:00"
+        },
+        {
+            "name": "lednerb/nova-action-button-selectors",
+            "version": "v2.0.6",
+            "source": {
+                "type": "git",
+                "url": "https://codeberg.org/Lednerb/nova-action-button-selectors",
+                "reference": "0f161cb4d6bcba1ed538ab71d8a28f56ba461444"
+            },
+            "require": {
+                "laravel/nova": "~4.0",
+                "php": "^7.3|^8.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Lednerb\\ActionButtonSelector\\AssetServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Lednerb\\ActionButtonSelector\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Sascha Brendel",
+                    "email": "mail@lednerb.de"
+                },
+                {
+                    "name": "Pitchayakit Pahamak",
+                    "email": "pitchayakit.p@gmail.com",
+                    "role": "Software Engineer"
+                }
+            ],
+            "description": "A Laravel Nova asset.",
+            "homepage": "https://lednerb.de",
+            "keywords": [
+                "laravel",
+                "nova"
+            ],
+            "time": "2024-02-19T12:14:50+00:00"
         },
         {
             "name": "monolog/monolog",
