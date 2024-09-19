@@ -5,15 +5,15 @@ namespace App\Nova;
 use App\Models\User as Model;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rules;
+use Laravel\Nova\Fields\Badge;
 use Laravel\Nova\Fields\BelongsTo;
 use Laravel\Nova\Fields\BelongsToMany;
-use Laravel\Nova\Fields\HasMany;
 use Laravel\Nova\Fields\Hidden;
 use Laravel\Nova\Fields\ID;
 use Laravel\Nova\Fields\Password;
 use Laravel\Nova\Fields\Text;
 use Laravel\Nova\Http\Requests\NovaRequest;
-use Vyuldashev\NovaPermission\RoleSelect;
+use App\Models\Role as RoleModel;
 
 /**
  * @mixin Model
@@ -68,9 +68,8 @@ class User extends Resource
                 ->creationRules('required', Rules\Password::defaults())
                 ->updateRules('nullable', Rules\Password::defaults()),
 
-            BelongsTo::make("Customer", "customer", Customer::class)->showOnIndex(),
-
-            BelongsToMany::make("Roles", "roles", Role::class),
+            BelongsTo::make($this->role?->title, "customer", Customer::class)
+                ->canSee(fn (Request $request) => $this->customer && $this->role?->title),
 
             Hidden::make("Parent", "parent_id")->onlyOnForms()
                 ->hideWhenUpdating()->fillUsing(function ($request, $model, $attribute) {
@@ -99,7 +98,7 @@ class User extends Resource
         return $request->user()->id !== $this->id && $this->parent_id === $request->user()->id;
     }
 
-    public function authorizedToForceDelete(Request $request)
+    public function authorizedToForceDelete(Request $request): bool
     {
         return $request->user()->id !== $this->id;
     }

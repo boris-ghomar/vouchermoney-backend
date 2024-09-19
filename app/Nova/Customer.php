@@ -5,18 +5,20 @@ namespace App\Nova;
 use App\Nova\Actions\CreateCustomer;
 use Illuminate\Http\Request;
 use Laravel\Nova\Fields\Avatar;
+use Laravel\Nova\Fields\Badge;
 use Laravel\Nova\Fields\BelongsTo;
 use Laravel\Nova\Fields\Currency;
 use Laravel\Nova\Fields\HasMany;
-use Laravel\Nova\Fields\HasManyThrough;
-use Laravel\Nova\Fields\HasOne;
 use Laravel\Nova\Fields\ID;
 use Laravel\Nova\Fields\Number;
 use Laravel\Nova\Fields\Text;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use App\Models\Customer as Model;
-use Vyuldashev\NovaPermission\RoleSelect;
+use App\Models\Role as RoleModel;
 
+/**
+ * @mixin Model
+ */
 class Customer extends Resource
 {
     /**
@@ -53,13 +55,23 @@ class Customer extends Resource
         return [
             ID::make()->sortable(),
 
-            Text::make("Name")->filterable(),
-            BelongsTo::make("User", "user", User::class),
-            Currency::make("Balance"),
+            Text::make("Name")->filterable()->sortable(),
             Avatar::make("Avatar")->nullable()->disableDownload()->deletable()->prunable()->acceptedTypes('.jpg,.jpeg,.png'),
-            Number::make("Max vouchers count", "max_vouchers_count"),
-            Number::make("Max voucher amount", "max_voucher_amount"),
-            HasMany::make("Users", "users", User::class),
+            BelongsTo::make("User", "user", User::class)->hideFromIndex(),
+            Currency::make("Balance")->sortable()->filterable(),
+
+            Number::make("Max vouchers count", "max_vouchers_count")->hideFromIndex(),
+            Number::make("Max voucher amount", "max_voucher_amount")->hideFromIndex(),
+
+            Badge::make("Role", function () {
+                return $this->user->role->name;
+            })->map([
+                RoleModel::SUPER_ADMIN => "danger",
+                RoleModel::MERCHANT => "info",
+                RoleModel::RESELLER => "success"
+            ])->onlyOnIndex(),
+
+            HasMany::make("Accounts", "children", User::class),
 
         ];
     }
@@ -111,7 +123,7 @@ class Customer extends Resource
     public function actions(NovaRequest $request): array
     {
         return [
-            CreateCustomer::make()->standalone(),
+            CreateCustomer::make()->standalone()->onlyOnIndex(),
         ];
     }
 

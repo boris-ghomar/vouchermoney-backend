@@ -11,6 +11,7 @@ use App\Nova\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Laravel\Nova\Http\Requests\NovaRequest;
+use Laravel\Nova\Menu\Menu;
 use Laravel\Nova\Menu\MenuItem;
 use Laravel\Nova\Menu\MenuSection;
 use Laravel\Nova\Nova;
@@ -31,15 +32,22 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
 
         $can = fn(...$permissions) => fn(NovaRequest $request) => $request->user()->can(...$permissions);
 
+        Nova::userMenu(function (Request $request, Menu $menu) {
+            $menu->prepend(
+                MenuItem::make(
+                    'Profile',
+                    "/resources/users/{$request->user()?->getKey()}"
+                ),
+            );
+
+            return $menu;
+        });
+
         Nova::mainMenu(fn(Request $request) => [
             MenuSection::dashboard(MainDashboard::class)->icon("view-grid"),
 
-            MenuSection::make("Profile")
-                ->path("/resources/" . ($request->user()?->customer?->id ? "customers/" . $request->user()->customer->id : "users/" . $request->user()?->id))
-                ->icon("user-circle"),
-
-            MenuSection::resource(Customer::class)->icon("user-group")->canSee($can(["customer.view-any"])),
             MenuSection::resource(OwnUsers::class)->icon("users")->canSee($can(["user.view-any"])),
+            MenuSection::resource(Customer::class)->icon("user-group")->canSee($can(["customer.view-any"])),
 
             MenuSection::make("Permissions", [
                 MenuItem::resource(Permission::class)->canSee($can(["permission.view-any"])),

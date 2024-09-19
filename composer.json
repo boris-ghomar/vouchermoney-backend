@@ -11,6 +11,7 @@
         "laravel/nova": "^4.0",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.9",
+        "lednerb/nova-action-button-selectors": "^2.0",
         "pestphp/pest": "3.x-dev",
         "pestphp/pest-plugin-laravel": "v3.0.0",
         "spatie/laravel-activitylog": "^4.8",
