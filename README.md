@@ -3,6 +3,9 @@
 ## Requirements and Details
 
 - PHP - 8.2.12 (Add extension list)
+  - ext-gd
+  - ext-zip
+  - ext-intl
 - MySQL - MariaDB (10.4.32)
 - Laravel 11
 - Laravel Nova - v4.35.1 (Licensed)

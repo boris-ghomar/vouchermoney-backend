@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Nova\Customer;
 use App\Nova\Dashboards\Main as MainDashboard;
+use App\Nova\OwnUsers;
 use App\Nova\Permission;
 use App\Nova\Role;
 use App\Nova\User;
@@ -36,13 +37,18 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
         Nova::mainMenu(fn(Request $request) => [
             MenuSection::dashboard(MainDashboard::class)->icon("view-grid"),
 
+            MenuSection::make("Profile")
+                ->path("/resources/" . ($request->user()?->customer?->id ? "customers/" . $request->user()->customer->id : "users/" . $request->user()?->id))
+                ->icon("user-circle"),
+
             MenuSection::resource(Customer::class)->icon("user-group")->canSee(can("customer.view-any")),
-            MenuSection::resource(User::class)->icon("users")->canSee(can("user.view-any")),
+            MenuSection::resource(OwnUsers::class)->icon("users")->canSee(can("user.view-any")),
 
             MenuSection::make("Permissions", [
                 MenuItem::resource(Permission::class)->canSee(can("permission.view-any")),
-                MenuItem::resource(Role::class)->canSee(can("role.view-any"))
-            ])->icon("key")->collapsable()->collapsedByDefault()->canSee(can("permission.view-any", "role.view-any"))
+                MenuItem::resource(Role::class)->canSee(can("role.view-any")),
+                MenuItem::resource(User::class)->canSee(can("user.view-any")),
+            ])->icon("key")->collapsable()->collapsedByDefault()->canSee(can("permission.view-any", "role.view-any", "user.view-any"))
         ]);
     }
 
@@ -94,7 +100,9 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
      */
     public function tools(): array
     {
-        return [];
+        return [
+
+        ];
     }
 
     /**

@@ -3,16 +3,10 @@
 namespace App\Policies;
 
 use App\Models\Customer;
-use App\Models\Role;
 use App\Models\User;
 
 class CustomerPolicy
 {
-    private function isAdmin(User $user): bool
-    {
-        return $user->hasRole(Role::ADMIN);
-    }
-
     public function viewAny(User $user): bool
     {
         return $user->can("customer.view-any");
@@ -23,12 +17,9 @@ class CustomerPolicy
         return $customer->isChild($user);
     }
 
-    public function create(User $user, ?Customer $customer): bool
+    public function create(User $user): bool
     {
-        return $user->can("customer.create") && (
-                $this->isAdmin($user) ||
-                ($customer && $customer->isChild($user))
-            );
+        return $user->can("customer.create") && $user->isAdmin();
     }
 
     public function update(User $user, Customer $customer): bool
@@ -44,8 +35,8 @@ class CustomerPolicy
         return $user->can("customer.delete") && ($this->isAdmin($user) || $customer->user->id === $user->id);
     }
 
-    public function attachUser(User $user,Customer $customer): bool
+    public function attachUser(User $user, Customer $customer): bool
     {
-        return $user->can("user.create") && ($this->isAdmin($user)|| $customer->user->id === $user->id);
+        return $user->can("user.create") && ($this->isAdmin($user) || $customer->user->id === $user->id);
     }
 }

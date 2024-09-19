@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\Permission;
 use App\Models\Role;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class PermissionSeeder extends Seeder
@@ -18,20 +17,23 @@ class PermissionSeeder extends Seeder
             'role.view-any',
             'permission.view-any',
             'customer.view-any',
+            'user.view-any',
         ];
 
         foreach ($permissions as $permission) {
             Permission::firstOrCreate(['name' => $permission]);
         }
 
-        $roles = [
-            'reseller' => ['customer.detail', 'user.create', 'user.update', 'user.details'],
-            'merchant' => ['customer.detail', 'user.create', 'user.update', 'user.details'],
-        ];
+        $roles = [Role::SUPER_ADMIN, Role::MERCHANT, Role::RESELLER];
 
-        foreach ($roles as $name => $permissions) {
-            $role = Role::firstOrCreate(['name' => $name]);
-            $role->syncPermissions($permissions);
+        foreach ($roles as $role) {
+            Role::firstOrCreate(['name' => $role]);
+        }
+
+        $rolePermissions = ["user.view-any"];
+
+        foreach ([Role::MERCHANT, Role::RESELLER] as $role) {
+            Role::findByName($role)->syncPermissions($rolePermissions);
         }
     }
 }
