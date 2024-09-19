@@ -3,6 +3,7 @@
 namespace App\Nova;
 
 use App\Nova\Actions\CreateCustomer;
+use Illuminate\Http\Request;
 use Laravel\Nova\Fields\Avatar;
 use Laravel\Nova\Fields\BelongsTo;
 use Laravel\Nova\Fields\Currency;
@@ -55,11 +56,16 @@ class Customer extends Resource
             HasOne::make("User", "user", User::class),
             Currency::make("Balance"),
             Avatar::make("Avatar")->nullable()->disableDownload()->deletable()->prunable()->acceptedTypes('.jpg,.jpeg,.png'),
-            Number::make("Max vouchers count"),
-            Number::make("Max voucher amount"),
+            Number::make("Max vouchers count", "max_vouchers_count"),
+            Number::make("Max voucher amount", "max_voucher_amount"),
             HasMany::make("Users", "users", User::class),
 
         ];
+    }
+
+    public function authorizedToReplicate(Request $request): bool
+    {
+        return false;
     }
 
     /**

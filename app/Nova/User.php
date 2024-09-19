@@ -2,14 +2,14 @@
 
 namespace App\Nova;
 
+use Illuminate\Http\Request;
 use Illuminate\Validation\Rules;
+use Laravel\Nova\Fields\BelongsTo;
 use Laravel\Nova\Fields\ID;
 use Laravel\Nova\Fields\Password;
 use Laravel\Nova\Fields\Text;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use App\Models\User as Model;
-use Illuminate\Database\Eloquent\Builder;
-use App\Models\Role as RoleModel;
 
 /**
  * @mixin Model
@@ -40,18 +40,6 @@ class User extends Resource
         'name', 'email'
     ];
 
-    public static $perPageOptions = [10, 25, 50];
-
-    public static function indexQuery(NovaRequest $request, $query): Builder
-    {
-        return $query->where("parent_id", $request->user()->id);
-    }
-
-    public static function label(): string
-    {
-        return auth()->user()->hasRole(RoleModel::SUPER_ADMIN) ? "Admins" : "Users";
-    }
-
     /**
      * Get the fields displayed by the resource.
      *
@@ -78,8 +66,23 @@ class User extends Resource
                 ->creationRules('required', Rules\Password::defaults())
                 ->updateRules('nullable', Rules\Password::defaults()),
 
-//            HasOne::make("Customer", "customer", Customer::class)
+            BelongsTo::make("Role", "role", Role::class)
         ];
+    }
+
+    public function authorizedToReplicate(Request $request): false
+    {
+        return false;
+    }
+
+    public function authorizedToDelete(Request $request): bool
+    {
+        return $request->user()->id !== $this->id && $this->parent_id === $request->user()->id;
+    }
+
+    public function authorizedToForceDelete(Request $request)
+    {
+        return $request->user()->id !== $this->id;
     }
 
     /**

@@ -31,6 +31,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Collection<Voucher> $updatedVouchers
  * @property Collection<Finance> $createdFinances
  * @property Collection<Finance> $updatedFinances
+ * @property Role $role
  *
  * @property bool is_parent
  */
@@ -89,6 +90,11 @@ class User extends Authenticatable
         return $this->hasMany(User::class, 'parent_id');
     }
 
+    public function isAdmin(): bool
+    {
+        return $this->parent->roles()->where("name", Role::SUPER_ADMIN)->exists();
+    }
+
     public function customer(): HasOne
     {
         return $this->hasOne(Customer::class);
@@ -117,5 +123,10 @@ class User extends Authenticatable
     public function addIsParentAttribute(): bool
     {
         return $this->parent_id === 0;
+    }
+
+    public function getRoleAttribute()
+    {
+        return $this->roles()->first();
     }
 }

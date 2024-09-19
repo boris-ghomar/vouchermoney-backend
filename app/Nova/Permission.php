@@ -2,6 +2,7 @@
 
 namespace App\Nova;
 
+use Laravel\Nova\Fields\DateTime;
 use Laravel\Nova\Fields\HasMany;
 use Laravel\Nova\Fields\ID;
 use Laravel\Nova\Fields\Text;
@@ -49,7 +50,10 @@ class Permission extends Resource
             Text::make("Name"),
 
             HasMany::make("Roles", "roles", Role::class),
-            HasMany::make("Users", "users", User::class)
+            HasMany::make("Users", "users", User::class),
+
+            DateTime::make("Created at", 'created_at')->exceptOnForms(),
+            DateTime::make(__('Updated at'), 'updated_at')->exceptOnForms(),
         ];
     }
 
