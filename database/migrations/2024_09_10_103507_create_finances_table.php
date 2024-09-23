@@ -13,16 +13,13 @@ return new class extends Migration
     {
         Schema::create('finances', function (Blueprint $table) {
             $table->id();
-            $table->enum("type", ["withdrawal", "deposit"]);
             $table->decimal('amount');
             $table->text('request_comment')->nullable();
-            $table->enum('status', ['pending', 'cancelled', 'approved', 'declined'])->default('pending');
+            $table->enum('status', ['pending', 'canceled', 'approved', 'rejected'])->default('pending');
             $table->text('approved_comment')->nullable();
-            $table->unsignedBigInteger('created_by')->nullable();
-            $table->unsignedBigInteger('updated_by')->nullable();
-
-            $table->foreign('created_by')->references('id')->on('users')->onDelete('set null');
-            $table->foreign('updated_by')->references('id')->on('users')->onDelete('set null');
+            $table->unsignedBigInteger('resolved_by')->nullable();
+            $table->foreignId('customer_id');
+            $table->foreign('resolved_by')->references('id')->on('users')->nullOnDelete(); //approve or reject by
             $table->timestamps();
         });
     }
