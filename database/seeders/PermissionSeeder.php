@@ -3,8 +3,9 @@
 namespace Database\Seeders;
 
 use App\Models\Permission;
-use App\Models\Role;
+use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class PermissionSeeder extends Seeder
 {
@@ -14,26 +15,28 @@ class PermissionSeeder extends Seeder
     public function run(): void
     {
         $permissions = [
-            'role.view-any',
-            'permission.view-any',
-            'customer.view-any',
-            'user.view-any',
+            'customer:view-any',
+            'customer:create',
+            'customer:update',
+            'customer:delete',
+            'user:view-any',
+            'user:create',
+            'user:delete',
+            'user:attach-permission',
         ];
 
-        foreach ($permissions as $permission) {
-            Permission::firstOrCreate(['name' => $permission]);
+        foreach (array_merge($permissions, Permission::getCustomerPermissions()) as $permission) {
+            Permission::create(['name' => $permission]);
         }
 
-        $roles = [Role::SUPER_ADMIN, Role::MERCHANT, Role::RESELLER];
+        $user = new User();
+        $user->name = "Admin";
+        $user->email = "admin@test.com";
+        $user->email_verified_at = now();
+        $user->role = User::ROLE_ADMIN;
+        $user->password = Hash::make("123123123");
+        $user->save();
 
-        foreach ($roles as $role) {
-            Role::firstOrCreate(['name' => $role]);
-        }
-
-        $rolePermissions = ["user.view-any"];
-
-        foreach ([Role::MERCHANT, Role::RESELLER] as $role) {
-            Role::findByName($role)->syncPermissions($rolePermissions);
-        }
+        $user->syncPermissions($permissions);
     }
 }

@@ -2,36 +2,68 @@
 
 namespace App\Policies;
 
-use App\Models\Customer;
-use App\Models\Role;
-use App\Models\User;
-
 class PermissionPolicy
 {
-    public function viewAny(User $user): bool
+    /**
+     * Determine whether the user can view any models.
+     */
+    public function viewAny(): bool
     {
-        return $user->can("role.view-any");
-    }
-
-    public function view(User $user, Role $role): bool
-    {
-        if ($role->name === Role::SUPER_ADMIN)
-            return false;
-
         return true;
     }
 
-    public function create(User $user, ?Customer $customer): bool
+    /**
+     * Determine whether the user can view the model.
+     */
+    public function view(): bool
     {
         return false;
     }
 
-    public function update(User $user, Customer $customer): bool
+    /**
+     * Determine whether the user can create models.
+     */
+    public function create(): bool
     {
         return false;
     }
 
-    public function delete(User $user, Customer $customer): bool
+    /**
+     * Determine whether the user can restore the model.
+     */
+    public function replicate(): bool
+    {
+        return false;
+    }
+
+    /**
+     * Determine whether the user can update the model.
+     */
+    public function update(): bool
+    {
+        return false;
+    }
+
+    /**
+     * Determine whether the user can delete the model.
+     */
+    public function delete(): bool
+    {
+        return false;
+    }
+
+    /**
+     * Determine whether the user can restore the model.
+     */
+    public function restore(): bool
+    {
+        return false;
+    }
+
+    /**
+     * Determine whether the user can permanently delete the model.
+     */
+    public function forceDelete(): bool
     {
         return false;
     }

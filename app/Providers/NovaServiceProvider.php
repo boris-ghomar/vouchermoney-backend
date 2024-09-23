@@ -4,9 +4,6 @@ namespace App\Providers;
 
 use App\Nova\Customer;
 use App\Nova\Dashboards\Main as MainDashboard;
-use App\Nova\OwnUsers;
-use App\Nova\Permission;
-use App\Nova\Role;
 use App\Nova\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -30,7 +27,7 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
 
         Nova::footer(fn() => null);
 
-        $can = fn(...$permissions) => fn(NovaRequest $request) => $request->user()->can(...$permissions);
+        $can = fn(...$permissions) => fn(NovaRequest $request) => $request->user()?->can(...$permissions);
 
         Nova::userMenu(function (Request $request, Menu $menu) {
             $menu->prepend(
@@ -45,15 +42,12 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
 
         Nova::mainMenu(fn(Request $request) => [
             MenuSection::dashboard(MainDashboard::class)->icon("view-grid"),
+            MenuSection::make(__("fields.customer"))->canSee($can(["customer:view-balance"]))
+                ->icon("user")->path("/resources/customers/" . $request->user()?->customer_id),
 
-            MenuSection::resource(OwnUsers::class)->icon("users")->canSee($can(["user.view-any"])),
-            MenuSection::resource(Customer::class)->icon("user-group")->canSee($can(["customer.view-any"])),
-
-            MenuSection::make("Permissions", [
-                MenuItem::resource(Permission::class)->canSee($can(["permission.view-any"])),
-                MenuItem::resource(Role::class)->canSee($can(["role.view-any"])),
-                MenuItem::resource(User::class)->canSee($can(["user.view-any"])),
-            ])->icon("key")->collapsable()->collapsedByDefault()->canSee($can(["permission.view-any", "role.view-any", "user.view-any"]))
+            MenuSection::resource(User::class)->icon("users"),
+            MenuSection::resource(Customer::class)->icon("user-group")
+                ->canSee($can(["customer:view-any"]))
         ]);
     }
 

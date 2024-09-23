@@ -3,42 +3,36 @@
 namespace App\Models;
 
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Permission\Traits\HasRoles;
 
 /**
- * @property int $id
- * @property string $name
- * @property string|null $email
- * @property Carbon|null $email_verified_at
- * @property int $parent_id
- * @property boolean $is_active
- * @property string $timezone
- * @property string $api_key
- * @property Carbon $created_at
- * @property Carbon $updated_at
+ * @property  int          $id
+ * @property  string       $name
+ * @property  string       $email
+ * @property  Carbon|null  $email_verified_at
+ * @property  bool         $is_active
+ * @property  int|null     $customer_id
+ * @property  string       $role
+ * @property  string       $password
+ * @property  string|null  $api_token
+ * @property  Carbon|null  $created_at
+ * @property  Carbon|null  $updated_at
  *
- * @property User $parent
- * @property Collection<User> $children
- * @property Customer $customer
- * @property Collection<Voucher> $createdVouchers
- * @property Collection<Voucher> $updatedVouchers
- * @property Collection<Finance> $createdFinances
- * @property Collection<Finance> $updatedFinances
- * @property Role $role
- *
- * @property bool is_parent
+ * @property  bool         $is_admin
+ * @property  bool         $is_customer
+ * @property  Customer     $customer
  */
 class User extends Authenticatable
 {
     use HasFactory, Notifiable, HasApiTokens, HasRoles;
+
+    const ROLE_ADMIN = "admin";
+    const ROLE_CUSTOMER = "customer";
 
     /**
      * The attributes that are mass assignable.
@@ -48,11 +42,12 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'email_verified_at',
         'password',
-        'parent_id',
         'is_active',
-        'timezone',
-        'api_key',
+        'api_token',
+        'customer_id',
+        'role'
     ];
 
     /**
@@ -63,10 +58,8 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
-        'api_key'
+        'api_token'
     ];
-
-    protected $with = ["parent", "roles", "permissions"];
 
     /**
      * Get the attributes that should be cast.
@@ -81,53 +74,18 @@ class User extends Authenticatable
         ];
     }
 
-    public function parent(): BelongsTo
+    public function customer(): BelongsTo
     {
-        return $this->belongsTo(User::class, "parent_id", "id");
+        return $this->belongsTo(Customer::class);
     }
 
-    public function children(): HasMany
+    public function getIsAdminAttribute(): bool
     {
-        return $this->hasMany(User::class, 'parent_id');
+        return $this->role === User::ROLE_ADMIN;
     }
 
-    public function isAdmin(): bool
+    public function getIsCustomerAttribute(): bool
     {
-        return $this->parent->roles()->where("name", Role::SUPER_ADMIN)->exists();
-    }
-
-    public function customer(): HasOne
-    {
-        return $this->hasOne(Customer::class, "user_id", $this->parent_id === 0 ? "id" : "parent_id");
-    }
-
-    public function createdVouchers(): HasMany
-    {
-        return $this->hasMany(Voucher::class, 'created_by');
-    }
-
-    public function updatedVouchers(): HasMany
-    {
-        return $this->hasMany(Voucher::class, 'updated_by');
-    }
-
-    public function createdFinances(): HasMany
-    {
-        return $this->hasMany(Finance::class, 'created_by');
-    }
-
-    public function updatedFinances(): HasMany
-    {
-        return $this->hasMany(Finance::class, 'updated_by');
-    }
-
-    public function addIsParentAttribute(): bool
-    {
-        return $this->parent_id === 0;
-    }
-
-    public function getRoleAttribute()
-    {
-        return $this->roles()->first();
+        return $this->role === User::ROLE_CUSTOMER;
     }
 }

@@ -3,24 +3,27 @@
 namespace App\Nova;
 
 use App\Models\User as Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rules;
+use Laravel\Nova\Fields\Avatar;
 use Laravel\Nova\Fields\Badge;
 use Laravel\Nova\Fields\BelongsTo;
 use Laravel\Nova\Fields\BelongsToMany;
+use Laravel\Nova\Fields\Boolean;
 use Laravel\Nova\Fields\Hidden;
 use Laravel\Nova\Fields\ID;
 use Laravel\Nova\Fields\Password;
 use Laravel\Nova\Fields\Text;
 use Laravel\Nova\Http\Requests\NovaRequest;
-use App\Models\Role as RoleModel;
+use Outl1ne\DependencyContainer\DependencyContainer;
+use App\Models\Permission as PermissionModel;
 
 /**
  * @mixin Model
  */
 class User extends Resource
 {
-
     /**
      * The model the resource corresponds to.
      *
@@ -42,6 +45,36 @@ class User extends Resource
         return $this->name;
     }
 
+    public static function indexQuery(NovaRequest $request, $query): Builder
+    {
+        $user = $request->user();
+
+        if ($user) {
+            $query->whereNot("id", $user->id);
+        }
+
+        if ($request?->viaRelationship) {
+            return $query;
+        }
+
+        if ($user?->is_customer)
+            return $query->where("customer_id", $user->customer_id);
+
+        return $query->where("role", Model::ROLE_ADMIN);
+    }
+
+    public static function authorizedToViewAny(Request $request): bool
+    {
+        $user = $request->user();
+
+        if ($user && (
+                ($user->is_customer && $user->can("customer:user:view-any")) ||
+                ($user->is_admin && $user->can("user:view-any")))
+        ) return true;
+
+        return false;
+    }
+
     /**
      * Get the fields displayed by the resource.
      *
@@ -51,56 +84,121 @@ class User extends Resource
     public function fields(NovaRequest $request): array
     {
         return [
-            ID::make()->sortable(),
+            ID::make(__("fields.id"), "id")->sortable()->canSee(function (Request $request) {
+                $user = $request->user();
+                return $user && $user->is_admin;
+            }),
 
-            Text::make('Name')
-                ->sortable()
-                ->rules('required', 'max:255'),
+            Text::make(__("fields.name"), "name")->filterable()->rules('required', 'max:100'),
 
-            Text::make('Email')
-                ->sortable()
-                ->rules('required', 'email', 'max:254')
+            Boolean::make(__("fields.is_active"), "is_active")
+                ->exceptOnForms()
+                ->canSee(function (Request $request) {
+                    $user = $request->user();
+
+                    return $user && (
+                            $user->is_admin ||
+                            ($user->is_customer && $user->customer_id === $this->customer_id)
+                        );
+                }),
+
+            Avatar::make(__("fields.avatar"), "customer.avatar")
+                ->canSee(fn() => $this->is_customer)
+                ->exceptOnForms(),
+
+            Badge::make(__("fields.role"), "role")
+                ->exceptOnForms()
+                ->map([
+                    Model::ROLE_ADMIN => "danger",
+                    Model::ROLE_CUSTOMER => "success"
+                ])
+                ->canSee(fn(Request $request) => $request->user()?->is_admin),
+
+            Hidden::make(__("fields.role"), "role")
+                ->onlyOnForms()->hideWhenUpdating()->fillUsing(function ($request, $model, $attribute) {
+                    $model->{$attribute} = $request?->viaRelationship ? Model::ROLE_CUSTOMER : $request->user()?->role;
+                }),
+
+            Text::make(__("fields.email"), "email")
+                ->filterable()
+                ->rules('required', 'email:dns', 'max:255')
                 ->creationRules('unique:users,email')
                 ->updateRules('unique:users,email,{{resourceId}}'),
 
-            Password::make('Password')
+//            Boolean::make(__("fields.is_verified"), "email_verified_at")->hide(),
+
+//            DateTime::make(__("fields.email_verified_at"), "email_verified_at")->hide(),
+
+            Password::make(__("fields.password"), "password")
                 ->onlyOnForms()
-                ->creationRules('required', Rules\Password::defaults())
-                ->updateRules('nullable', Rules\Password::defaults()),
+                ->rules("min:8", Rules\Password::defaults())
+                ->creationRules('required')
+                ->updateRules('nullable'),
 
-            BelongsTo::make($this->role?->title, "customer", Customer::class)
-                ->canSee(fn (Request $request) => $this->customer && $this->role?->title),
+            BelongsTo::make("Customer", "customer", Customer::class)
+                ->onlyOnForms()->readonly()->canSee(fn($request) => $request->viaRelationship),
 
-            Hidden::make("Parent", "parent_id")->onlyOnForms()
-                ->hideWhenUpdating()->fillUsing(function ($request, $model, $attribute) {
-                    $model->{$attribute} = $request->user()->id;
-                })
+            Hidden::make("Customer", "customer_id")
+                ->canSee(function (Request $request) {
+                    $user = $request->user();
+
+                    return $user && $user->is_customer && $user->can("customer:user:create");
+                })->fillUsing(function ($request, $model, $attribute) {
+                    $model->{$attribute} = $request->user()->customer_id;
+                }),
+
+            DependencyContainer::make([
+                BelongsTo::make(__("fields.customer"), "customer", Customer::class)
+                    ->onlyOnDetail()
+            ])->dependsOn("role", Model::ROLE_CUSTOMER),
+
+            BelongsToMany::make(__("fields.permissions"), "permissions", Permission::class)
+                ->canSee(function (Request $request) {
+                    $user = $request->user();
+
+                    return $user && (
+                            ($user->is_customer && $user->can("customer:user:attach-permission")) ||
+                            ($user->is_admin)
+                        ) && $user->id !== $this->id;
+                })->collapsable()->collapsedByDefault()
         ];
+    }
+
+    public static function relatablePermissions(NovaRequest $request, $query)
+    {
+        return $query->whereNotIn('name', PermissionModel::getAllHighOrderPermissions());
     }
 
     public function authorizedToAttachAny(NovaRequest $request, $model): bool
     {
+        $user = $request->user();
+        if (
+            ($user && $this->id !== $user->id) &&
+            (
+                ($user->is_admin && $this->is_admin && $user->can("user:attach-permission")) ||
+                ($user->is_customer && $this->customer_id === $user->customer_id && $user->can("customer:user:attach-permission"))
+            )
+        ) return true;
+
         return false;
     }
+
+//    public function authorizedToAttach(NovaRequest $request, $model): bool
+//    {
+//        return !in_array($model?->name, [
+//            "customer:user:delete", "customer:user:attach-permission",
+//            "user:delete", "user:attach-permission"
+//        ]);
+//    }
 
     public function authorizedToDetach(NovaRequest $request, $model, $relationship): bool
     {
-        return false;
+        return $this->authorizedToAttachAny($request, $model);
     }
 
-    public function authorizedToReplicate(Request $request): false
+    public function authorizedToReplicate(Request $request): bool
     {
         return false;
-    }
-
-    public function authorizedToDelete(Request $request): bool
-    {
-        return $request->user()->id !== $this->id && $this->parent_id === $request->user()->id;
-    }
-
-    public function authorizedToForceDelete(Request $request): bool
-    {
-        return $request->user()->id !== $this->id;
     }
 
     /**

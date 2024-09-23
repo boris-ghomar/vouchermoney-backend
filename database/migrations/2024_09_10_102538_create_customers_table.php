@@ -13,12 +13,10 @@ return new class extends Migration
     {
         Schema::create('customers', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('user_id');
             $table->string('name')->unique();
             $table->decimal('balance')->default(0);
             $table->string('avatar')->nullable();
-            $table->integer('max_vouchers_count')->nullable();
-            $table->decimal('max_voucher_amount')->nullable();
+            $table->enum("type", ["reseller", "merchant"]);
             $table->timestamps();
         });
     }
