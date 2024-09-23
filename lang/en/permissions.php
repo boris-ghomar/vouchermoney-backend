@@ -1,7 +1,6 @@
 <?php
 
 return [
-    'permission:view-any' => "View any permission",
     'customer:view-any' => "View any customer",
     'customer:create' => "Create customer",
     'customer:update' => "Update customer",

@@ -15,7 +15,6 @@ class PermissionSeeder extends Seeder
     public function run(): void
     {
         $permissions = [
-            'permission:view-any',
             'customer:view-any',
             'customer:create',
             'customer:update',

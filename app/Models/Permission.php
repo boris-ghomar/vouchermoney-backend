@@ -16,4 +16,17 @@ class Permission extends SpatiePermission
             "customer:view-balance",
         ];
     }
+
+    public static function getAllHighOrderPermissions(): array
+    {
+        return [
+            "customer:delete",
+            "customer:update",
+            "user:delete",
+            "user:attach-permission",
+            "customer:user:delete",
+            "customer:user:attach-permission",
+            "customer:user:create"
+        ];
+    }
 }

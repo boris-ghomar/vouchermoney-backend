@@ -5,11 +5,11 @@ namespace App\Nova;
 use Illuminate\Http\Request;
 use Laravel\Nova\Fields\BelongsToMany;
 use Laravel\Nova\Fields\DateTime;
-use Laravel\Nova\Fields\HasMany;
 use Laravel\Nova\Fields\ID;
 use Laravel\Nova\Fields\Text;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use App\Models\Permission as Model;
+use App\Models\User as UserModel;
 
 /**
  * @mixin Model
@@ -28,9 +28,10 @@ class Permission extends Resource
      *
      * @var array
      */
-    public static $search = [
-        'name',
-    ];
+    public static $search = [];
+
+    public static $searchable = false;
+
 
     public function title(): string
     {

@@ -2,33 +2,22 @@
 
 namespace App\Policies;
 
-use App\Models\Permission;
-use App\Models\User;
-
 class PermissionPolicy
 {
     /**
      * Determine whether the user can view any models.
      */
-    public function viewAny(User $user): bool
+    public function viewAny(): bool
     {
-        if (
-            ($user->is_admin && $user->can("permission:view-any")) ||
-            ($user->is_customer && $user->can("customer:user:attach-permission"))
-        ) return true;
-
-        return false;
+        return true;
     }
 
     /**
      * Determine whether the user can view the model.
      */
-    public function view(User $user, Permission $permission): bool
+    public function view(): bool
     {
         return false;
-        if ($user->can($permission->name) && !in_array($permission->name, ["user:delete", "user:attach-permission", "customer:user:delete", "customer:user:attach-permission", "customer:delete"])) return true;
-
-        return $this->viewAny($user);
     }
 
     /**

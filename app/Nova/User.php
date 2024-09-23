@@ -11,14 +11,13 @@ use Laravel\Nova\Fields\Badge;
 use Laravel\Nova\Fields\BelongsTo;
 use Laravel\Nova\Fields\BelongsToMany;
 use Laravel\Nova\Fields\Boolean;
-use Laravel\Nova\Fields\DateTime;
-use Laravel\Nova\Fields\HasOne;
 use Laravel\Nova\Fields\Hidden;
 use Laravel\Nova\Fields\ID;
 use Laravel\Nova\Fields\Password;
 use Laravel\Nova\Fields\Text;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Outl1ne\DependencyContainer\DependencyContainer;
+use App\Models\Permission as PermissionModel;
 
 /**
  * @mixin Model
@@ -160,9 +159,14 @@ class User extends Resource
                     return $user && (
                             ($user->is_customer && $user->can("customer:user:attach-permission")) ||
                             ($user->is_admin)
-                        );
+                        ) && $user->id !== $this->id;
                 })->collapsable()->collapsedByDefault()
         ];
+    }
+
+    public static function relatablePermissions(NovaRequest $request, $query)
+    {
+        return $query->whereNotIn('name', PermissionModel::getAllHighOrderPermissions());
     }
 
     public function authorizedToAttachAny(NovaRequest $request, $model): bool
@@ -171,16 +175,21 @@ class User extends Resource
         if (
             ($user && $this->id !== $user->id) &&
             (
-                ($user->is_admin && $this->is_admin && $user->can("user:attach-permission") && !in_array($model?->name, ["user:delete", "user:attach-permission"])) ||
+                ($user->is_admin && $this->is_admin && $user->can("user:attach-permission")) ||
                 ($user->is_customer && $this->customer_id === $user->customer_id && $user->can("customer:user:attach-permission"))
-            )
-            && !in_array($model->name, [
-                ]
             )
         ) return true;
 
         return false;
     }
+
+//    public function authorizedToAttach(NovaRequest $request, $model): bool
+//    {
+//        return !in_array($model?->name, [
+//            "customer:user:delete", "customer:user:attach-permission",
+//            "user:delete", "user:attach-permission"
+//        ]);
+//    }
 
     public function authorizedToDetach(NovaRequest $request, $model, $relationship): bool
     {
