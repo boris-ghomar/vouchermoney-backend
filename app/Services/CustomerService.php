@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Http\Requests\UserRequest;
 use App\Models\Customer;
-use App\Models\Role;
 use App\Models\User;
 use App\Types\CustomerTypes;
 use Exception;

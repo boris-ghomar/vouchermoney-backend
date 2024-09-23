@@ -2,12 +2,13 @@
 
 namespace App\Nova;
 
+use Illuminate\Http\Request;
+use Laravel\Nova\Fields\BelongsToMany;
 use Laravel\Nova\Fields\DateTime;
 use Laravel\Nova\Fields\HasMany;
 use Laravel\Nova\Fields\ID;
 use Laravel\Nova\Fields\Text;
 use Laravel\Nova\Http\Requests\NovaRequest;
-use Illuminate\Http\Request;
 use App\Models\Permission as Model;
 
 /**
@@ -36,7 +37,7 @@ class Permission extends Resource
         return __("permissions." . $this->name);
     }
 
-    /**
+     /**
      * Get the fields displayed by the resource.
      *
      * @param  NovaRequest  $request
@@ -45,36 +46,19 @@ class Permission extends Resource
     public function fields(NovaRequest $request): array
     {
         return [
-            ID::make()->sortable(),
+            ID::make(__("fields.id"), "id")->onlyOnDetail(),
 
-            Text::make("Name", function () {
-                return $this->title();
-            }),
+            Text::make(__("fields.name"), fn () => $this->title()),
 
-            HasMany::make("Roles", "roles", Role::class),
-            HasMany::make("Users", "users", User::class),
+            BelongsToMany::make(__("fields.users"), "users", User::class)
+                ->onlyOnDetail()->canSee(fn(Request $request) => $request->user()?->is_admin),
 
-            DateTime::make("Created at", 'created_at')->exceptOnForms(),
-            DateTime::make(__('Updated at'), 'updated_at')->exceptOnForms(),
+            DateTime::make(__("fields.created_at"), 'created_at')->onlyOnDetail(),
+            DateTime::make(__("fields.updated_at"), 'updated_at')->onlyOnDetail(),
         ];
     }
 
-    public static function authorizedToCreate(Request $request): bool
-    {
-        return false;
-    }
-
-    public function authorizedToUpdate(Request $request): bool
-    {
-        return false;
-    }
-
-    public function authorizedToDelete(Request $request): bool
-    {
-        return false;
-    }
-
-    public function authorizedToReplicate(Request $request): bool
+    public function authorizedToUpdate(Request $request): false
     {
         return false;
     }

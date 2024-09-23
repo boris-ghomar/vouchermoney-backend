@@ -13,10 +13,10 @@ return new class extends Migration
     {
         Schema::create('finances', function (Blueprint $table) {
             $table->id();
-            $table->decimal('request_amount');
+            $table->enum("type", ["withdrawal", "deposit"]);
+            $table->decimal('amount');
             $table->text('request_comment')->nullable();
-            $table->enum('status', ['pending', 'cancelled', 'approved', 'rejected', 'fulfilled'])->default('pending');
-            $table->decimal('approved_amount')->nullable();
+            $table->enum('status', ['pending', 'cancelled', 'approved', 'declined'])->default('pending');
             $table->text('approved_comment')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "5d8cba4fca74434e56d45a5a9101a2ec",
+    "content-hash": "41070488238da4c96989a29082fe34b2",
     "packages": [
         {
             "name": "brianium/paratest",
@@ -3495,6 +3495,51 @@
                 }
             ],
             "time": "2024-07-26T05:48:04+00:00"
+        },
+        {
+            "name": "outl1ne/nova-dependency-container",
+            "version": "2.0.4",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/outl1ne/nova-dependency-container.git",
+                "reference": "3562063e72231e23d6612e57e64e71339fedb849"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/outl1ne/nova-dependency-container/zipball/3562063e72231e23d6612e57e64e71339fedb849",
+                "reference": "3562063e72231e23d6612e57e64e71339fedb849",
+                "shasum": ""
+            },
+            "require": {
+                "laravel/nova": "^4.0",
+                "php": ">=8.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Outl1ne\\DependencyContainer\\FieldServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Outl1ne\\DependencyContainer\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "A Laravel Nova field container allowing to depend on other fields values",
+            "keywords": [
+                "laravel",
+                "nova"
+            ],
+            "support": {
+                "source": "https://github.com/outl1ne/nova-dependency-container/tree/2.0.4"
+            },
+            "time": "2023-07-24T08:43:14+00:00"
         },
         {
             "name": "pestphp/pest",

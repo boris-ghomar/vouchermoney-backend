@@ -2,53 +2,39 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * @property int $user_id
- * @property string $name
- * @property float $balance
- * @property string $avatar
- * @property int $max_vouchers_count
- * @property float $max_voucher_amount
- * @property User $user
+ * @property  int               $id
+ * @property  string            $name
+ * @property  float             $balance
+ * @property  string|null       $avatar
+ * @property  string            $type
+ * @property  Carbon|null       $created_at
+ * @property  Carbon|null       $updated_at
+ *
+ * @property  Collection<User>  $users
  */
 class Customer extends Model
 {
     use HasFactory;
 
+    const TYPE_RESELLER = "reseller";
+    const TYPE_MERCHANT = "merchant";
+
     protected $fillable = [
-        'user_id',
         'name',
         'balance',
         'avatar',
-        'max_vouchers_count',
-        'max_voucher_amount'
+        'type'
     ];
 
-    protected $with = ["user"];
-
-    public function user(): BelongsTo
+    public function users(): HasMany
     {
-        return $this->belongsTo(User::class);
+        return $this->hasMany(User::class, "customer_id");
     }
-
-    public function children(): HasMany
-    {
-        return $this->user->children();
-    }
-
-    public function isChild(User $user): bool
-    {
-        return $this->user->id === $user->id || $this->user->id === $user->parent_id;
-    }
-
-    public function roles()
-    {
-        return $this->user->roles();
-    }
-
 }

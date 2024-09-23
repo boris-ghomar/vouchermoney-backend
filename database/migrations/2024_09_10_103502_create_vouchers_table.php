@@ -13,14 +13,17 @@ return new class extends Migration
     {
         Schema::create('vouchers', function (Blueprint $table) {
             $table->id();
-            $table->string('code')->unique();
+            $table->string('code')->unique()->index();
             $table->decimal('amount');
-            $table->enum('status', ['creating', 'pending', 'blocked', 'used', 'canceled'])->default('creating');
-            $table->unsignedBigInteger('created_by')->nullable();
-            $table->unsignedBigInteger('updated_by')->nullable();
+            $table->enum('status', ['active', 'blocked', 'cancelled', 'transferred', 'expired'])->default('active');
+            $table->unsignedBigInteger('used_by')->nullable();
+            $table->unsignedBigInteger('created_by');
+            $table->dateTime("cancelled_at")->nullable();
+            $table->dateTime("expired_at")->nullable();
 
-            $table->foreign('created_by')->references('id')->on('users')->onDelete('set null');
-            $table->foreign('updated_by')->references('id')->on('users')->onDelete('set null');
+            $table->foreign('created_by')->references('id')->on('users')->cascadeOnDelete();
+            $table->foreign('used_by')->references('id')->on('users')->nullOnDelete();
+            $table->softDeletes();
             $table->timestamps();
         });
     }

@@ -163,7 +163,7 @@ return [
     */
 
      'brand' => [
-         'logo' => "Voucher-money",
+         'logo' => public_path("assets/logo.svg"),
 
 //         'colors' => [
 //             "400" => "24, 182, 155, 0.5",

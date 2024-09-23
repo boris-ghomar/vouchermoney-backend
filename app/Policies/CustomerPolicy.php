@@ -7,36 +7,71 @@ use App\Models\User;
 
 class CustomerPolicy
 {
+    /**
+     * Determine whether the user can view any models.
+     */
     public function viewAny(User $user): bool
     {
-        return $user->can("customer.view-any");
+        return $user->is_admin && $user->can("customer:view-any");
     }
 
+    /**
+     * Determine whether the user can view the model.
+     */
     public function view(User $user, Customer $customer): bool
     {
-        return $customer->isChild($user);
+        if ($user->is_customer && $user->customer_id === $customer->id && $user->can("customer:view-balance")) {
+            return true;
+        }
+
+        return $this->viewAny($user);
     }
 
+    /**
+     * Determine whether the user can create models.
+     */
     public function create(User $user): bool
     {
-        return $user->can("customer.create") && $user->isAdmin();
+        return $user->is_admin && $user->can("customer:create");
     }
 
+    /**
+     * Determine whether the user can update the model.
+     */
     public function update(User $user, Customer $customer): bool
     {
-        return $user->can("customer.update") && (
-                $this->isAdmin($user) ||
-                $customer->isChild($user)
-            );
+        return $user->customer_id === $customer->id && $user->can("customer:update");
     }
 
-    public function delete(User $user, Customer $customer): bool
+    /**
+     * Determine whether the user can delete the model.
+     */
+    public function delete(User $user): bool
     {
-        return $user->can("customer.delete") && ($this->isAdmin($user) || $customer->user->id === $user->id);
+        return $user->is_admin && $user->can("customer:delete");
     }
 
-    public function attachUser(User $user, Customer $customer): bool
+    /**
+     * Determine whether the user can restore the model.
+     */
+    public function restore(User $user, Customer $customer): bool
     {
-        return $user->can("user.create") && ($this->isAdmin($user) || $customer->user->id === $user->id);
+        return $this->update($user, $customer);
+    }
+
+    /**
+     * Determine whether the user can restore the model.
+     */
+    public function replicate(): bool
+    {
+        return false;
+    }
+
+    /**
+     * Determine whether the user can permanently delete the model.
+     */
+    public function forceDelete(User $user): bool
+    {
+        return $this->delete($user);
     }
 }

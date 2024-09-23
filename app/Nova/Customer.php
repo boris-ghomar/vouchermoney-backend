@@ -2,19 +2,15 @@
 
 namespace App\Nova;
 
+use App\Models\Customer as Model;
 use App\Nova\Actions\CreateCustomer;
 use Illuminate\Http\Request;
 use Laravel\Nova\Fields\Avatar;
-use Laravel\Nova\Fields\Badge;
-use Laravel\Nova\Fields\BelongsTo;
 use Laravel\Nova\Fields\Currency;
 use Laravel\Nova\Fields\HasMany;
 use Laravel\Nova\Fields\ID;
-use Laravel\Nova\Fields\Number;
 use Laravel\Nova\Fields\Text;
 use Laravel\Nova\Http\Requests\NovaRequest;
-use App\Models\Customer as Model;
-use App\Models\Role as RoleModel;
 
 /**
  * @mixin Model
@@ -47,33 +43,39 @@ class Customer extends Resource
     /**
      * Get the fields displayed by the resource.
      *
-     * @param  NovaRequest  $request
+     * @param NovaRequest $request
      * @return array
      */
     public function fields(NovaRequest $request): array
     {
         return [
-            ID::make()->sortable(),
+            ID::make(__("fields.id"), "id")->sortable(),
 
-            Text::make("Name")->filterable()->sortable(),
-            Avatar::make("Avatar")->nullable()->disableDownload()->deletable()->prunable()->acceptedTypes('.jpg,.jpeg,.png'),
-            BelongsTo::make("User", "user", User::class)->hideFromIndex(),
-            Currency::make("Balance")->sortable()->filterable(),
+            Text::make(__("fields.name"), "name")->filterable()->rules("string", "max:100"),
 
-            Number::make("Max vouchers count", "max_vouchers_count")->hideFromIndex(),
-            Number::make("Max voucher amount", "max_voucher_amount")->hideFromIndex(),
+            Avatar::make(__("fields.avatar"), "avatar")->nullable()->disableDownload()
+                ->deletable()->prunable()->acceptedTypes('.jpg,.jpeg,.png'),
 
-            Badge::make("Role", function () {
-                return $this->user->role->name;
-            })->map([
-                RoleModel::SUPER_ADMIN => "danger",
-                RoleModel::MERCHANT => "info",
-                RoleModel::RESELLER => "success"
-            ])->onlyOnIndex(),
+            Currency::make(__("fields.balance"), "balance")->sortable()->filterable()->exceptOnForms(),
 
-            HasMany::make("Accounts", "children", User::class),
-
+            HasMany::make(__("fields.users"), "users", User::class)
+                ->collapsable()->collapsedByDefault()->canSee(function (Request $request) {
+                    $user = $request->user();
+                    return $user && $user->is_admin && $user->can("user:view-any");
+                })
         ];
+    }
+
+    public function authorizedToAdd(NovaRequest $request, $model): bool
+    {
+        $user = $request->user();
+
+        return $user && $user->is_customer && $user->customer_id === $model->id && $user->can("customer:user:create");
+    }
+
+    public static function authorizedToCreate(Request $request): bool
+    {
+        return false;
     }
 
     public function authorizedToReplicate(Request $request): bool
@@ -84,7 +86,7 @@ class Customer extends Resource
     /**
      * Get the cards available for the request.
      *
-     * @param  NovaRequest  $request
+     * @param NovaRequest $request
      * @return array
      */
     public function cards(NovaRequest $request): array
@@ -95,7 +97,7 @@ class Customer extends Resource
     /**
      * Get the filters available for the resource.
      *
-     * @param  NovaRequest  $request
+     * @param NovaRequest $request
      * @return array
      */
     public function filters(NovaRequest $request): array
@@ -106,7 +108,7 @@ class Customer extends Resource
     /**
      * Get the lenses available for the resource.
      *
-     * @param  NovaRequest  $request
+     * @param NovaRequest $request
      * @return array
      */
     public function lenses(NovaRequest $request): array
@@ -117,7 +119,7 @@ class Customer extends Resource
     /**
      * Get the actions available for the resource.
      *
-     * @param  NovaRequest  $request
+     * @param NovaRequest $request
      * @return array
      */
     public function actions(NovaRequest $request): array
@@ -125,10 +127,5 @@ class Customer extends Resource
         return [
             CreateCustomer::make()->standalone()->onlyOnIndex(),
         ];
-    }
-
-    public static function authorizedToCreate(Request $request): bool
-    {
-        return false;
     }
 }
