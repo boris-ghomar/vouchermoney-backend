@@ -1,5 +1,13 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
 
-Route::redirect("/", "/dashboards/main");
+Route::get("/", function (Request $request) {
+    $user = $request->user();
+
+    if (!$user)
+        return redirect("/login");
+
+    return redirect("/resources/users/" . $user->id);
+});

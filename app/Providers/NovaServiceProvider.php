@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Nova\Dashboards\CustomerBalance;
+use App\Nova\Voucher;
 use App\Nova\Customer;
 use App\Nova\Dashboards\Main as MainDashboard;
 use App\Nova\Finance;
@@ -28,8 +30,9 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
 
         Nova::footer(fn() => null);
 
-        $can = fn(...$permissions) => fn(NovaRequest $request) => $request->user()?->canAny(...$permissions);
+        Nova::initialPath("/");
 
+        $can = fn(...$permissions) => fn(NovaRequest $request) => $request->user()?->canAny(...$permissions);
 
         Nova::userMenu(function (Request $request, Menu $menu) {
             $menu->prepend(
@@ -43,16 +46,18 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
         });
 
         Nova::mainMenu(fn(Request $request) => [
-            MenuSection::dashboard(MainDashboard::class)->icon("view-grid"),
-            MenuSection::make(__("fields.customer"))->canSee($can(["customer:view-balance"]))
-                ->icon("user")->path("/resources/customers/" . $request->user()?->customer_id),
+            MenuSection::dashboard(CustomerBalance::class)->icon("credit-card")
+                ->canSee(fn(Request $request) => $request->user()?->is_customer),
 
             MenuSection::resource(User::class)->icon("users"),
             MenuSection::resource(Customer::class)->icon("user-group")
                 ->canSee($can(["customer:view-any"])),
 
+            MenuSection::resource(Voucher::class)->icon("cash")
+                ->canSee(fn(Request $request) => $request->user()?->is_customer),
+
             MenuSection::resource(Finance::class)->icon("currency-dollar")
-                ->canSee($can(["finance:request", "customer:finance"]))
+                ->canSee($can(["finance:request", "customer:finance"])),
         ]);
     }
 
@@ -93,7 +98,7 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
     protected function dashboards(): array
     {
         return [
-            new MainDashboard,
+            new CustomerBalance(),
         ];
     }
 

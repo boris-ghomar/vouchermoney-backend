@@ -5,8 +5,11 @@ namespace App\Nova;
 use App\Models\Customer as Model;
 use App\Nova\Actions\CreateCustomer;
 use App\Nova\Actions\DeleteCustomer;
+use App\Nova\Metrics\AccountBalance;
 use Illuminate\Http\Request;
+use Laravel\Nova\Exceptions\HelperNotSupported;
 use Laravel\Nova\Fields\Avatar;
+use Laravel\Nova\Fields\Badge;
 use Laravel\Nova\Fields\Currency;
 use Laravel\Nova\Fields\HasMany;
 use Laravel\Nova\Fields\ID;
@@ -50,14 +53,22 @@ class Customer extends Resource
     public function fields(NovaRequest $request): array
     {
         return [
-            ID::make(__("fields.id"), "id")->sortable(),
+            ID::make(__("fields.id"), "id")->sortable()
+                ->canSee(fn (Request $request) => $request->user()?->is_admin),
 
-            Text::make(__("fields.name"), "name")->filterable()->rules("string", "max:100"),
+            Text::make(__("fields.name"), "name")
+                ->canSee(fn (Request $request) => $request->user()?->is_admin)
+                ->filterable()->rules("string", "max:100"),
 
             Avatar::make(__("fields.avatar"), "avatar")->nullable()->disableDownload()
                 ->deletable()->prunable()->acceptedTypes('.jpg,.jpeg,.png'),
 
-            Currency::make(__("fields.balance"), "balance")->sortable()->filterable()->exceptOnForms(),
+            Currency::make(__("fields.balance"), "balance")->sortable()->filterable()->onlyOnIndex(),
+
+            Badge::make("Type", "type")->map([
+                Model::TYPE_RESELLER => "info",
+                Model::TYPE_MERCHANT => "success"
+            ])->canSee(fn(Request $request) => $request->user()?->is_admin),
 
             HasMany::make(__("fields.users"), "users", User::class)
                 ->collapsable()->collapsedByDefault()->canSee(function (Request $request) {
@@ -95,10 +106,13 @@ class Customer extends Resource
      *
      * @param NovaRequest $request
      * @return array
+     * @throws HelperNotSupported
      */
     public function cards(NovaRequest $request): array
     {
-        return [];
+        return [
+            AccountBalance::make()->onlyOnDetail(),
+        ];
     }
 
     /**
