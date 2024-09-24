@@ -2,7 +2,10 @@
 
 namespace App\Providers;
 
+use App\Nova\ActiveVoucher;
 use App\Nova\Dashboards\CustomerBalance;
+use App\Nova\Lenses\ResolvedVouchers;
+use App\Nova\Lenses\UsedVouchers;
 use App\Nova\Voucher;
 use App\Nova\Customer;
 use App\Nova\Dashboards\Main as MainDashboard;
@@ -53,8 +56,11 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
             MenuSection::resource(Customer::class)->icon("user-group")
                 ->canSee($can(["customer:view-any"])),
 
-            MenuSection::resource(Voucher::class)->icon("cash")
-                ->canSee(fn(Request $request) => $request->user()?->is_customer),
+            MenuSection::make("Vouchers", [
+                MenuItem::resource(ActiveVoucher::class),
+                MenuItem::lens(ActiveVoucher::class, ResolvedVouchers::class),
+                MenuItem::lens(ActiveVoucher::class, UsedVouchers::class),
+            ])->icon("cash")->canSee(fn(Request $request) => $request->user()?->is_customer),
 
             MenuSection::resource(Finance::class)->icon("currency-dollar")
                 ->canSee($can(["finance:request", "customer:finance"])),

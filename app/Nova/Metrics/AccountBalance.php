@@ -10,6 +10,8 @@ use Laravel\Nova\Metrics\ValueResult;
 
 class AccountBalance extends Value
 {
+    public $icon = "";
+
     /**
      * Calculate the value of the metric.
      *

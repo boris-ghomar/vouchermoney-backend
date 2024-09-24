@@ -2,13 +2,19 @@
 
 namespace App\Nova;
 
+use Illuminate\Http\Request;
+use Laravel\Nova\Exceptions\HelperNotSupported;
 use Laravel\Nova\Fields\Badge;
 use Laravel\Nova\Fields\Currency;
 use Laravel\Nova\Fields\ID;
 use Laravel\Nova\Fields\Text;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use App\Models\Voucher as Model;
+use Illuminate\Database\Eloquent\Builder;
 
+/**
+ * @mixin Model
+ */
 class Voucher extends Resource
 {
     /**
@@ -34,29 +40,76 @@ class Voucher extends Resource
         'code',
     ];
 
+    public static function indexQuery(NovaRequest $request, $query): Builder
+    {
+        $user = $request->user();
+
+        if ($user && $user->is_admin && $request->viaResource === "customers") {
+            $query->where("created_by", $request->viaResourceId);
+        } else if ($user && $user->is_customer && $user->customer_id) {
+            $query->where("created_by", $user->customer_id);
+        }
+
+        return $query;
+    }
+
+
+    public function authorizedToDelete(Request $request): bool
+    {
+        return false;
+    }
+
+    public static function authorizedToCreate(Request $request): bool
+    {
+        return false;
+    }
+
     /**
      * Get the fields displayed by the resource.
      *
-     * @param  NovaRequest  $request
+     * @param NovaRequest $request
      * @return array
+     * @throws HelperNotSupported
      */
     public function fields(NovaRequest $request): array
     {
-        return [
-            ID::make()->sortable(),
+        return self::getVoucherDefaultFields();
+    }
 
-            Text::make("Code", "code"),
+    /**
+     * @throws HelperNotSupported
+     */
+    public static function getVoucherDefaultFields(bool $showStatus = true): array
+    {
+        $fields = [
+            ID::make()->sortable()->canSee(fn(Request $request) => $request->user()?->is_admin),
 
-            Currency::make("Amount", "amount"),
+            Text::make("Code", "code")->copyable()->readonly(),
 
-            Badge::make('Status', "status")->map([
-                Model::STATUS_ACTIVE => 'warning',
+            Currency::make("Amount", "amount")
+        ];
+
+        if ($showStatus) {
+            $fields[] = Badge::make('Status', "status")->map([
+                Model::STATUS_ACTIVE => 'success',
                 Model::STATUS_BLOCKED => 'danger',
                 Model::STATUS_CANCELED => 'info',
-                Model::STATUS_TRANSFERRED => 'success',
+                Model::STATUS_TRANSFERRED => 'info',
                 Model::STATUS_EXPIRED => 'danger',
-            ])->withIcons(),
-        ];
+            ])->withIcons();
+        }
+
+        return $fields;
+    }
+
+    public function authorizedToUpdate(Request $request): bool
+    {
+        return false;
+    }
+
+    public function authorizedToReplicate(Request $request): bool
+    {
+        return false;
     }
 
     /**
@@ -101,5 +154,15 @@ class Voucher extends Resource
     public function actions(NovaRequest $request): array
     {
         return [];
+    }
+
+    public function getKey(): string
+    {
+        return "all-vouchers";
+    }
+
+    public static function uriKey(): string
+    {
+        return "all-vouchers";
     }
 }

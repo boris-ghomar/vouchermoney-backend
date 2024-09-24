@@ -9,17 +9,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * @property  int          $id
- * @property  string       $code
- * @property  float        $amount
- * @property  string       $status
- * @property  int|null     $used_by
- * @property  int          $created_by
- * @property  Carbon|null  $resolved_at
- * @property  Carbon|null  $deleted_at
- * @property  Carbon|null  $created_at
- * @property  Carbon|null  $updated_at
+ * @property  int            $id
+ * @property  string         $code
+ * @property  float          $amount
+ * @property  string         $status
+ * @property  int|null       $used_by
+ * @property  int            $created_by
+ * @property  Carbon|null    $resolved_at
+ * @property  Carbon|null    $deleted_at
+ * @property  Carbon|null    $created_at
+ * @property  Carbon|null    $updated_at
  *
+ * @property  Customer       $issuer
+ * @property  Customer|null  $recipient
  */
 class Voucher extends Model
 {
@@ -30,6 +32,7 @@ class Voucher extends Model
     const STATUS_CANCELED = "canceled";
     const STATUS_TRANSFERRED = "transferred";
     const STATUS_EXPIRED = "expired";
+    const STATUS_USED = "used";
 
     protected $fillable = [
         'code',
@@ -46,11 +49,11 @@ class Voucher extends Model
 
     public function issuer(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(Customer::class, 'created_by');
     }
 
     public function recipient(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'used_by');
+        return $this->belongsTo(Customer::class, 'used_by');
     }
 }

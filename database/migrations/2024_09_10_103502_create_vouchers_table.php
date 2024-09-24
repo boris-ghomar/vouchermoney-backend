@@ -15,15 +15,15 @@ return new class extends Migration
             $table->id();
             $table->string('code')->unique();
             $table->decimal('amount');
-            $table->enum('status', ['active', 'blocked', 'cancelled', 'transferred', 'expired'])->default('active');
+            $table->enum('status', ['active', 'blocked', 'canceled', 'transferred', 'expired', 'used'])->default('active');
             $table->unsignedBigInteger('created_by');
             $table->unsignedBigInteger('used_by')->nullable();
             $table->dateTime("resolved_at")->nullable();
             $table->softDeletes();
             $table->timestamps();
 
-            $table->foreign('created_by')->references('id')->on('users')->cascadeOnDelete();
-            $table->foreign('used_by')->references('id')->on('users')->nullOnDelete();
+            $table->foreign('created_by')->references('id')->on('customers')->cascadeOnDelete();
+            $table->foreign('used_by')->references('id')->on('customers')->nullOnDelete();
         });
     }
 
