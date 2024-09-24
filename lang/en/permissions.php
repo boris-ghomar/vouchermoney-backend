@@ -13,5 +13,8 @@ return [
     'customer:user:create' => "Create user",
     'customer:user:delete' => "Delete user",
     'customer:view-balance' => "View balance",
-    'customer:user:attach-permission' => "Attach permission to user"
+    'customer:user:attach-permission' => "Attach permission to user",
+    "customer:finance" => "Request finance",
+    'finance:request' => "Request finance",
+    'finance:resolve' => "Resolve finance",
 ];

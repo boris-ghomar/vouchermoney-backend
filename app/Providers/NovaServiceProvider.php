@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Nova\Customer;
 use App\Nova\Dashboards\Main as MainDashboard;
+use App\Nova\Finance;
 use App\Nova\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -27,7 +28,8 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
 
         Nova::footer(fn() => null);
 
-        $can = fn(...$permissions) => fn(NovaRequest $request) => $request->user()?->can(...$permissions);
+        $can = fn(...$permissions) => fn(NovaRequest $request) => $request->user()?->canAny(...$permissions);
+
 
         Nova::userMenu(function (Request $request, Menu $menu) {
             $menu->prepend(
@@ -47,7 +49,10 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
 
             MenuSection::resource(User::class)->icon("users"),
             MenuSection::resource(Customer::class)->icon("user-group")
-                ->canSee($can(["customer:view-any"]))
+                ->canSee($can(["customer:view-any"])),
+
+            MenuSection::resource(Finance::class)->icon("currency-dollar")
+                ->canSee($can(["finance:request", "customer:finance"]))
         ]);
     }
 
