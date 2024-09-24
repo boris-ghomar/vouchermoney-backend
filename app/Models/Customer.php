@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @property  int               $id
@@ -21,7 +22,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Customer extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     const TYPE_RESELLER = "reseller";
     const TYPE_MERCHANT = "merchant";
@@ -32,6 +33,15 @@ class Customer extends Model
         'avatar',
         'type'
     ];
+
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        parent::deleted(function (Customer $model) {
+            $model->users()->delete();
+        });
+    }
 
     public function users(): HasMany
     {

@@ -4,6 +4,7 @@ namespace App\Nova;
 
 use App\Models\Customer as Model;
 use App\Nova\Actions\CreateCustomer;
+use App\Nova\Actions\DeleteCustomer;
 use Illuminate\Http\Request;
 use Laravel\Nova\Fields\Avatar;
 use Laravel\Nova\Fields\Currency;
@@ -66,6 +67,12 @@ class Customer extends Resource
         ];
     }
 
+    public function authorizedToDelete(Request $request): bool
+    {
+        $user = $request->user();
+        return $user && $user->is_admin && $user->can("customer:delete");
+    }
+
     public function authorizedToAdd(NovaRequest $request, $model): bool
     {
         $user = $request->user();
@@ -125,7 +132,7 @@ class Customer extends Resource
     public function actions(NovaRequest $request): array
     {
         return [
-            CreateCustomer::make()->standalone()->onlyOnIndex(),
+            CreateCustomer::make(),
         ];
     }
 }
