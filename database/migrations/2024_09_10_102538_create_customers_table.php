@@ -17,6 +17,7 @@ return new class extends Migration
             $table->decimal('balance')->default(0);
             $table->string('avatar')->nullable();
             $table->enum("type", ["reseller", "merchant"]);
+            $table->softDeletes();
             $table->timestamps();
         });
     }
