@@ -3,18 +3,18 @@
 namespace App\Nova;
 
 use App\Models\Finance as Model;
-use App\Models\Role;
 use App\Nova\Actions\CreateFinance;
 use Illuminate\Http\Request;
 use Laravel\Nova\Fields\Badge;
 use Laravel\Nova\Fields\BelongsTo;
+use Laravel\Nova\Fields\Currency;
 use Laravel\Nova\Fields\Hidden;
 use Laravel\Nova\Fields\ID;
-use Laravel\Nova\Fields\Number;
-use Laravel\Nova\Fields\Select;
 use Laravel\Nova\Fields\Textarea;
 use Laravel\Nova\Http\Requests\NovaRequest;
-use App\Models\Customer;
+use App\Models\Customer as CustomerModel;
+use Illuminate\Database\Eloquent\Builder;
+
 class Finance extends Resource
 {
     /**
@@ -22,7 +22,7 @@ class Finance extends Resource
      *
      * @var class-string<Model>
      */
-    public static $model = Model::class;
+    public static string $model = Model::class;
 
     /**
      * The single value that should be used to represent the resource when being displayed.
@@ -36,17 +36,16 @@ class Finance extends Resource
      *
      * @var array
      */
-    public static $search = [
-        'customer', 'request_amount', 'status', 'approved_amount', 'created_by'
-    ];
+    public static $search = [];
 
-    public static function indexQuery(NovaRequest $request, $query)
+    public static function indexQuery(NovaRequest $request, $query): Builder
     {
         $user = auth()->user();
-        if ($user->customer)
-        {
-            return $query->where('customer_id',$user->customer->id);
-        }
+
+        if ($user?->is_customer)
+            return $query->where('customer_id', $user->customer_id);
+
+        return $query;
     }
 
     /**
@@ -55,38 +54,19 @@ class Finance extends Resource
      * @param NovaRequest $request
      * @return array
      */
-    public function fields(NovaRequest $request)
+    public function fields(NovaRequest $request): array
     {
-
         return [
             ID::make()->sortable(),
 
-            Select::make('Customer', 'customer_id')
-                ->options(Customer::all()->pluck("name", "id"))
-                ->searchable()
-                ->rules('required')
-                ->canSee(function () {
-                    return auth()->user()->hasRole(Role::SUPER_ADMIN);
-                })->hideFromIndex(),
+            BelongsTo::make('Customer', 'customer', Customer::class)
+                ->canSee(fn(Request $request) => $request->user()?->is_admin),
 
+            Currency::make('Amount', 'amount'),
 
-            Hidden::make('Customer', 'customer_id')->default(function () {
-                $user = auth()->user();
-                return ($user && $user->customer) ? $user->customer->id : null;
-            })->canSee(function () {
-                return auth()->user()->hasRole(Role::RESELLER) || auth()->user()->hasRole(Role::MERCHANT);
-            }),
-            BelongsTo::make('Customer', 'customer', \App\Nova\Customer  ::class)
-                ->onlyOnIndex(),
-            Number::make('Amount', 'amount')->rules('required', 'numeric'),
+            Textarea::make('Request comment', 'request_comment')->onlyOnDetail(),
 
-            Textarea::make('Comment', 'request_comment')->rules('nullable', 'string'),
-
-            Textarea::make('Approved Comment', 'approved_comment')
-                ->rules('nullable', 'string')
-                ->canSee(function () {
-                    return auth()->user()->hasRole(Role::SUPER_ADMIN);
-                }),
+            Textarea::make('Approved comment', 'approved_comment')->onlyOnDetail(),
 
             Badge::make('Status', function () {
                 return $this->status;
@@ -97,16 +77,10 @@ class Finance extends Resource
                 'canceled' => 'warning',
             ])->withIcons(),
 
-            Hidden::make('Status', 'status')->default(function () {
-                return auth()->user()->hasRole(Role::SUPER_ADMIN) ? 'approved' : 'pending';
-            }),
-
-            Hidden::make('Resolved By', 'resolved_by')->default(function () {
-                return auth()->id();
-            }),
+            BelongsTo::make("Resolved by", "resolver", User::class)
+                ->canSee(fn(Request $request) => $request->user()?->is_admin),
         ];
     }
-
 
     /**
      * Get the cards available for the request.
@@ -114,7 +88,7 @@ class Finance extends Resource
      * @param NovaRequest $request
      * @return array
      */
-    public function cards(NovaRequest $request)
+    public function cards(NovaRequest $request): array
     {
         return [];
     }
@@ -125,7 +99,7 @@ class Finance extends Resource
      * @param NovaRequest $request
      * @return array
      */
-    public function filters(NovaRequest $request)
+    public function filters(NovaRequest $request): array
     {
         return [];
     }
@@ -136,7 +110,7 @@ class Finance extends Resource
      * @param NovaRequest $request
      * @return array
      */
-    public function lenses(NovaRequest $request)
+    public function lenses(NovaRequest $request): array
     {
         return [];
     }
@@ -148,18 +122,21 @@ class Finance extends Resource
      * @return array
      */
 
-    public function actions(NovaRequest $request)
+    public function actions(NovaRequest $request): array
     {
         return [
-            CreateFinance::make()->setFinanceType('deposit')->standalone()->onlyOnIndex(),
-            CreateFinance::make()->setFinanceType('withdraw')->standalone()->onlyOnIndex(),
+            CreateFinance::make()->setType('deposit'),
+            CreateFinance::make()->setType('withdraw'),
         ];
     }
 
-    public static function authorizedToCreate(Request $request)
+    public static function authorizedToCreate(Request $request): bool
     {
         return false;
     }
 
-
+    public function authorizedToUpdate(Request $request): bool
+    {
+        return false;
+    }
 }

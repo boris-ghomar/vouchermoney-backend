@@ -2,33 +2,32 @@
 
 namespace App\Nova\Actions;
 
-use App\Models\Customer;
+use App\Nova\Customer;
 use App\Models\Finance;
-use App\Models\Role;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Collection;
 use Laravel\Nova\Actions\Action;
 use Laravel\Nova\Actions\ActionResponse;
 use Laravel\Nova\Fields\ActionFields;
-use Laravel\Nova\Fields\Hidden;
-use Laravel\Nova\Fields\Number;
-use Laravel\Nova\Fields\Select;
+use Laravel\Nova\Fields\Currency;
 use Laravel\Nova\Fields\Textarea;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Lednerb\ActionButtonSelector\ShowAsButton;
-use function Webmozart\Assert\Tests\StaticAnalysis\null;
+use Outl1ne\MultiselectField\Multiselect;
 
 class CreateFinance extends Action
 {
     use InteractsWithQueue, Queueable, ShowAsButton;
 
-    protected $finance_type;
+    protected string $type;
 
-    public function setFinanceType($finance_type)
+    public $standalone = true;
+    public $onlyOnIndex = true;
+
+    public function setType($type): static
     {
-        $this->finance_type = $finance_type;
+        $this->type = $type;
         return $this;
     }
 
@@ -37,75 +36,60 @@ class CreateFinance extends Action
      *
      * @return string
      */
-    public function name()
+    public function name(): string
     {
-       return ($this->finance_type === 'deposit' ? 'Create Deposit' : 'Create Withdraw');
+       return $this->type === 'deposit' ? 'Request deposit' : 'Request withdraw';
     }
 
     /**
      * Perform the action on the given models.
      *
-     * @param  \Laravel\Nova\Fields\ActionFields  $fields
-     * @param  \Illuminate\Support\Collection  $models
-     * @return mixed
+     * @param  ActionFields  $fields
+     * @param  Collection  $models
+     * @return ActionResponse
      */
-    public function handle(ActionFields $fields, Collection $models)
+    public function handle(ActionFields $fields, Collection $models): ActionResponse
     {
+        $authUser = auth()->user();
+
+        if (!$authUser) return ActionResponse::danger("Something went wrong");
+
         $finance = new Finance();
 
-        $finance->amount = $this->finance_type === 'deposit' ? abs($fields->amount) : -abs($fields->amount);
-        $finance->customer_id = $fields->customer_id;
+        $finance->amount = abs($fields->amount) * ($this->type === 'deposit' ? 1 : -1);
+        $finance->customer_id = $fields->customer_id ?: $authUser->customer_id;
         $finance->request_comment = $fields->request_comment;
-        $finance->status = $fields->status;
-
+        $finance->approved_comment = $fields->approved_comment ?: null;
+        $finance->status = $authUser->is_admin ? Finance::STATUS_APPROVED : Finance::STATUS_PENDING;
+        $finance->resolved_by = $authUser->is_admin ? $authUser->id : null;
         $finance->save();
 
         return ActionResponse::message('Created successfully');
-
     }
 
     /**
      * Get the fields available on the action.
      *
-     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
+     * @param  NovaRequest  $request
      * @return array
      */
-    public function fields(NovaRequest $request)
+    public function fields(NovaRequest $request): array
     {
         return [
+            Currency::make('Amount')->rules('required'),
 
-            Number::make('Amount')->rules('required', 'numeric'),
-            Select::make('Customer', 'customer_id')
-                ->canSee(function () {
-                    $user = auth()->user();
-                    return $user->hasRole(Role::SUPER_ADMIN);
-                })
-                ->options(Customer::all()->pluck("name", "id"))
-                ->searchable()
+            Multiselect::make('Customer', 'customer_id')
+                ->canSee(fn() => auth()->user()?->is_admin)
+                ->singleSelect()
+                ->asyncResource(Customer::class)
                 ->rules('required'),
-            Hidden::make('Customer','customer_id')->default(function ()
-            {
-                $user = auth()->user();
-                return ($user && $user->customer ? $user->customer->id : null);
-            })->canSee(function (){
-                return auth()->user()->hasRole(Role::RESELLER) || auth()->user()->hasRole(Role::MERCHANT);
-            }),
-            Textarea::make('Comment', 'request_comment')->rules('nullable', 'string'),
-            Textarea::make('Approved Comment', 'approved_comment')
-                ->rules('nullable', 'string')
-                ->canSee(function () {
-                    $user = auth()->user();
-                    return $user->hasRole(Role::SUPER_ADMIN);
-                }),
 
-            Hidden::make('Status', 'status')->default(function () {
-                $user = auth()->user();
-                return ($user && $user->hasRole(Role::SUPER_ADMIN)) ? 'approved' : 'pending';
-            }),
-            Hidden::make('Resolved By', 'resolved_by')->default(function () {
-                $user = auth()->user();
-                return ($user && $user->hasRole(Role::SUPER_ADMIN)) ? auth()->id() : null;
-            }),
+            Textarea::make('Comment', 'request_comment')
+                ->rules('nullable'),
+
+            Textarea::make('Approved Comment', 'approved_comment')
+                ->rules('nullable')
+                ->canSee(fn() => auth()->user()?->is_admin),
         ];
     }
 }

@@ -13,6 +13,7 @@
         "laravel/tinker": "^2.9",
         "lednerb/nova-action-button-selectors": "^2.0",
         "outl1ne/nova-dependency-container": "^2.0",
+        "outl1ne/nova-multiselect-field": "^4.5",
         "pestphp/pest": "3.x-dev",
         "pestphp/pest-plugin-laravel": "v3.0.0",
         "spatie/laravel-activitylog": "^4.8",

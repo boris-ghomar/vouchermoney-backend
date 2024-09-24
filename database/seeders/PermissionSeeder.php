@@ -23,6 +23,8 @@ class PermissionSeeder extends Seeder
             'user:create',
             'user:delete',
             'user:attach-permission',
+            'finance:request',
+            'finance:resolve',
         ];
 
         foreach (array_merge($permissions, Permission::getCustomerPermissions()) as $permission) {
