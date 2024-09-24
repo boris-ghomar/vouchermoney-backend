@@ -2,7 +2,7 @@
 
 namespace App\Nova\Actions;
 
-use App\Nova\Customer;
+use App\Models\Customer;
 use App\Models\Finance;
 use Illuminate\Bus\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -11,10 +11,12 @@ use Laravel\Nova\Actions\Action;
 use Laravel\Nova\Actions\ActionResponse;
 use Laravel\Nova\Fields\ActionFields;
 use Laravel\Nova\Fields\Currency;
+use Laravel\Nova\Fields\Select;
+use Laravel\Nova\Fields\Text;
 use Laravel\Nova\Fields\Textarea;
+use Laravel\Nova\Fields\Trix;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Lednerb\ActionButtonSelector\ShowAsButton;
-use Outl1ne\MultiselectField\Multiselect;
 
 class CreateFinance extends Action
 {
@@ -58,8 +60,12 @@ class CreateFinance extends Action
 
         $finance->amount = abs($fields->amount) * ($this->type === 'deposit' ? 1 : -1);
         $finance->customer_id = $fields->customer_id ?: $authUser->customer_id;
-        $finance->request_comment = $fields->request_comment;
-        $finance->approved_comment = $fields->approved_comment ?: null;
+
+        if ($authUser->is_admin)
+            $finance->approved_comment = $fields->comment;
+        else
+            $finance->request_comment = $fields->comment;
+
         $finance->status = $authUser->is_admin ? Finance::STATUS_APPROVED : Finance::STATUS_PENDING;
         $finance->resolved_by = $authUser->is_admin ? $authUser->id : null;
         $finance->save();
@@ -78,18 +84,15 @@ class CreateFinance extends Action
         return [
             Currency::make('Amount')->rules('required'),
 
-            Multiselect::make('Customer', 'customer_id')
+            Select::make('Customer', 'customer_id')
                 ->canSee(fn() => auth()->user()?->is_admin)
-                ->singleSelect()
-                ->asyncResource(Customer::class)
-                ->rules('required'),
+                ->rules(auth()->user()?->is_admin ? 'required' : 'nullable')
+                ->options(function () {
+                    return Customer::all()->pluck('name','id');
+                })
+            ->searchable(),
 
-            Textarea::make('Comment', 'request_comment')
-                ->rules('nullable'),
-
-            Textarea::make('Approved Comment', 'approved_comment')
-                ->rules('nullable')
-                ->canSee(fn() => auth()->user()?->is_admin),
+            Text::make('Comment', 'comment')->rules('nullable'),
         ];
     }
 }
