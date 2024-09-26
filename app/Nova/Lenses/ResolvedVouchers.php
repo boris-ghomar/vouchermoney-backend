@@ -2,6 +2,7 @@
 
 namespace App\Nova\Lenses;
 
+use App\Models\User;
 use App\Nova\Voucher;
 use Laravel\Nova\Exceptions\HelperNotSupported;
 use Laravel\Nova\Http\Requests\LensRequest;

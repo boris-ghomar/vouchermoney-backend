@@ -12,12 +12,19 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('transactions', function (Blueprint $table) {
-            $table->id();
-            $table->string('number')->unique();
-            $table->text('description')->nullable();
-            $table->unsignedBigInteger('model_id');
-            $table->string('model_type');
-            $table->enum('status', ['pending', 'fulfilled', 'waiting', 'cancelled'])->default('pending');
+            $table->uuid("id")->primary();
+            $table->foreignId("customer_id")->constrained();
+            $table->decimal("amount");
+            $table->string("description")->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('archived_transactions', function (Blueprint $table) {
+            $table->uuid("id")->primary();
+            $table->foreignId("customer_id")->constrained();
+            $table->decimal("amount");
+            $table->string("description")->nullable();
+            $table->dateTime("archived_at")->nullable();
             $table->timestamps();
         });
     }
@@ -26,6 +33,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::dropIfExists('archived_transactions');
         Schema::dropIfExists('transactions');
     }
 };

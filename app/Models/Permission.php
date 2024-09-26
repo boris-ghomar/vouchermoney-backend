@@ -14,7 +14,8 @@ class Permission extends SpatiePermission
             "customer:user:delete",
             "customer:user:attach-permission",
             "customer:view-balance",
-            "customer:finance"
+            "customer:finance",
+            "customer:notifications"
         ];
     }
 
