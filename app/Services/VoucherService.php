@@ -2,36 +2,23 @@
 
 namespace App\Services;
 
-use App\Models\Voucher;
+use App\Models\Customer;
+use App\Models\User;
+use App\Models\Voucher\Voucher;
+use Illuminate\Support\Facades\DB;
 
 class VoucherService
 {
-    public function generate(): string
+    public function create(User $user, Customer $customer, float $amount): Voucher
     {
-        // Define characters to use (exclude 0, O, I, 1, and l for readability)
-        $characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        $voucher = new Voucher();
 
-        // Generate a voucher code using the allowed characters
-        $voucherCode = '';
-        for ($i = 0; $i < 4; $i++) {
-            $voucherCode .= substr(str_shuffle($characters), 0, 4);
+        DB::transaction(function () use ($customer, $amount, $voucher) {
 
-            // Add hyphen between groups
-            if ($i < 3) $voucherCode .= '-';
-        }
+            $customer->transact($amount, "Voucher generation");
+        });
 
-        // Ensure uniqueness by checking the database
-        while (Voucher::where('code', $voucherCode)->exists()) {
-            // Re-generate the code if a duplicate is found
-            $voucherCode = $this->generate();
-        }
-
-        return $voucherCode;
-    }
-
-    public function create()
-    {
-
+        return $voucher;
     }
 
     public function cancel()

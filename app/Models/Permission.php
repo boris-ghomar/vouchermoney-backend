@@ -9,12 +9,19 @@ class Permission extends SpatiePermission
     public static function getCustomerPermissions(): array
     {
         return [
+            "customer:update",
             "customer:user:view-any",
             "customer:user:create",
             "customer:user:delete",
             "customer:user:attach-permission",
             "customer:view-balance",
-            "customer:finance"
+            "customer:finance",
+            "customer:notifications",
+            "customer:voucher:generate",
+            "customer:voucher:redeem",
+            "customer:voucher:freeze",
+            "customer:voucher:view",
+            "customer:transaction:view"
         ];
     }
 
@@ -27,7 +34,7 @@ class Permission extends SpatiePermission
             "user:attach-permission",
             "customer:user:delete",
             "customer:user:attach-permission",
-            "customer:user:create"
+            "customer:user:create",
         ];
     }
 }

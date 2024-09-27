@@ -2,10 +2,15 @@
 
 namespace App\Providers;
 
+use App\Nova\ActiveVoucher;
+use App\Nova\ActivityLog;
+use App\Nova\ArchivedVoucher;
+use App\Nova\Dashboards\CustomerBalance;
 use App\Nova\ArchivedFinance;
 use App\Nova\Customer;
-use App\Nova\Dashboards\Main as MainDashboard;
+use App\Nova\Dashboards\Home;
 use App\Nova\Finance;
+use App\Nova\Transaction;
 use App\Nova\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -29,8 +34,11 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
 
         Nova::footer(fn() => null);
 
-        $can = fn(...$permissions) => fn(NovaRequest $request) => $request->user()?->canAny(...$permissions);
+        Nova::initialPath("/dashboards/home");
 
+        Nova::userTimezone(fn(Request $request) => $request->user()?->timezone ?: config("app.timezone"));
+
+        $can = fn(...$permissions) => fn(NovaRequest $request) => $request->user()?->canAny(...$permissions);
 
         Nova::userMenu(function (Request $request, Menu $menu) {
             $menu->prepend(
@@ -44,14 +52,22 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
         });
 
         Nova::mainMenu(fn(Request $request) => [
-            MenuSection::dashboard(MainDashboard::class)->icon("view-grid"),
-            MenuSection::make(__("fields.customer"))->canSee($can(["customer:view-balance"]))
-                ->icon("user")->path("/resources/customers/" . $request->user()?->customer_id),
+            MenuSection::dashboard(Home::class)->icon("home"),
 
             MenuSection::resource(User::class)->icon("users"),
             MenuSection::resource(Customer::class)->icon("user-group")
                 ->canSee($can(["customer:view-any"])),
 
+            MenuSection::make("Vouchers", [
+                MenuItem::resource(ActiveVoucher::class)->canSee($can(["voucher:view", "customer:voucher:view", "customer:voucher:generate", "customer:voucher:redeem"])),
+                MenuItem::resource(ArchivedVoucher::class)->canSee($can(["voucher:view", "customer:voucher:view"])),
+            ])->icon("cash")->canSee($can(["voucher:view", "customer:voucher:view", "customer:voucher:generate", "customer:voucher:redeem"])),
+
+            MenuSection::resource(Transaction::class)
+                ->icon("clipboard-list")->canSee($can(["transaction:view", "customer:transaction:view"])),
+
+            MenuSection::resource(ActivityLog::class)->icon('lightning-bolt')
+                ->canSee(fn (Request $request) => $request->user()?->is_admin && $request->user()?->can("activity:view"))
             MenuSection::make("Finance", [
                 MenuItem::resource(Finance::class)->withBadgeIf(fn() => \App\Models\Finance::all()->count(), "danger", fn() => \App\Models\Finance::all()->count() > 0),
                 MenuItem::resource(ArchivedFinance::class),
@@ -96,7 +112,7 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
     protected function dashboards(): array
     {
         return [
-            new MainDashboard,
+            new Home(),
         ];
     }
 
@@ -107,9 +123,7 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
      */
     public function tools(): array
     {
-        return [
-
-        ];
+        return [];
     }
 
     /**

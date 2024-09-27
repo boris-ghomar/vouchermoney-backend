@@ -2,6 +2,7 @@
 
 namespace App\Nova;
 
+use Laravel\Nova\Fields\DateTime;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Laravel\Nova\Resource as NovaResource;
 
@@ -55,5 +56,21 @@ abstract class Resource extends NovaResource
     public static function relatableQuery(NovaRequest $request, $query)
     {
         return parent::relatableQuery($request, $query);
+    }
+
+    public static function makeDatetimeField(string $title, string $attribute): DateTime
+    {
+        return DateTime::make($title, $attribute)
+            ->displayUsing(fn ($value) => $value ? $value->format('D d/m/Y, g:ia') : '');
+    }
+
+    public static function timestamps(): array
+    {
+        return [
+            static::makeDatetimeField(__("fields.created_at"), "created_at")
+                ->onlyOnDetail(),
+            static::makeDatetimeField(__("fields.updated_at"), "updated_at")
+                ->onlyOnDetail(),
+        ];
     }
 }

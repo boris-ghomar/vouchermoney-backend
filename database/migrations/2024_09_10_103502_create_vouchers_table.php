@@ -11,20 +11,36 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('vouchers', function (Blueprint $table) {
-            $table->id();
-            $table->string('code')->unique()->index();
-            $table->decimal('amount');
-            $table->enum('status', ['active', 'blocked', 'cancelled', 'transferred', 'expired'])->default('active');
-            $table->unsignedBigInteger('used_by')->nullable();
-            $table->unsignedBigInteger('created_by');
-            $table->dateTime("cancelled_at")->nullable();
-            $table->dateTime("expired_at")->nullable();
+        Schema::create('voucher_codes', function (Blueprint $table) {
+            $table->string('code', 20)->primary();
+        });
 
-            $table->foreign('created_by')->references('id')->on('users')->cascadeOnDelete();
-            $table->foreign('used_by')->references('id')->on('users')->nullOnDelete();
-            $table->softDeletes();
+        Schema::create('vouchers', function (Blueprint $table) {
+            $table->string('code')->primary();
+            $table->foreignId("customer_id")->nullable()->constrained()->nullOnDelete();
+            $table->decimal('amount');
+            $table->boolean("active")->default(1);
             $table->timestamps();
+        });
+
+        Schema::create('archived_vouchers', function (Blueprint $table) {
+            $table->string('code')->primary();
+            $table->decimal('amount');
+            $table->enum('state', ['redeemed', 'expired']);
+            $table->timestamp("resolved_at")->useCurrent();
+            $table->json("customer_data");
+            $table->json("recipient_data")->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('voucher_activity', function (Blueprint $table) {
+            $table->id();
+            $table->string('code');
+            $table->enum('from_state', ["created", "active", "frozen"]);
+            $table->enum('to_state', ["active", "frozen", "redeemed", "expired"]);
+            $table->string("description")->nullable();
+            $table->json("user_data")->nullable();
+            $table->timestamp("time")->useCurrent();
         });
     }
 
@@ -33,6 +49,9 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::dropIfExists('voucher_activity');
+        Schema::dropIfExists('archived_vouchers');
         Schema::dropIfExists('vouchers');
+        Schema::dropIfExists('voucher_codes');
     }
 };
