@@ -3,17 +3,18 @@
 namespace App\Nova;
 
 use App\Models\Finance as Model;
-use App\Nova\Actions\CreateFinance;
-use App\Nova\Actions\ManageFinance;
+use App\Nova\Actions\DeleteFinance;
+use App\Nova\Actions\RequestFinance;
+use App\Nova\Actions\ResolveFinance;
 use Illuminate\Http\Request;
-use Laravel\Nova\Actions\Action;
-use Laravel\Nova\Actions\ActionResponse;
 use Laravel\Nova\Fields\Badge;
 use Laravel\Nova\Fields\BelongsTo;
 use Laravel\Nova\Fields\Currency;
 use Laravel\Nova\Fields\ID;
+use Laravel\Nova\Fields\Text;
 use Laravel\Nova\Fields\Textarea;
 use Laravel\Nova\Http\Requests\NovaRequest;
+use Illuminate\Database\Eloquent\Builder;
 
 /**
  * @mixin Model
@@ -51,6 +52,16 @@ class Finance extends Resource
         return 'Finance';
     }
 
+    public static function indexQuery(NovaRequest $request, $query): Builder
+    {
+        $user = $request->user();
+
+        if ($user?->is_customer)
+            $query->where("customer_id", $user->customer_id);
+
+        return $query;
+    }
+
     /**
      * Get the fields displayed by the resource.
      *
@@ -76,7 +87,7 @@ class Finance extends Resource
                 return abs($amount->amount);
             }),
 
-            Textarea::make('Request comment', 'request_comment')->onlyOnDetail(),
+            Text::make('Comment', 'comment'),
         ];
     }
 
@@ -113,22 +124,19 @@ class Finance extends Resource
         return [];
     }
 
+    public static $polling = true;
+
     /**
      * Get the actions available for the resource.
      *
      * @param NovaRequest $request
-     * @return Action|ActionResponse
+     * @return array
      */
-
     public function actions(NovaRequest $request): array
     {
-        return [
-            CreateFinance::make()->setType('deposit')->confirmText("")->confirmButtonText('Request Deposit'),
-            CreateFinance::make()->setType('withdraw')->confirmText("")->confirmButtonText('Request Withdraw'),
-            ManageFinance::make()->setType(Model::ACTION_APPROVE)->canSee(fn(Request  $request) => $request->user()->is_admin)->confirmText("")->confirmButtonText("Approve"),
-            ManageFinance::make()->setType(Model::ACTION_REJECT)->canSee(fn(Request  $request) => $request->user()->is_admin)->confirmText("")->confirmButtonText('Reject'),
-            ManageFinance::make()->setType(Model::ACTION_CANCEL)->canSee(fn(Request  $request) => $request->user()->is_customer)->confirmText("")->confirmButtonText('Cancel')
-        ];
+        return array_merge(RequestFinance::make(), [
+            DeleteFinance::make()->canSee(fn(Request $request) => $request->user()?->is_customer)
+        ], ResolveFinance::make());
     }
 
     public static function authorizedToCreate(Request $request): bool
@@ -144,7 +152,7 @@ class Finance extends Resource
     {
         return false;
     }
-    public function authorizedToDelete(Request $request)
+    public function authorizedToDelete(Request $request): bool
     {
         return false;
     }

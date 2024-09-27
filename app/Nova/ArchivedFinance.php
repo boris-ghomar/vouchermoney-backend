@@ -6,19 +6,21 @@ use Illuminate\Http\Request;
 use Laravel\Nova\Fields\Badge;
 use Laravel\Nova\Fields\BelongsTo;
 use Laravel\Nova\Fields\Currency;
-use Laravel\Nova\Fields\HasOne;
 use Laravel\Nova\Fields\ID;
+use Laravel\Nova\Fields\Text;
 use Laravel\Nova\Fields\Textarea;
 use Laravel\Nova\Http\Requests\NovaRequest;
+use App\Models\ArchivedFinance as Model;
+use Illuminate\Database\Eloquent\Builder;
 
 class ArchivedFinance extends Resource
 {
     /**
      * The model the resource corresponds to.
      *
-     * @var class-string<\App\Models\ArchivedFinance>
+     * @var class-string<Model>
      */
-    public static string $model = \App\Models\ArchivedFinance::class;
+    public static string $model = Model::class;
 
     /**
      * The single value that should be used to represent the resource when being displayed.
@@ -46,6 +48,18 @@ class ArchivedFinance extends Resource
         return "Archived Finances";
     }
 
+    public static function indexQuery(NovaRequest $request, $query): Builder
+    {
+        $user = $request->user();
+
+        if ($user?->is_customer)
+            $query->where("customer_id", $user->customer_id);
+
+        return $query;
+    }
+
+    public static $polling = true;
+
     /**
      * Get the fields displayed by the resource.
      *
@@ -71,7 +85,7 @@ class ArchivedFinance extends Resource
                 return abs($amount->amount);
             }),
 
-            Textarea::make('Request comment', 'request_comment')->onlyOnDetail(),
+            Text::make('Request comment', 'request_comment')->onlyOnDetail(),
 
             Badge::make('Status', function () {
                 return $this->status;
@@ -80,10 +94,7 @@ class ArchivedFinance extends Resource
                 'rejected' => 'danger',
             ])->withIcons(),
 
-            Textarea::make('Resolved comment', 'resolved_comment')->onlyOnDetail(),
-
-            BelongsTo::make("Resolved by", "resolver", User::class)
-                ->canSee(fn(Request $request) => $request->user()?->is_admin),
+            Text::make('Resolver comment', 'resolved_comment')->onlyOnDetail(),
         ];
     }
 
@@ -131,12 +142,12 @@ class ArchivedFinance extends Resource
         return [];
     }
 
-   public static function authorizedToCreate(Request $request)
+   public static function authorizedToCreate(Request $request): false
    {
        return false;
    }
 
-   public function authorizedToUpdate(Request $request)
+   public function authorizedToUpdate(Request $request): false
    {
        return false;
    }
@@ -145,7 +156,7 @@ class ArchivedFinance extends Resource
     {
         return false;
     }
-    public function authorizedToDelete(Request $request)
+    public function authorizedToDelete(Request $request): false
     {
         return false;
     }

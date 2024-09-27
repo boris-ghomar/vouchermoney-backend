@@ -19,6 +19,7 @@ use Laravel\Nova\Menu\MenuItem;
 use Laravel\Nova\Menu\MenuSection;
 use Laravel\Nova\Nova;
 use Laravel\Nova\NovaApplicationServiceProvider;
+use App\Models\Finance as FinanceModel;
 
 class NovaServiceProvider extends NovaApplicationServiceProvider
 {
@@ -66,7 +67,21 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
                 ->icon("clipboard-list")->canSee($can(["transaction:view", "customer:transaction:view"])),
 
             MenuSection::make("Finance", [
-                MenuItem::resource(Finance::class)->withBadgeIf(fn() => \App\Models\Finance::all()->count(), "danger", fn() => \App\Models\Finance::all()->count() > 0),
+                MenuItem::resource(Finance::class)->withBadgeIf(function () use ($request) {
+                    $user = $request->user();
+
+                    if ($user->is_admin) $count = FinanceModel::all()->count();
+                    else $count = $user->customer->finances()->count();
+
+                    return $count;
+                }, "info", function () use ($request) {
+                    $user = $request->user();
+
+                    if ($user->is_admin) $count = FinanceModel::all()->count();
+                    else $count = $user->customer->finances()->count();
+
+                    return $count > 0;
+                }),
                 MenuItem::resource(ArchivedFinance::class),
             ])->icon("currency-dollar")->canSee($can(["finance:request", "customer:finance"])),
 

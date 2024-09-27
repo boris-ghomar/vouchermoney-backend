@@ -66,6 +66,16 @@ class Customer extends Model
         return $balance;
     }
 
+    public function finances(): HasMany
+    {
+        return $this->hasMany(Finance::class);
+    }
+
+    public function archivedFinances(): HasMany
+    {
+        return $this->hasMany(ArchivedFinance::class);
+    }
+
     /**
      * @param string $message
      * @param string $type Supported types - info, success, error or warning
@@ -155,5 +165,15 @@ class Customer extends Model
         $this->checkValidityOfAmount($amount);
 
         if (!$this->hasEnoughBalance($amount)) throw new InsufficientBalance();
+    }
+
+    public function requestWithdrawFinance(float $amount, string $comment): Finance
+    {
+        return Finance::withdraw($this, $amount, $comment);
+    }
+
+    public function requestDepositFinance(float $amount, string $comment): Finance
+    {
+        return Finance::deposit($this, $amount, $comment);
     }
 }

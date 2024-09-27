@@ -20,6 +20,7 @@ return [
     "amount" => "Amount",
     "status" => "Status",
     "recipient" => "Recipient",
+    "comment" => "Comment",
 
     "type" => "Type",
     "merchant" => "Merchant",

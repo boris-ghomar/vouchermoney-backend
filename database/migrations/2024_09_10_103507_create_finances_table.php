@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('customer_id')->constrained()->cascadeOnDelete();
             $table->decimal('amount');
-            $table->text('request_comment')->nullable();
+            $table->text('comment')->nullable();
             $table->timestamps();
         });
 
@@ -27,9 +27,7 @@ return new class extends Migration
             $table->enum('status', ['approved', 'rejected']);
             $table->text('resolved_comment')->nullable();
             $table->dateTime("expired_at")->nullable();
-            $table->unsignedBigInteger('resolved_by')->nullable();
-
-            $table->foreign('resolved_by')->references('id')->on('users')->nullOnDelete(); //approve or reject by
+            $table->json("resolver_data")->nullable();
             $table->timestamps();
         });
     }

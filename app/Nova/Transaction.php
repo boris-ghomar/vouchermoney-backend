@@ -64,7 +64,7 @@ class Transaction extends Resource
             Text::make(__("fields.description"), "description"),
 
             static::makeDatetimeField(__("fields.created_at"), "created_at")->filterable()->sortable(),
-            static::makeDatetimeField(__("fields.updated_at"), "updated_at")->filterable()->sortable(),
+            static::makeDatetimeField(__("fields.updated_at"), "updated_at")->onlyOnDetail(),
         ];
     }
 
