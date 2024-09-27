@@ -4,6 +4,7 @@ namespace App\Nova\Actions;
 
 use App\Models\Customer;
 use App\Models\Finance;
+use App\Nova\ArchivedFinance;
 use Illuminate\Bus\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Collection;
@@ -13,8 +14,6 @@ use Laravel\Nova\Fields\ActionFields;
 use Laravel\Nova\Fields\Currency;
 use Laravel\Nova\Fields\Select;
 use Laravel\Nova\Fields\Text;
-use Laravel\Nova\Fields\Textarea;
-use Laravel\Nova\Fields\Trix;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Lednerb\ActionButtonSelector\ShowAsButton;
 
@@ -56,21 +55,28 @@ class CreateFinance extends Action
 
         if (!$authUser) return ActionResponse::danger("Something went wrong");
 
-        $finance = new Finance();
+        $amount = abs($fields->amount) * ($this->type === 'deposit' ? 1 : -1);
+        $customer_id = $fields->customer_id ?: $authUser->customer_id;
 
-        $finance->amount = abs($fields->amount) * ($this->type === 'deposit' ? 1 : -1);
-        $finance->customer_id = $fields->customer_id ?: $authUser->customer_id;
-
-        if ($authUser->is_admin)
-            $finance->approved_comment = $fields->comment;
-        else
+        if ($authUser->is_admin) {
+            $archived = new \App\Models\ArchivedFinance();
+            $archived->amount = $amount;
+            $archived->customer_id = $customer_id;
+            $archived->resolved_comment = $fields->comment;
+            $archived->status = \App\Models\ArchivedFinance::STATUS_APPROVED;
+            $archived->resolved_by = $authUser->id;
+            $archived->save();
+            return ActionResponse::redirect('/resources/archived-finances');
+        }
+        else {
+            $finance = new Finance();
+            $finance->amount = $amount;
+            $finance->customer_id = $customer_id;
             $finance->request_comment = $fields->comment;
+            $finance->save();
+            return ActionResponse::message("Created successfully");
+        }
 
-        $finance->status = $authUser->is_admin ? Finance::STATUS_APPROVED : Finance::STATUS_PENDING;
-        $finance->resolved_by = $authUser->is_admin ? $authUser->id : null;
-        $finance->save();
-
-        return ActionResponse::message('Created successfully');
     }
 
     /**

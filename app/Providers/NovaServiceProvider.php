@@ -6,6 +6,7 @@ use App\Nova\ActiveVoucher;
 use App\Nova\ActivityLog;
 use App\Nova\ArchivedVoucher;
 use App\Nova\Dashboards\CustomerBalance;
+use App\Nova\ArchivedFinance;
 use App\Nova\Customer;
 use App\Nova\Dashboards\Home;
 use App\Nova\Finance;
@@ -57,9 +58,6 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
             MenuSection::resource(Customer::class)->icon("user-group")
                 ->canSee($can(["customer:view-any"])),
 
-            MenuSection::resource(Finance::class)->icon("currency-dollar")
-                ->canSee($can(["finance:request", "customer:finance"])),
-
             MenuSection::make("Vouchers", [
                 MenuItem::resource(ActiveVoucher::class)->canSee($can(["voucher:view", "customer:voucher:view", "customer:voucher:generate", "customer:voucher:redeem"])),
                 MenuItem::resource(ArchivedVoucher::class)->canSee($can(["voucher:view", "customer:voucher:view"])),
@@ -70,6 +68,10 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
 
             MenuSection::resource(ActivityLog::class)->icon('lightning-bolt')
                 ->canSee(fn (Request $request) => $request->user()?->is_admin && $request->user()?->can("activity:view"))
+            MenuSection::make("Finance", [
+                MenuItem::resource(Finance::class)->withBadgeIf(fn() => \App\Models\Finance::all()->count(), "danger", fn() => \App\Models\Finance::all()->count() > 0),
+                MenuItem::resource(ArchivedFinance::class),
+            ])->icon("currency-dollar")->canSee($can(["finance:request", "customer:finance"])),
         ]);
     }
 
