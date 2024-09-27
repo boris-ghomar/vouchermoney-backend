@@ -2,8 +2,7 @@
 
 namespace App\Nova\Actions;
 
-use App\Models\Voucher;
-use App\Services\VoucherService;
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Collection;
@@ -24,11 +23,20 @@ class GenerateVoucher extends Action
 
     public $standalone = true;
 
-    public $name = "Generate voucher";
+    public function name(): string
+    {
+        return __("actions.generate_voucher");
+    }
 
-    public $confirmButtonText = "Generate";
+    public function getConfirmButtonText(): string
+    {
+        return __("actions.generate");
+    }
 
-    public $modalSize = "3xl";
+    public function getCancelButtonText(): string
+    {
+        return __("actions.cancel");
+    }
 
     public $confirmText = "";
 
@@ -41,26 +49,33 @@ class GenerateVoucher extends Action
      */
     public function handle(ActionFields $fields, Collection $models): ActionResponse
     {
-        $service = new VoucherService();
-
+        /** @var User $user */
         $user = auth()->user();
 
-        if (!$user || !$user->is_customer || !$user->customer_id) {
-            return ActionResponse::danger("Customer is not found");
+        if (empty($user) || empty($user->customer))
+            return ActionResponse::danger(__("actions.customer_not_found"));
+
+        $count = +$fields->count ?: 1;
+        $amount = $fields->amount;
+        $i = 0;
+
+        if (!$user->customer->hasEnoughBalance($count * $amount)) {
+            return ActionResponse::danger("Insufficient balance for that action");
         }
 
-        $count = $fields->count ?: 1;
-
         try {
-            for ($i = 0; $i < $count; $i++) {
-                $voucher = new Voucher();
-                $voucher->code = $service->generateCode();
-                $voucher->amount = $fields->amount;
-                $voucher->created_by = $user->customer_id;
-                $voucher->save();
-            }
+            for (; $i < $count; $i++) $user->customer->generateVoucher($amount);
         } catch (Exception $exception) {
-            return ActionResponse::danger("Something went wrong");
+            activity(static::class)
+                ->causedBy($user)
+                ->performedOn($user->customer)
+                ->withProperties([
+                    "user" => $user,
+                    "customer" => $user->customer,
+                    "error" => $exception->getMessage(),
+                    "session" => session()->all()
+                ])->log("Failed to generate voucher via Nova action");
+            return ActionResponse::danger($exception->getMessage());
         }
 
         return ActionResponse::message("Voucher" . ($count === 1 ? "" : "s") . " generated");
@@ -75,11 +90,8 @@ class GenerateVoucher extends Action
     public function fields(NovaRequest $request): array
     {
         return [
-            Number::make("How many vouchers?", "count")
-                ->rules("required")->default(1),
-
-            Currency::make("Amount", "amount")
-                ->rules("required")
+            Number::make(__("fields.count"), "count")->default(1)->rules("required", "min:1", "max:5"),
+            Currency::make(__("fields.amount"), "amount")->rules("required", "min:1", "max:1000")
         ];
     }
 }

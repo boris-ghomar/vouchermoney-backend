@@ -16,8 +16,34 @@ return [
     "role" => "Role",
     "customer" => "Customer",
     "permissions" => "Permissions",
+    "event" => "Event",
+    "amount" => "Amount",
+    "status" => "Status",
+    "recipient" => "Recipient",
 
     "type" => "Type",
     "merchant" => "Merchant",
-    "reseller" => "Reseller"
+    "reseller" => "Reseller",
+
+    "frozen" => "Frozen",
+    "active" => "Active",
+    "redeemed" => "Redeemed",
+    "expired" => "Expired",
+
+    "count" => "Count",
+    "code" => "Code",
+
+    "description" => "Description",
+    "subject" => "Subject",
+    "subject_id" => "Subject ID",
+    "subject_type" => "Subject Type",
+    "causer" => "Causer",
+    "causer_ip" => "Causer IP",
+    "properties" => "Properties",
+    "batch_uuid" => "Batch UUID",
+    "withdraw" => "Withdraw",
+    "deposit" => "Deposit",
+
+    "resolved_status" => "Resolved status",
+    "resolved_at" => "Resolved at"
 ];

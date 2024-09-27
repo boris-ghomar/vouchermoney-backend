@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Exceptions\InsufficientBalance;
 use App\Exceptions\TransactionWithZeroAmount;
+use App\Models\Voucher\Voucher;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -58,7 +59,7 @@ class Customer extends Model
     {
         $balance = $this->balance;
 
-        foreach ($this->transactions as $transaction) {
+        foreach ($this->transactions()->get() as $transaction) {
             $balance += $transaction->amount;
         }
 
@@ -86,6 +87,8 @@ class Customer extends Model
 
     public function hasEnoughBalance(float $amount): bool
     {
+        $amount = abs($amount);
+
         return $this->calculateBalance() >= $amount;
     }
 
@@ -115,7 +118,7 @@ class Customer extends Model
 
         $this->checkAbilityToMakeWithdrawalTransaction($amount);
 
-        return $this->transact(abs($amount) * -1, $description);
+        return $this->transact($amount * -1, $description);
     }
 
     private function transact(float $amount, string $description = ""): Transaction
@@ -129,6 +132,11 @@ class Customer extends Model
         $transaction->save();
 
         return $transaction;
+    }
+
+    public function generateVoucher(float $amount): Voucher
+    {
+        return Voucher::generate($this, $amount);
     }
 
     /**

@@ -9,5 +9,5 @@ Route::get("/", function (Request $request) {
     if (!$user)
         return redirect("/login");
 
-    return redirect("/resources/users/" . $user->id);
+    return redirect("/dashboards/home");
 });

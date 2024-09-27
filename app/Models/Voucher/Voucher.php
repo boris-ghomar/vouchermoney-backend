@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * @property  string $code
- * @property  int|null $customer_id
+ * @property  int $customer_id
  * @property  float $amount
  * @property  boolean $active
  * @property  Carbon|null $created_at
@@ -35,28 +35,38 @@ class Voucher extends Model
         "active"
     ];
 
-    /**
-     * @throws InsufficientBalance
-     * @throws TransactionWithZeroAmount
-     */
     public static function generate(Customer $customer, float $amount): static
     {
-        $customer->withdraw($amount, "Generating voucher");
+        return DB::transaction(function () use ($customer, $amount) {
+            $customer->withdraw($amount, "Generating voucher");
 
-        $voucher = new static();
-        $voucher->code = VoucherCode::generate();
-        $voucher->amount = $amount;
-        $voucher->customer_id = $customer->id;
-        $voucher->save();
+            $voucher = new static();
+            $voucher->code = VoucherCode::generate();
+            $voucher->amount = $amount;
+            $voucher->customer_id = $customer->id;
+            $voucher->save();
 
-        $voucher->makeLog()->fromCreationToActive("Voucher [" . $voucher->code . "] - generated");
+            $voucher->makeLog()->fromCreationToActive();
 
-        return $voucher;
+            return $voucher;
+        });
     }
 
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function freeze(): static
+    {
+        DB::transaction(function () {
+            $this->active = 0;
+            $this->save();
+
+            $this->makeLog()->fromActive()->toFrozen();
+        });
+
+        return $this;
     }
 
     /**

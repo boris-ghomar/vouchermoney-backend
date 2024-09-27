@@ -10,14 +10,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\DB;
 
 /**
- * @property  string $id
- * @property  int $customer_id
- * @property  float $amount
- * @property  string|null $description
- * @property  Carbon|null $created_at
- * @property  Carbon|null $updated_at
+ * @property  string       $id
+ * @property  int          $customer_id
+ * @property  float        $amount
+ * @property  string|null  $description
+ * @property  Carbon|null  $created_at
+ * @property  Carbon|null  $updated_at
  *
- * @property  Customer $customer
+ * @property  string       $type
+ * @property  Customer     $customer
  */
 class Transaction extends Model
 {
@@ -34,6 +35,11 @@ class Transaction extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function getTypeAttribute(): string
+    {
+        return $this->amount < 0 ? "withdraw" : "deposit";
     }
 
     /**

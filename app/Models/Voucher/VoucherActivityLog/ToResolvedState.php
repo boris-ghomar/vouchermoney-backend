@@ -24,9 +24,9 @@ class ToResolvedState
         return $this->activity;
     }
 
-    public function toFrozen(string $description = ""): VoucherActivity
+    public function toFrozen(): VoucherActivity
     {
-        return $this->to(VoucherActivity::STATE_FROZEN, $description);
+        return $this->to(VoucherActivity::STATE_FROZEN, "Voucher [" . $this->activity->code .  "] frozen");
     }
 
     public function toRedeemed(string $description = ""): VoucherActivity

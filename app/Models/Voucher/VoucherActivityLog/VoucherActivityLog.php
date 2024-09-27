@@ -25,9 +25,9 @@ class VoucherActivityLog
         return $this->activity;
     }
 
-    public function fromCreationToActive(string $description = ""): VoucherActivity
+    public function fromCreationToActive(): VoucherActivity
     {
-        return $this->fromToActive(VoucherActivity::STATE_CREATED, $description);
+        return $this->fromToActive(VoucherActivity::STATE_CREATED, "Voucher [" . $this->activity->code . "] - generated");
     }
 
     public function fromActive(): ToResolvedState
@@ -35,6 +35,18 @@ class VoucherActivityLog
         $this->activity->from_state = VoucherActivity::STATE_ACTIVE;
 
         return new ToResolvedState($this->activity);
+    }
+
+    public function fromFrozenToExpired(string $description = ""): VoucherActivity
+    {
+        $this->activity->from_state = VoucherActivity::STATE_FROZEN;
+        $this->activity->to_state = VoucherActivity::STATE_EXPIRED;
+
+        if (!empty($description)) $this->activity->description = $description;
+
+        $this->activity->save();
+
+        return $this->activity;
     }
 
     public function fromFrozenToActive(string $description = ""): VoucherActivity

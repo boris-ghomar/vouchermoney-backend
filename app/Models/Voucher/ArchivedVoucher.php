@@ -20,8 +20,8 @@ use Illuminate\Database\Eloquent\Builder;
  * @property  Customer      $customer
  * @property  Customer      $recipient
  *
- * @method  Builder|static  redeemed()
- * @method  Builder|static  expired()
+ * @method  Builder|static  onlyRedeemed()
+ * @method  Builder|static  onlyExpired()
  */
 class ArchivedVoucher extends Model
 {
@@ -46,12 +46,12 @@ class ArchivedVoucher extends Model
         "recipient_data" => "array",
     ];
 
-    public function scopeRedeemed(Builder $query): void
+    public function scopeOnlyRedeemed(Builder $query): void
     {
         $query->where("state", self::STATE_REDEEMED);
     }
 
-    public function scopeExpired(Builder $query): void
+    public function scopeOnlyExpired(Builder $query): void
     {
         $query->where("state", self::STATE_EXPIRED);
     }

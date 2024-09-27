@@ -2,24 +2,28 @@
 
 namespace App\Nova\Actions;
 
-use App\Models\Voucher;
-use Illuminate\Bus\Queueable;
-use Illuminate\Queue\InteractsWithQueue;
+use App\Models\Voucher\Voucher;
 use Illuminate\Support\Collection;
 use Laravel\Nova\Actions\ActionResponse;
 use Laravel\Nova\Actions\DestructiveAction;
 use Laravel\Nova\Fields\ActionFields;
 use Laravel\Nova\Http\Requests\NovaRequest;
+use Lednerb\ActionButtonSelector\ShowAsButton;
 use Exception;
 
-class CancelVoucher extends DestructiveAction
+class FreezeVoucher extends DestructiveAction
 {
-    use InteractsWithQueue, Queueable;
+    use ShowAsButton;
 
-    public $confirmButtonText = "Cancel";
-    public $name = "Cancel";
-    public $confirmText = "Are you sure you want to cancel this voucher?";
     public $showInline = true;
+    public $sole = true;
+
+    public function name(): string
+    {
+        return __("actions.freeze");
+    }
+
+    public $withoutActionEvents = true;
 
     /**
      * Perform the action on the given models.
@@ -30,16 +34,16 @@ class CancelVoucher extends DestructiveAction
      */
     public function handle(ActionFields $fields, Collection $models): ActionResponse
     {
+        /** @var Voucher $voucher */
+        $voucher = $models->first();
+
         try {
-            foreach ($models as $model) {
-                $model->status = Voucher::STATUS_CANCELED;
-                $model->save();
-            }
+            $voucher->freeze();
         } catch (Exception $exception) {
             return ActionResponse::danger("Something went wrong");
         }
 
-        return ActionResponse::message("Voucher successfully cancelled");
+        return ActionResponse::message("Voucher frozen");
     }
 
     /**

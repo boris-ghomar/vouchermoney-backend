@@ -4,7 +4,6 @@ namespace App\Nova;
 
 use App\Models\Customer as Model;
 use App\Nova\Actions\CreateCustomer;
-use App\Nova\Actions\DeleteCustomer;
 use App\Nova\Metrics\AccountBalance;
 use Illuminate\Http\Request;
 use Laravel\Nova\Exceptions\HelperNotSupported;
@@ -111,7 +110,9 @@ class Customer extends Resource
     public function cards(NovaRequest $request): array
     {
         return [
-            AccountBalance::make()->onlyOnDetail(),
+            AccountBalance::make()->onlyOnDetail()->canSee(function (Request $request) {
+                return $request->user()?->is_admin;
+            }),
         ];
     }
 

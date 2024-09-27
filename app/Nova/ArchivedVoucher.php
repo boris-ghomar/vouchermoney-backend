@@ -5,17 +5,14 @@ namespace App\Nova;
 use Illuminate\Http\Request;
 use Laravel\Nova\Exceptions\HelperNotSupported;
 use Laravel\Nova\Fields\Badge;
+use Laravel\Nova\Fields\BelongsTo;
+use Laravel\Nova\Fields\Code;
 use Laravel\Nova\Fields\Currency;
 use Laravel\Nova\Fields\ID;
 use Laravel\Nova\Fields\Text;
 use Laravel\Nova\Http\Requests\NovaRequest;
-use App\Models\Voucher as Model;
-use Illuminate\Database\Eloquent\Builder;
-
-/**
- * @mixin Model
- */
-class Voucher extends Resource
+use App\Models\Voucher\ArchivedVoucher as Model;
+class ArchivedVoucher extends Resource
 {
     /**
      * The model the resource corresponds to.
@@ -40,30 +37,6 @@ class Voucher extends Resource
         'code',
     ];
 
-    public static function indexQuery(NovaRequest $request, $query): Builder
-    {
-        $user = $request->user();
-
-        if ($user && $user->is_admin && $request->viaResource === "customers") {
-            $query->where("created_by", $request->viaResourceId);
-        } else if ($user && $user->is_customer && $user->customer_id) {
-            $query->where("created_by", $user->customer_id);
-        }
-
-        return $query;
-    }
-
-
-    public function authorizedToDelete(Request $request): bool
-    {
-        return false;
-    }
-
-    public static function authorizedToCreate(Request $request): bool
-    {
-        return false;
-    }
-
     /**
      * Get the fields displayed by the resource.
      *
@@ -73,33 +46,37 @@ class Voucher extends Resource
      */
     public function fields(NovaRequest $request): array
     {
-        return self::getVoucherDefaultFields();
+        return [
+            Text::make(__("fields.code"), "code")->copyable()->filterable(),
+
+            Currency::make(__("fields.amount"), "amount")
+                ->sortable()->filterable(),
+
+            Badge::make(__("fields.resolved_status"), "state")->map([
+                Model::STATE_REDEEMED => "success",
+                Model::STATE_EXPIRED => "danger"
+            ])->labels([
+                Model::STATE_REDEEMED => __("fields.redeemed"),
+                Model::STATE_EXPIRED => __("fields.expired"),
+            ])->filterable()->sortable(),
+
+            Code::make(__("fields.customer"), "customer_data")->json()->onlyOnDetail(),
+            Code::make(__("fields.recipient"), "recipient_data")->json()->onlyOnDetail(),
+
+            static::makeDatetimeField(__("fields.resolved_at"), "resolved_at"),
+
+            ...static::timestamps()
+        ];
     }
 
-    /**
-     * @throws HelperNotSupported
-     */
-    public static function getVoucherDefaultFields(bool $showStatus = true): array
+    public static function authorizedToCreate(Request $request): bool
     {
-        $fields = [
-            ID::make()->sortable()->canSee(fn(Request $request) => $request->user()?->is_admin),
+        return false;
+    }
 
-            Text::make("Code", "code")->copyable()->readonly(),
-
-            Currency::make("Amount", "amount")
-        ];
-
-        if ($showStatus) {
-            $fields[] = Badge::make('Status', "status")->map([
-                Model::STATUS_ACTIVE => 'success',
-                Model::STATUS_BLOCKED => 'danger',
-                Model::STATUS_CANCELED => 'info',
-                Model::STATUS_TRANSFERRED => 'info',
-                Model::STATUS_EXPIRED => 'danger',
-            ])->withIcons();
-        }
-
-        return $fields;
+    public function authorizedToReplicate(Request $request): bool
+    {
+        return false;
     }
 
     public function authorizedToUpdate(Request $request): bool
@@ -107,7 +84,12 @@ class Voucher extends Resource
         return false;
     }
 
-    public function authorizedToReplicate(Request $request): bool
+    public function authorizedToDelete(Request $request): bool
+    {
+        return false;
+    }
+
+    public function authorizedToForceDelete(Request $request): bool
     {
         return false;
     }
@@ -154,15 +136,5 @@ class Voucher extends Resource
     public function actions(NovaRequest $request): array
     {
         return [];
-    }
-
-    public function getKey(): string
-    {
-        return "all-vouchers";
-    }
-
-    public static function uriKey(): string
-    {
-        return "all-vouchers";
     }
 }

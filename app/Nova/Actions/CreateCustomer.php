@@ -28,6 +28,8 @@ class CreateCustomer extends Action
 
     public $standalone = true;
 
+    public $confirmText = "";
+
     public $onlyOnIndex = true;
 
     public $confirmButtonText = "Create";

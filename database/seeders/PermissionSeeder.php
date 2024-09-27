@@ -17,7 +17,6 @@ class PermissionSeeder extends Seeder
         $permissions = [
             'customer:view-any',
             'customer:create',
-            'customer:update',
             'customer:delete',
             'user:view-any',
             'user:create',
@@ -25,6 +24,9 @@ class PermissionSeeder extends Seeder
             'user:attach-permission',
             'finance:request',
             'finance:resolve',
+            'voucher:view',
+            'activity:view',
+            'transaction:view'
         ];
 
         foreach (array_merge($permissions, Permission::getCustomerPermissions()) as $permission) {
