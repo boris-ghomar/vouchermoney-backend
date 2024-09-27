@@ -26,6 +26,12 @@ class CreateCustomer extends Action
         return __("actions.create_customer");
     }
 
+    public $standalone = true;
+
+    public $onlyOnIndex = true;
+
+    public $confirmButtonText = "Create";
+
     /**
      * Perform the action on the given models.
      *

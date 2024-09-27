@@ -21,6 +21,7 @@ return new class extends Migration
             $table->enum("role", ["admin", "customer"])->default("customer");
             $table->foreignId("customer_id")->nullable();
             $table->string("api_token")->nullable();
+            $table->softDeletes();
             $table->rememberToken();
             $table->timestamps();
         });
