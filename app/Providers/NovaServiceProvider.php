@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Nova\ArchivedFinance;
 use App\Nova\Customer;
 use App\Nova\Dashboards\Main as MainDashboard;
 use App\Nova\Finance;
@@ -51,8 +52,10 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
             MenuSection::resource(Customer::class)->icon("user-group")
                 ->canSee($can(["customer:view-any"])),
 
-            MenuSection::resource(Finance::class)->icon("currency-dollar")
-                ->canSee($can(["finance:request", "customer:finance"]))
+            MenuSection::make("Finance", [
+                MenuItem::resource(Finance::class)->withBadgeIf(fn() => \App\Models\Finance::all()->count(), "danger", fn() => \App\Models\Finance::all()->count() > 0),
+                MenuItem::resource(ArchivedFinance::class),
+            ])->icon("currency-dollar")->canSee($can(["finance:request", "customer:finance"])),
         ]);
     }
 

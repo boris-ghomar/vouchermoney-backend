@@ -2,30 +2,23 @@
 
 namespace App\Nova;
 
-use App\Models\Finance as Model;
-use App\Nova\Actions\CreateFinance;
-use App\Nova\Actions\ManageFinance;
 use Illuminate\Http\Request;
-use Laravel\Nova\Actions\Action;
-use Laravel\Nova\Actions\ActionResponse;
 use Laravel\Nova\Fields\Badge;
 use Laravel\Nova\Fields\BelongsTo;
 use Laravel\Nova\Fields\Currency;
+use Laravel\Nova\Fields\HasOne;
 use Laravel\Nova\Fields\ID;
 use Laravel\Nova\Fields\Textarea;
 use Laravel\Nova\Http\Requests\NovaRequest;
 
-/**
- * @mixin Model
- */
-class Finance extends Resource
+class ArchivedFinance extends Resource
 {
     /**
      * The model the resource corresponds to.
      *
-     * @var class-string<Model>
+     * @var class-string<\App\Models\ArchivedFinance>
      */
-    public static string $model = Model::class;
+    public static string $model = \App\Models\ArchivedFinance::class;
 
     /**
      * The single value that should be used to represent the resource when being displayed.
@@ -39,16 +32,18 @@ class Finance extends Resource
      *
      * @var array
      */
-    public static $search = ['id','amount'];
+    public static $search = [
+        'id','customer_id','amount','status','resolved_by'
+    ];
 
     public function getKey(): string
     {
-        return 'finance';
+        return 'archived-finance';
     }
 
     public static function label(): string
     {
-        return 'Finance';
+        return "Archived Finances";
     }
 
     /**
@@ -60,7 +55,7 @@ class Finance extends Resource
     public function fields(NovaRequest $request): array
     {
         return [
-            ID::make()->sortable()->canSee(fn(Request $request) => $request->user()?->is_admin),
+            ID::make()->sortable(),
 
             BelongsTo::make('Customer', 'customer', Customer::class)
                 ->canSee(fn(Request $request) => $request->user()?->is_admin),
@@ -77,6 +72,18 @@ class Finance extends Resource
             }),
 
             Textarea::make('Request comment', 'request_comment')->onlyOnDetail(),
+
+            Badge::make('Status', function () {
+                return $this->status;
+            })->map([
+                'approved' => 'success',
+                'rejected' => 'danger',
+            ])->withIcons(),
+
+            Textarea::make('Resolved comment', 'resolved_comment')->onlyOnDetail(),
+
+            BelongsTo::make("Resolved by", "resolver", User::class)
+                ->canSee(fn(Request $request) => $request->user()?->is_admin),
         ];
     }
 
@@ -117,29 +124,23 @@ class Finance extends Resource
      * Get the actions available for the resource.
      *
      * @param NovaRequest $request
-     * @return Action|ActionResponse
+     * @return array
      */
-
     public function actions(NovaRequest $request): array
     {
-        return [
-            CreateFinance::make()->setType('deposit')->confirmText("")->confirmButtonText('Request Deposit'),
-            CreateFinance::make()->setType('withdraw')->confirmText("")->confirmButtonText('Request Withdraw'),
-            ManageFinance::make()->setType(Model::ACTION_APPROVE)->canSee(fn(Request  $request) => $request->user()->is_admin)->confirmText("")->confirmButtonText("Approve"),
-            ManageFinance::make()->setType(Model::ACTION_REJECT)->canSee(fn(Request  $request) => $request->user()->is_admin)->confirmText("")->confirmButtonText('Reject'),
-            ManageFinance::make()->setType(Model::ACTION_CANCEL)->canSee(fn(Request  $request) => $request->user()->is_customer)->confirmText("")->confirmButtonText('Cancel')
-        ];
+        return [];
     }
 
-    public static function authorizedToCreate(Request $request): bool
-    {
-        return false;
-    }
+   public static function authorizedToCreate(Request $request)
+   {
+       return false;
+   }
 
-    public function authorizedToUpdate(Request $request): bool
-    {
-        return false;
-    }
+   public function authorizedToUpdate(Request $request)
+   {
+       return false;
+   }
+
     public function authorizedToReplicate(Request $request): bool
     {
         return false;
