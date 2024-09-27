@@ -5,7 +5,6 @@ namespace App\Providers;
 use App\Nova\ActiveVoucher;
 use App\Nova\ActivityLog;
 use App\Nova\ArchivedVoucher;
-use App\Nova\Dashboards\CustomerBalance;
 use App\Nova\ArchivedFinance;
 use App\Nova\Customer;
 use App\Nova\Dashboards\Home;
@@ -66,12 +65,13 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
             MenuSection::resource(Transaction::class)
                 ->icon("clipboard-list")->canSee($can(["transaction:view", "customer:transaction:view"])),
 
-            MenuSection::resource(ActivityLog::class)->icon('lightning-bolt')
-                ->canSee(fn (Request $request) => $request->user()?->is_admin && $request->user()?->can("activity:view"))
             MenuSection::make("Finance", [
                 MenuItem::resource(Finance::class)->withBadgeIf(fn() => \App\Models\Finance::all()->count(), "danger", fn() => \App\Models\Finance::all()->count() > 0),
                 MenuItem::resource(ArchivedFinance::class),
             ])->icon("currency-dollar")->canSee($can(["finance:request", "customer:finance"])),
+
+            MenuSection::resource(ActivityLog::class)->icon('lightning-bolt')
+                ->canSee(fn (Request $request) => $request->user()?->is_admin && $request->user()?->can("activity:view")),
         ]);
     }
 
