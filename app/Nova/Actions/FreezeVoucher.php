@@ -81,12 +81,20 @@ class FreezeVoucher extends DestructiveAction
     public static function make(...$arguments): static
     {
         $result = parent::make();
-
-        if ($arguments[0] && $arguments[0]?->active) $result->freeze();
-        else $result->activate();
-
-        return $result->confirmButtonText(__("actions.freeze"))
+        $confirm = "actions.";
+        $description = "actions.";
+        if ($arguments[0] && $arguments[0]?->active) {
+            $result->freeze();
+            $confirm .= 'freeze';
+            $description .= 'freeze_description';
+        }
+        else {
+            $result->activate();
+            $confirm .= 'activate';
+            $description .= 'activate_description';
+        }
+        return $result->confirmButtonText(__($confirm))
             ->cancelButtonText(__("actions.cancel"))
-            ->confirmText(__("actions.freeze_description"));
+            ->confirmText(__($description));
     }
 }
