@@ -11,7 +11,6 @@ use App\Nova\Customer;
 use App\Nova\Dashboards\Home;
 use App\Nova\Finance;
 use App\Nova\Transaction;
-use App\Nova\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Laravel\Nova\Http\Requests\NovaRequest;
@@ -20,7 +19,7 @@ use Laravel\Nova\Menu\MenuItem;
 use Laravel\Nova\Menu\MenuSection;
 use Laravel\Nova\Nova;
 use Laravel\Nova\NovaApplicationServiceProvider;
-use App\Models\Finance as FinanceModel;
+use App\Models\Finance\Finance as FinanceModel;
 
 class NovaServiceProvider extends NovaApplicationServiceProvider
 {
