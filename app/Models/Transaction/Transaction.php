@@ -5,7 +5,7 @@ namespace App\Models\Transaction;
 use App\Exceptions\AttemptToArchiveTransactionWithoutCustomer;
 use App\Models\Customer;
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\DB;
  */
 class Transaction extends Model
 {
-    use HasUuids;
+    use HasUlids;
 
     protected $keyType = "string";
     public $incrementing = false;

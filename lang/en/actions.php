@@ -7,6 +7,7 @@ return [
     "generate" => "Generate",
     "cancel" => "Cancel",
     "freeze" => "Freeze",
+    "activate" => "Activate",
     "request" => "Request",
     "delete" => "Delete",
     "approve" => "Approve",
