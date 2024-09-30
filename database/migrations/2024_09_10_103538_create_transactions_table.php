@@ -24,7 +24,7 @@ return new class extends Migration
             $table->foreignUlid("customer_id")->constrained()->cascadeOnDelete();
             $table->decimal("amount");
             $table->string("description")->nullable();
-            $table->dateTime("archived_at")->nullable();
+            $table->timestamp("archived_at")->useCurrent();
             $table->timestamps();
         });
     }

@@ -7,21 +7,12 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * @property  string       $id
- * @property  int          $customer_id
- * @property  float        $amount
- * @property  string|null  $description
  * @property  Carbon       $archived_at
- * @property  Carbon|null  $created_at
- * @property  Carbon|null  $updated_at
- *
- * @property  Customer     $customer
  */
-class ArchivedTransaction extends Transaction
+class ArchivedTransaction extends AbstractTransaction
 {
     protected $table = "archived_transactions";
-    protected $keyType = "string";
-    public $incrementing = false;
+
     public $timestamps = false;
 
     protected $casts = [
@@ -36,8 +27,19 @@ class ArchivedTransaction extends Transaction
         'archived_at'
     ];
 
-    public function customer(): BelongsTo
+    public static function make(Transaction $transaction): static
     {
-        return $this->belongsTo(Customer::class);
+        $archivedTransaction = new static();
+        $archivedTransaction->id = $transaction->id;
+        $archivedTransaction->customer_id = $transaction->customer->id;
+        $archivedTransaction->amount = $transaction->amount;
+
+        if (!empty($transaction->description)) $archivedTransaction->description = $transaction->description;
+
+        $archivedTransaction->created_at = $transaction->created_at;
+        $archivedTransaction->updated_at = $transaction->updated_at;
+        $archivedTransaction->save();
+
+        return $archivedTransaction;
     }
 }

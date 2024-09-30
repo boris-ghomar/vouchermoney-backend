@@ -23,6 +23,7 @@ return [
     "comment" => "Comment",
     "request_comment" => "Request comment",
     "resolve_comment" => "Resolve comment",
+    "archived_at" => "Archived at",
 
     "type" => "Type",
     "merchant" => "Merchant",

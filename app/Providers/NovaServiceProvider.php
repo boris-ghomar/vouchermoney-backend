@@ -6,6 +6,7 @@ use App\Nova\Account;
 use App\Nova\ActiveVoucher;
 use App\Nova\ActivityLog;
 use App\Nova\Admin;
+use App\Nova\ArchivedTransaction;
 use App\Nova\ArchivedVoucher;
 use App\Nova\ArchivedFinance;
 use App\Nova\Customer;
@@ -77,8 +78,10 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
                 MenuItem::resource(ArchivedVoucher::class)->canSee($can(["voucher:view", "customer:voucher:view"])),
             ])->icon("cash")->canSee($can(["voucher:view", "customer:voucher:view", "customer:voucher:generate", "customer:voucher:redeem", "customer:voucher:freeze"])),
 
-            MenuSection::resource(Transaction::class)
-                ->icon("clipboard-list")->canSee($can(["transaction:view", "customer:transaction:view"])),
+            MenuSection::make("Transactions", [
+                MenuItem::resource(Transaction::class),
+                MenuItem::resource(ArchivedTransaction::class)
+            ])->icon("clipboard-list")->canSee($can(["transaction:view", "customer:transaction:view"])),
 
             MenuSection::make("Finance", [
                 MenuItem::resource(Finance::class)->withBadgeIf(function () use ($request) {
