@@ -5,6 +5,7 @@ namespace App\Nova;
 use App\Models\Customer as Model;
 use App\Nova\Actions\CreateCustomer;
 use App\Nova\Metrics\AccountBalance;
+use App\Nova\Metrics\CustomerAvailableBalance;
 use Illuminate\Http\Request;
 use Laravel\Nova\Exceptions\HelperNotSupported;
 use Laravel\Nova\Fields\Avatar;
@@ -111,9 +112,8 @@ class Customer extends Resource
     public function cards(NovaRequest $request): array
     {
         return [
-            AccountBalance::make()->onlyOnDetail()->canSee(function (Request $request) {
-                return $request->user()?->is_admin;
-            }),
+            CustomerAvailableBalance::make()->onlyOnDetail()->canSee(fn (Request $request) => $request->user()?->is_admin),
+            AccountBalance::make()->onlyOnDetail()->canSee(fn (Request $request) => $request->user()?->is_admin),
         ];
     }
 
@@ -148,7 +148,8 @@ class Customer extends Resource
     public function actions(NovaRequest $request): array
     {
         return [
-            CreateCustomer::make(),
+            CreateCustomer::make()
+                ->canSee(fn(Request $request) => $request->user()?->is_admin && $request->user()->can("customer:create")),
         ];
     }
 }
