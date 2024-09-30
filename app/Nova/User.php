@@ -98,6 +98,9 @@ class User extends Resource
                     $model->{$attribute} = $request->user()->customer_id;
                 })->onlyOnForms(),
 
+            BelongsTo::make(__("fields.customer"), "customer", Customer::class)->onlyOnDetail()
+                ->canSee(fn(Request $request) => $request->user()?->id === $this->id && $request->user()->can("customer:view-balance")),
+
             DependencyContainer::make([
                 BelongsTo::make(__("fields.customer"), "customer", Customer::class)
             ])->dependsOnNullOrZero("customer_id")->exceptOnForms()->canSee(fn(Request $request) => $this->customer_id),

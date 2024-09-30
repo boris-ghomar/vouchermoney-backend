@@ -5,18 +5,23 @@ namespace App\Nova;
 use Illuminate\Database\Eloquent\Builder;
 use Laravel\Nova\Http\Requests\NovaRequest;
 
-class Admin extends User
+class Account extends User
 {
     /**
      * @return string
      */
     public static function label(): string
     {
-        return "Admins";
+        return "Users";
     }
 
     public static function indexQuery(NovaRequest $request, $query): Builder
     {
-        return $query->whereNull("customer_id")->whereNot("id", $request->user()?->id);
+        $user = $request->user();
+
+        if ($user?->is_customer)
+            $query->where("customer_id", $user->customer_id)->whereNot("id", $user?->id);
+
+        return $query;
     }
 }

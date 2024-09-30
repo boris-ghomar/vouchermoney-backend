@@ -69,7 +69,7 @@ class Customer extends Resource
             Badge::make("Type", "type")->map([
                 Model::TYPE_RESELLER => "info",
                 Model::TYPE_MERCHANT => "success"
-            ])->filterable()->canSee(fn(Request $request) => $request->user()?->is_admin),
+            ])->filterable()->onlyForAdmins(),
 
             HasMany::make(__("fields.users"), "users", User::class)
                 ->collapsable()->collapsedByDefault()->canSee(function (Request $request) {

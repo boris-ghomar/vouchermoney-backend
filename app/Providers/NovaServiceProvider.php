@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Nova\Account;
 use App\Nova\ActiveVoucher;
 use App\Nova\ActivityLog;
 use App\Nova\Admin;
@@ -11,8 +12,10 @@ use App\Nova\Customer;
 use App\Nova\Dashboards\Home;
 use App\Nova\Finance;
 use App\Nova\Transaction;
+use App\Nova\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Laravel\Nova\Fields\Field;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Laravel\Nova\Menu\Menu;
 use Laravel\Nova\Menu\MenuItem;
@@ -32,6 +35,10 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
     {
         parent::boot();
 
+        Field::macro('onlyForAdmins', function () {
+            return $this->canSee(fn(Request $request) => $request->user()?->is_admin);
+        });
+
         Nova::footer(fn() => null);
 
         Nova::initialPath("/dashboards/home");
@@ -41,6 +48,14 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
         $can = fn(...$permissions) => fn(NovaRequest $request) => $request->user()?->canAny(...$permissions);
 
         Nova::userMenu(function (Request $request, Menu $menu) {
+            if ($request->user()?->is_customer && $request->user()->can("customer:view-balance"))
+                $menu->prepend(
+                    MenuItem::make(
+                        'Customer',
+                        "/resources/customers/{$request->user()->customer_id}"
+                    ),
+                );
+
             $menu->prepend(
                 MenuItem::make(
                     'Profile',
@@ -51,11 +66,15 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
             return $menu;
         });
 
+
         Nova::mainMenu(fn(Request $request) => [
             MenuSection::dashboard(Home::class)->icon("home"),
 
             MenuSection::resource(Admin::class)->icon('users')
                 ->canSee($can(["user:view-any"])),
+
+            MenuSection::resource(Account::class)->icon('users')
+                ->canSee($can(["customer:user:view-any"])),
 
             MenuSection::resource(Customer::class)->icon("user-group")
                 ->canSee($can(["customer:view-any"])),
