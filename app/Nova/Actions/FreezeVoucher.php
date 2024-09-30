@@ -38,7 +38,12 @@ class FreezeVoucher extends DestructiveAction
         $voucher = $models->first();
 
         try {
-            $voucher->freeze();
+            if ($voucher->active) {
+
+                $voucher->freeze();
+            } else {
+                $voucher->activate();
+            }
         } catch (Exception $exception) {
             return ActionResponse::danger("Something went wrong");
         }

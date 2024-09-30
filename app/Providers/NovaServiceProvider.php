@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Nova\ActiveVoucher;
 use App\Nova\ActivityLog;
+use App\Nova\Admin;
 use App\Nova\ArchivedVoucher;
 use App\Nova\ArchivedFinance;
 use App\Nova\Customer;
@@ -54,7 +55,9 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
         Nova::mainMenu(fn(Request $request) => [
             MenuSection::dashboard(Home::class)->icon("home"),
 
-            MenuSection::resource(User::class)->icon("users"),
+            MenuSection::resource(Admin::class)->icon('users')
+                ->canSee($can(["user:view-any"])),
+
             MenuSection::resource(Customer::class)->icon("user-group")
                 ->canSee($can(["customer:view-any"])),
 
