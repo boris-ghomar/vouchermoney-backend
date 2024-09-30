@@ -160,12 +160,10 @@ class ActiveVoucher extends Resource
                 ->confirmButtonText(__("actions.generate"))
                 ->cancelButtonText(__("actions.cancel")),
 
-            FreezeVoucher::make()
+            FreezeVoucher::make($this)
                 ->canSee(fn(Request $request) => $request->user()?->can("customer:voucher:freeze"))
                 ->canRun(fn(Request $request) => $request->user()?->can("customer:voucher:freeze"))
-                ->confirmButtonText(__("actions.freeze"))
-                ->cancelButtonText(__("actions.cancel"))
-                ->confirmText(__("actions.freeze_description"))
+
         ];
     }
 

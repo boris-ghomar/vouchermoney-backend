@@ -18,10 +18,31 @@ class FreezeVoucher extends DestructiveAction
     public $showInline = true;
     public $sole = true;
 
-    public function name(): string
+    protected string $type = 'freeze';
+
+    public function activate(): static
     {
-        return __("actions.freeze");
+        return $this->setType("activate");
     }
+
+    public function freeze(): static
+    {
+        return $this->setType("freeze");
+    }
+
+    private function setType(string $type): static
+    {
+        $this->type = $type;
+//        $this->name = $type === 'freeze' ? __('actions.freeze') : __('actions.activate');
+        return $this;
+    }
+
+    public function name()
+    {
+        return $this->type === 'freeze' ? __('actions.freeze') : __('actions.activate');
+    }
+
+    public $uriKey = "freeze-voucher";
 
     public $withoutActionEvents = true;
 
@@ -36,19 +57,14 @@ class FreezeVoucher extends DestructiveAction
     {
         /** @var Voucher $voucher */
         $voucher = $models->first();
-
         try {
-            if ($voucher->active) {
-
-                $voucher->freeze();
-            } else {
-                $voucher->activate();
-            }
+            if ($voucher->active) $voucher->freeze();
+            else $voucher->activate();
         } catch (Exception $exception) {
             return ActionResponse::danger("Something went wrong");
         }
 
-        return ActionResponse::message("Voucher frozen");
+        return ActionResponse::message("Voucher " . ($voucher->active ? "activated" : "frozen"));
     }
 
     /**
@@ -60,5 +76,17 @@ class FreezeVoucher extends DestructiveAction
     public function fields(NovaRequest $request): array
     {
         return [];
+    }
+
+    public static function make(...$arguments): static
+    {
+        $result = parent::make();
+
+        if ($arguments[0] && $arguments[0]?->active) $result->freeze();
+        else $result->activate();
+
+        return $result->confirmButtonText(__("actions.freeze"))
+            ->cancelButtonText(__("actions.cancel"))
+            ->confirmText(__("actions.freeze_description"));
     }
 }
