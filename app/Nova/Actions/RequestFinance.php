@@ -4,7 +4,7 @@ namespace App\Nova\Actions;
 
 use App\Exceptions\InsufficientBalance;
 use App\Models\Customer;
-use App\Models\Finance;
+use App\Models\Finance\Finance;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -71,8 +71,8 @@ class RequestFinance extends Action
         else $customer = $authUser->customer;
 
         try {
-            if ($this->type === Finance::TYPE_DEPOSIT) $customer->requestDepositFinance($fields->amount, $fields->comment ?: "");
-            else$customer->requestWithdrawFinance($fields->amount, $fields->comment ?: "");
+            if ($this->type === Finance::TYPE_DEPOSIT) $customer->requestDeposit($fields->amount, $fields->comment ?: "");
+            else $customer->requestWithdraw($fields->amount, $fields->comment ?: "");
         } catch (InsufficientBalance $exception) {
             return ActionResponse::danger($exception->getMessage());
         }
@@ -88,20 +88,21 @@ class RequestFinance extends Action
      */
     public function fields(NovaRequest $request): array
     {
-        return [
+        $user = $request->user();
+        $fields = [
             Currency::make(__("fields.amount"), "amount")->rules('required', "min:1", "max:10000"),
-
-            Select::make(__("fields.customer"), 'customer_id')
-                ->canSee(fn() => auth()->user()?->is_admin)
-                ->rules(auth()->user()?->is_admin ? 'required' : 'nullable')
-                ->options(fn () => Customer::all()->pluck('name','id'))
-                ->searchable(),
-
             Text::make(__("fields.comment"), 'comment')->rules('nullable'),
         ];
+
+        if ($user?->is_admin)
+            array_unshift($fields, Select::make(__("fields.customer"), 'customer_id')
+                ->rules('required')->options(Customer::toOptionsArray())
+                ->searchable());
+
+        return $fields;
     }
 
-    public static function make(...$arguments): array
+    public static function get(): array
     {
         $deposit = parent::make()->deposit()->confirmButtonText(__("actions.request"))->cancelButtonText(__("actions.cancel"));
         $withdraw = parent::make()->withdraw()->confirmButtonText(__("actions.request"))->cancelButtonText(__("actions.cancel"));

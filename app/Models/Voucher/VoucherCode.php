@@ -25,6 +25,8 @@ class VoucherCode extends Model
         "code"
     ];
 
+    const VOUCHER_GROUPS = 6;
+
     public static function generate(): string
     {
         $voucherCode = "";
@@ -56,11 +58,11 @@ class VoucherCode extends Model
         // Generate a voucher code using the allowed characters
         $voucherCode = '';
 
-        for ($i = 0; $i < 4; $i++) {
+        for ($i = 0; $i < static::VOUCHER_GROUPS; $i++) {
             $voucherCode .= substr(str_shuffle($characters), 0, 4);
 
             // Add hyphen between groups
-            if ($i < 3) $voucherCode .= '-';
+            if ($i < static::VOUCHER_GROUPS - 1) $voucherCode .= '-';
         }
 
         // Ensure uniqueness by checking the database

@@ -12,16 +12,16 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('transactions', function (Blueprint $table) {
-            $table->uuid("id")->primary();
-            $table->foreignId("customer_id")->constrained();
+            $table->ulid("id")->primary();
+            $table->foreignUlid("customer_id")->constrained()->cascadeOnDelete();
             $table->decimal("amount");
             $table->string("description")->nullable();
             $table->timestamps();
         });
 
         Schema::create('archived_transactions', function (Blueprint $table) {
-            $table->uuid("id")->primary();
-            $table->foreignId("customer_id")->constrained();
+            $table->ulid("id")->primary();
+            $table->foreignUlid("customer_id")->constrained()->cascadeOnDelete();
             $table->decimal("amount");
             $table->string("description")->nullable();
             $table->dateTime("archived_at")->nullable();

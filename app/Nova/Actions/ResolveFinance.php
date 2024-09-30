@@ -2,7 +2,8 @@
 
 namespace App\Nova\Actions;
 
-use App\Models\Finance;
+use App\Models\Finance\Finance;
+use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Http\Request;
 use Illuminate\Queue\InteractsWithQueue;
@@ -11,7 +12,6 @@ use Laravel\Nova\Actions\Action;
 use Laravel\Nova\Actions\ActionResponse;
 use Laravel\Nova\Fields\ActionFields;
 use Laravel\Nova\Fields\Text;
-use Exception;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Lednerb\ActionButtonSelector\ShowAsButton;
 
@@ -63,10 +63,19 @@ class ResolveFinance extends Action
      */
     public function handle(ActionFields $fields, Collection $models): ActionResponse
     {
+        $user = auth()->user();
 
         try {
-            foreach ($models as $model) $model->{$this->type}(auth()->user(), $fields->comment ?: "");
+            foreach ($models as $model) $model->{$this->type}($user, $fields->comment ?: "");
         } catch (Exception $exception) {
+            activity(static::class)
+                ->withProperties([
+                    "user" => $user,
+                    "finances" => $models,
+                    "fields" => $fields,
+                    "exception" => $exception->getMessage()
+                ])->log("Exception when attempting to resolve finance");
+
             return ActionResponse::danger("Something went wrong");
         }
 

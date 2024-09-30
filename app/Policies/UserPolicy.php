@@ -12,7 +12,7 @@ class UserPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->is_admin && $user->can("user:view-any");
+        return $user->is_admin && ($user->can("user:view-any") || $user->is_customer && $user->can("customer:user:view-any"));
     }
 
     /**

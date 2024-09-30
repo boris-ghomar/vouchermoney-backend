@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Transaction;
 
 use App\Exceptions\AttemptToArchiveTransactionWithoutCustomer;
+use App\Models\Customer;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;

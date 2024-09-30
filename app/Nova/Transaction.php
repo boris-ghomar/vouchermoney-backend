@@ -2,6 +2,8 @@
 
 namespace App\Nova;
 
+use App\Models\Transaction\Transaction as Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Laravel\Nova\Fields\Badge;
 use Laravel\Nova\Fields\BelongsTo;
@@ -9,7 +11,6 @@ use Laravel\Nova\Fields\Currency;
 use Laravel\Nova\Fields\ID;
 use Laravel\Nova\Fields\Text;
 use Laravel\Nova\Http\Requests\NovaRequest;
-use App\Models\Transaction as Model;
 
 class Transaction extends Resource
 {
@@ -33,6 +34,14 @@ class Transaction extends Resource
      * @var array
      */
     public static $search = ['id'];
+
+    public static function indexQuery(NovaRequest $request, $query): Builder
+    {
+        if ($request->user()?->is_customer)
+            $query->where("customer_id", $request->user()->customer_id);
+
+        return $query;
+    }
 
     /**
      * Get the fields displayed by the resource.

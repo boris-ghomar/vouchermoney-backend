@@ -12,22 +12,22 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('finances', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('customer_id')->constrained()->cascadeOnDelete();
+            $table->ulid("id")->primary();
+            $table->foreignUlid('customer_id')->constrained()->cascadeOnDelete();
             $table->decimal('amount');
             $table->text('comment')->nullable();
             $table->timestamps();
         });
 
         Schema::create('archived_finances', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('customer_id')->constrained()->cascadeOnDelete();
+            $table->ulid("id")->primary();
+            $table->foreignUlid('customer_id')->constrained()->cascadeOnDelete();
             $table->decimal('amount');
+            $table->boolean('status');
             $table->text('request_comment')->nullable();
-            $table->enum('status', ['approved', 'rejected']);
             $table->text('resolved_comment')->nullable();
-            $table->dateTime("expired_at")->nullable();
             $table->json("resolver_data")->nullable();
+            $table->timestamp("resolved_at")->useCurrent();
             $table->timestamps();
         });
     }
@@ -37,6 +37,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::dropIfExists('archived_finances');
         Schema::dropIfExists('finances');
     }
 };

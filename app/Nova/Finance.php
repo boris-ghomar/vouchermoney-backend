@@ -2,19 +2,18 @@
 
 namespace App\Nova;
 
-use App\Models\Finance as Model;
+use App\Models\Finance\Finance as Model;
 use App\Nova\Actions\DeleteFinance;
 use App\Nova\Actions\RequestFinance;
 use App\Nova\Actions\ResolveFinance;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Laravel\Nova\Fields\Badge;
 use Laravel\Nova\Fields\BelongsTo;
 use Laravel\Nova\Fields\Currency;
 use Laravel\Nova\Fields\ID;
 use Laravel\Nova\Fields\Text;
-use Laravel\Nova\Fields\Textarea;
 use Laravel\Nova\Http\Requests\NovaRequest;
-use Illuminate\Database\Eloquent\Builder;
 
 /**
  * @mixin Model
@@ -40,17 +39,7 @@ class Finance extends Resource
      *
      * @var array
      */
-    public static $search = ['id','amount'];
-
-    public function getKey(): string
-    {
-        return 'finance';
-    }
-
-    public static function label(): string
-    {
-        return 'Finance';
-    }
+    public static $search = ['id', 'comment'];
 
     public static function indexQuery(NovaRequest $request, $query): Builder
     {
@@ -71,16 +60,14 @@ class Finance extends Resource
     public function fields(NovaRequest $request): array
     {
         return [
-            ID::make()->sortable()->canSee(fn(Request $request) => $request->user()?->is_admin),
+            ID::make(),
 
             BelongsTo::make('Customer', 'customer', Customer::class)
                 ->canSee(fn(Request $request) => $request->user()?->is_admin),
 
-            Badge::make('Type', function () {
-                return $this->amount < 0 ? 'Withdraw' : 'Deposit';
-            })->map([
-                'Withdraw' => 'danger',
-                'Deposit' => 'success',
+            Badge::make('Type', "type")->map([
+                'withdraw' => 'danger',
+                'deposit' => 'success',
             ]),
 
             Currency::make('Amount', function ($amount) {
@@ -88,6 +75,11 @@ class Finance extends Resource
             }),
 
             Text::make('Comment', 'comment'),
+
+            static::makeDatetimeField(__("fields.created_at"), "created_at")
+                ->sortable(),
+            static::makeDatetimeField(__("fields.updated_at"), "updated_at")
+                ->onlyOnDetail(),
         ];
     }
 
@@ -134,7 +126,7 @@ class Finance extends Resource
      */
     public function actions(NovaRequest $request): array
     {
-        return array_merge(RequestFinance::make(), [
+        return array_merge(RequestFinance::get(), [
             DeleteFinance::make()->canSee(fn(Request $request) => $request->user()?->is_customer)
         ], ResolveFinance::make());
     }

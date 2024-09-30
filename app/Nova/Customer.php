@@ -39,9 +39,7 @@ class Customer extends Resource
      *
      * @var array
      */
-    public static $search = [
-        'name',
-    ];
+    public static $search = ['name'];
 
     /**
      * Get the fields displayed by the resource.
@@ -55,19 +53,21 @@ class Customer extends Resource
             ID::make(__("fields.id"), "id")->sortable()
                 ->canSee(fn (Request $request) => $request->user()?->is_admin),
 
-            Text::make(__("fields.name"), "name")
-                ->canSee(fn (Request $request) => $request->user()?->is_admin)
-                ->filterable()->rules("string", "max:100"),
+            Text::make(__("fields.name"), "name")->sortable()->rules("string", "max:100"),
 
             Avatar::make(__("fields.avatar"), "avatar")->nullable()->disableDownload()
                 ->deletable()->prunable()->acceptedTypes('.jpg,.jpeg,.png'),
 
-            Currency::make(__("fields.balance"), "balance")->sortable()->filterable()->onlyOnIndex(),
+            Currency::make(__("fields.balance"), "balance")
+                ->canSee(fn(Request $request) => $request->user()?->is_admin)
+                ->sortable()->filterable(),
+
+            Currency::make(__("fields.balance"), "balance"),
 
             Badge::make("Type", "type")->map([
                 Model::TYPE_RESELLER => "info",
                 Model::TYPE_MERCHANT => "success"
-            ])->canSee(fn(Request $request) => $request->user()?->is_admin),
+            ])->filterable()->canSee(fn(Request $request) => $request->user()?->is_admin),
 
             HasMany::make(__("fields.users"), "users", User::class)
                 ->collapsable()->collapsedByDefault()->canSee(function (Request $request) {

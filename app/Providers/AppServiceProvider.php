@@ -16,7 +16,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app['db.schema']->morphUsingUlids();
     }
 
     /**

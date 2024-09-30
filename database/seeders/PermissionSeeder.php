@@ -37,8 +37,7 @@ class PermissionSeeder extends Seeder
         $user->name = "Admin";
         $user->email = "admin@test.com";
         $user->email_verified_at = now();
-        $user->role = User::ROLE_ADMIN;
-        $user->password = Hash::make("123123123");
+        $user->password = "123123123";
         $user->save();
 
         $user->syncPermissions($permissions);

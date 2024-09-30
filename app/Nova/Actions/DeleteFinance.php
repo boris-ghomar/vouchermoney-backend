@@ -2,7 +2,8 @@
 
 namespace App\Nova\Actions;
 
-use App\Models\Finance;
+use App\Models\Finance\Finance;
+use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Collection;
@@ -11,7 +12,6 @@ use Laravel\Nova\Actions\DestructiveAction;
 use Laravel\Nova\Fields\ActionFields;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Lednerb\ActionButtonSelector\ShowAsButton;
-use Exception;
 
 class DeleteFinance extends DestructiveAction
 {

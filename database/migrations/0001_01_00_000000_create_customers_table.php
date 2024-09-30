@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('customers', function (Blueprint $table) {
-            $table->id();
+            $table->ulid("id")->primary();
             $table->string('name')->unique();
             $table->decimal('balance')->default(0);
             $table->string('avatar')->nullable();

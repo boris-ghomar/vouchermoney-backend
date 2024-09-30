@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Transaction;
 
+use App\Models\Customer;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 

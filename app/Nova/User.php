@@ -5,7 +5,7 @@ namespace App\Nova;
 use App\Models\User as Model;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rules;
+use Illuminate\Validation\Rules\Password as PasswordRule;
 use Laravel\Nova\Fields\Avatar;
 use Laravel\Nova\Fields\Badge;
 use Laravel\Nova\Fields\BelongsTo;
@@ -37,7 +37,7 @@ class User extends Resource
      * @var array
      */
     public static $search = [
-        'name', 'email'
+        'name', 'email', 'id'
     ];
 
     public function title(): string
@@ -49,30 +49,11 @@ class User extends Resource
     {
         $user = $request->user();
 
-        if ($user) {
-            $query->whereNot("id", $user->id);
-        }
+        if ($user) $query->whereNot("id", $user->id);
 
-        if ($request?->viaRelationship) {
-            return $query;
-        }
+        if ($request->viaRelationship) return $query;
 
-        if ($user?->is_customer)
-            return $query->where("customer_id", $user->customer_id);
-
-        return $query->where("role", Model::ROLE_ADMIN);
-    }
-
-    public static function authorizedToViewAny(Request $request): bool
-    {
-        $user = $request->user();
-
-        if ($user && (
-                ($user->is_customer && $user->can("customer:user:view-any")) ||
-                ($user->is_admin && $user->can("user:view-any")))
-        ) return true;
-
-        return false;
+        return $query->where("customer_id", $user->customer_id);
     }
 
     /**
@@ -84,43 +65,16 @@ class User extends Resource
     public function fields(NovaRequest $request): array
     {
         return [
-            ID::make(__("fields.id"), "id")->sortable()->canSee(function (Request $request) {
-                $user = $request->user();
-                return $user && $user->is_admin;
-            }),
+            ID::make(__("fields.id"), "id")->sortable()
+                ->canSee(fn (Request $request) => $request->user()?->is_admin),
 
-            Text::make(__("fields.name"), "name")->filterable()->rules('required', 'max:100'),
-
-            Boolean::make(__("fields.is_active"), "is_active")
-                ->exceptOnForms()
-                ->canSee(function (Request $request) {
-                    $user = $request->user();
-
-                    return $user && (
-                            $user->is_admin ||
-                            ($user->is_customer && $user->customer_id === $this->customer_id)
-                        );
-                }),
+            Text::make(__("fields.name"), "name")
+                ->rules('required', 'max:100')->sortable(),
 
             Avatar::make(__("fields.avatar"), "customer.avatar")
-                ->canSee(fn() => $this->is_customer)
-                ->exceptOnForms(),
+                ->canSee(fn() => $this->is_customer)->exceptOnForms(),
 
-            Badge::make(__("fields.role"), "role")
-                ->exceptOnForms()
-                ->map([
-                    Model::ROLE_ADMIN => "danger",
-                    Model::ROLE_CUSTOMER => "success"
-                ])
-                ->canSee(fn(Request $request) => $request->user()?->is_admin),
-
-            Hidden::make(__("fields.role"), "role")
-                ->onlyOnForms()->hideWhenUpdating()->fillUsing(function ($request, $model, $attribute) {
-                    $model->{$attribute} = $request?->viaRelationship ? Model::ROLE_CUSTOMER : $request->user()?->role;
-                }),
-
-            Text::make(__("fields.email"), "email")
-                ->filterable()
+            Text::make(__("fields.email"), "email")->sortable()
                 ->rules('required', 'email:dns', 'max:255')
                 ->creationRules('unique:users,email')
                 ->updateRules('unique:users,email,{{resourceId}}'),
@@ -131,12 +85,12 @@ class User extends Resource
 
             Password::make(__("fields.password"), "password")
                 ->onlyOnForms()
-                ->rules("min:8", Rules\Password::defaults())
+                ->rules("min:8", PasswordRule::defaults())
                 ->creationRules('required')
                 ->updateRules('nullable'),
 
             BelongsTo::make("Customer", "customer", Customer::class)
-                ->onlyOnForms()->readonly()->canSee(fn($request) => $request->viaRelationship),
+                ->onlyOnForms()->readonly()->canSee(fn($request) => $request->viaRelationship && $request->viaRelationship !== "customers"),
 
             Hidden::make("Customer", "customer_id")
                 ->canSee(function (Request $request) {
@@ -145,21 +99,21 @@ class User extends Resource
                     return $user && $user->is_customer && $user->can("customer:user:create");
                 })->fillUsing(function ($request, $model, $attribute) {
                     $model->{$attribute} = $request->user()->customer_id;
-                }),
+                })->onlyOnForms(),
 
             DependencyContainer::make([
                 BelongsTo::make(__("fields.customer"), "customer", Customer::class)
                     ->onlyOnDetail()
-            ])->dependsOn("role", Model::ROLE_CUSTOMER),
+            ])->dependsOnNullOrZero("customer_id"),
 
             BelongsToMany::make(__("fields.permissions"), "permissions", Permission::class)
                 ->canSee(function (Request $request) {
                     $user = $request->user();
 
-                    return $user && (
-                            ($user->is_customer && $user->can("customer:user:attach-permission")) ||
-                            ($user->is_admin)
-                        ) && $user->id !== $this->id;
+                    return $user && $user->id !== $this->id && (
+                            ($user->is_customer && $this->customer_id === $user->customer_id && $user->can("customer:user:attach-permission")) ||
+                            ($user->is_admin && $user->can("user:attach-permission"))
+                        );
                 })->collapsable()->collapsedByDefault()
         ];
     }
@@ -172,6 +126,7 @@ class User extends Resource
     public function authorizedToAttachAny(NovaRequest $request, $model): bool
     {
         $user = $request->user();
+
         if (
             ($user && $this->id !== $user->id) &&
             (
@@ -182,14 +137,6 @@ class User extends Resource
 
         return false;
     }
-
-//    public function authorizedToAttach(NovaRequest $request, $model): bool
-//    {
-//        return !in_array($model?->name, [
-//            "customer:user:delete", "customer:user:attach-permission",
-//            "user:delete", "user:attach-permission"
-//        ]);
-//    }
 
     public function authorizedToDetach(NovaRequest $request, $model, $relationship): bool
     {

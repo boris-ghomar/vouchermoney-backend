@@ -12,21 +12,21 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('voucher_codes', function (Blueprint $table) {
-            $table->string('code', 20)->primary();
+            $table->string('code', 40)->primary();
         });
 
         Schema::create('vouchers', function (Blueprint $table) {
             $table->string('code')->primary();
-            $table->foreignId("customer_id")->nullable()->constrained()->nullOnDelete();
+            $table->foreignUlid("customer_id")->nullable()->constrained()->nullOnDelete();
             $table->decimal('amount');
-            $table->boolean("active")->default(1);
+            $table->boolean("active")->default(true);
             $table->timestamps();
         });
 
         Schema::create('archived_vouchers', function (Blueprint $table) {
             $table->string('code')->primary();
             $table->decimal('amount');
-            $table->enum('state', ['redeemed', 'expired']);
+            $table->boolean('state')->comment("1 if redeemed, 0 if expired");
             $table->timestamp("resolved_at")->useCurrent();
             $table->json("customer_data");
             $table->json("recipient_data")->nullable();

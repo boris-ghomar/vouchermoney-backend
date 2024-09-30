@@ -2,16 +2,15 @@
 
 namespace App\Nova;
 
+use App\Models\Finance\ArchivedFinance as Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Laravel\Nova\Fields\Badge;
 use Laravel\Nova\Fields\BelongsTo;
 use Laravel\Nova\Fields\Currency;
 use Laravel\Nova\Fields\ID;
 use Laravel\Nova\Fields\Text;
-use Laravel\Nova\Fields\Textarea;
 use Laravel\Nova\Http\Requests\NovaRequest;
-use App\Models\ArchivedFinance as Model;
-use Illuminate\Database\Eloquent\Builder;
 
 class ArchivedFinance extends Resource
 {
