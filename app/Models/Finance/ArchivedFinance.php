@@ -42,7 +42,9 @@ class ArchivedFinance extends AbstractFinance
     protected $casts = [
         "resolved_at" => "datetime",
         "resolver_data" => "array",
-        "status" => "boolean"
+        "status" => "boolean",
+        "created_at" => "datetime",
+        "updated_at" => "datetime"
     ];
 
     /**

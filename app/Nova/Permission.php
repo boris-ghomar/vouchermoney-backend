@@ -3,13 +3,12 @@
 namespace App\Nova;
 
 use Illuminate\Http\Request;
-use Laravel\Nova\Fields\BelongsToMany;
-use Laravel\Nova\Fields\DateTime;
-use Laravel\Nova\Fields\ID;
-use Laravel\Nova\Fields\Text;
+use App\Nova\Fields\BelongsToMany;
+use App\Nova\Fields\DateTime;
+use App\Nova\Fields\ID;
+use App\Nova\Fields\Text;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use App\Models\Permission as Model;
-use App\Models\User as UserModel;
 
 /**
  * @mixin Model
@@ -52,10 +51,10 @@ class Permission extends Resource
             Text::make(__("fields.name"), fn () => $this->title()),
 
             BelongsToMany::make(__("fields.users"), "users", User::class)
-                ->onlyOnDetail()->canSee(fn(Request $request) => $request->user()?->is_admin),
+                ->onlyOnDetail()->onlyForAdmins(),
 
-            DateTime::make(__("fields.created_at"), 'created_at')->onlyOnDetail(),
-            DateTime::make(__("fields.updated_at"), 'updated_at')->onlyOnDetail(),
+            DateTime::createdAt()->onlyOnDetail(),
+            DateTime::updatedAt(),
         ];
     }
 

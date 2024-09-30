@@ -2,17 +2,11 @@
 
 namespace App\Nova;
 
-use App\Nova\Fields\DateTime;
-use App\Nova\Fields\FieldHelper;
-use Illuminate\Http\Request;
-use App\Nova\Fields\Code;
-use App\Nova\Fields\ID;
-use App\Nova\Fields\MorphTo;
-use App\Nova\Fields\Text;
+use Laravel\Nova\Fields\ID;
 use Laravel\Nova\Http\Requests\NovaRequest;
-use Spatie\Activitylog\Models\Activity as Model;
+use App\Models\Transaction\ArchivedTransaction as Model;
 
-class ActivityLog extends Resource
+class ArchivedTransaction extends Resource
 {
     /**
      * The model the resource corresponds to.
@@ -34,7 +28,7 @@ class ActivityLog extends Resource
      * @var array
      */
     public static $search = [
-        "log_name",
+        'id', 'description'
     ];
 
     /**
@@ -45,42 +39,9 @@ class ActivityLog extends Resource
      */
     public function fields(NovaRequest $request): array
     {
-        return FieldHelper::make([
-            ID::make()->sortable(),
-
-            Text::make(__('fields.name'), 'log_name'),
-            Text::make(__('fields.event'), 'event')->onlyOnDetail(),
-            Text::make(__('fields.description'), 'description')->onlyOnDetail(),
-            Text::make(__("fields.batch_uuid"), "batch_uuid")->onlyOnDetail(),
-            MorphTo::make(__("fields.subject"), "subject"),
-            Text::make(__('fields.subject_id'), 'subject_id')->onlyOnDetail(),
-            Text::make(__('fields.subject_type'), 'subject_type')->onlyOnDetail(),
-            Text::make(__('fields.causer_ip'), 'properties->ip')->onlyOnIndex(),
-            MorphTo::make(__('fields.causer'), 'causer'),
-            Code::make(__('fields.properties'), 'properties')->json()->onlyOnDetail(),
-
-            DateTime::timestamps()
-        ]);
-    }
-
-    public static function authorizedToCreate(Request $request): false
-    {
-        return false;
-    }
-
-    public function authorizedToReplicate(Request $request): false
-    {
-        return false;
-    }
-
-    public function authorizedToDelete(Request $request): false
-    {
-        return false;
-    }
-
-    public function authorizedToUpdate(Request $request): false
-    {
-        return false;
+        return [
+            ID::make(__("fields.id"), "id")->sortable(),
+        ];
     }
 
     /**

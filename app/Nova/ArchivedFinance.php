@@ -4,14 +4,15 @@ namespace App\Nova;
 
 use App\Models\Finance\AbstractFinance;
 use App\Models\Finance\ArchivedFinance as Model;
+use App\Nova\Fields\DateTime;
 use App\Nova\Fields\FieldHelper;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
-use Laravel\Nova\Fields\Badge;
-use Laravel\Nova\Fields\BelongsTo;
-use Laravel\Nova\Fields\Currency;
-use Laravel\Nova\Fields\ID;
-use Laravel\Nova\Fields\Text;
+use App\Nova\Fields\Badge;
+use App\Nova\Fields\BelongsTo;
+use App\Nova\Fields\Currency;
+use App\Nova\Fields\ID;
+use App\Nova\Fields\Text;
 use Laravel\Nova\Http\Requests\NovaRequest;
 
 /**
@@ -63,31 +64,29 @@ class ArchivedFinance extends Resource
     public function fields(NovaRequest $request): array
     {
         return FieldHelper::make([
-            ID::make()->sortable(),
+            ID::make(__("fields.id"), "id")->sortable(),
 
             BelongsTo::make(__("fields.customer"), 'customer', Customer::class)
-                ->canSee(fn(Request $request) => $request->user()?->is_admin),
+                ->onlyForAdmins(),
 
             Badge::make(__("fields.type"), "type")->map([
                 AbstractFinance::TYPE_WITHDRAW => 'danger',
                 AbstractFinance::TYPE_DEPOSIT => 'success',
             ]),
 
-            Currency::make(__("fields.amount"), function ($amount) {
-                return abs($amount->amount);
-            }),
+            Currency::make(__("fields.amount"), "amount")->displayAsPositive(),
 
             Text::make(__("fields.request_comment"), 'request_comment')->onlyOnDetail(),
 
             Badge::make(__("fields.status"), "status")
-                ->map(['danger', 'success'])->withIcons()->sortable()->filterable()
-                ->labels(['Approved', 'Rejected']),
+                ->asBoolean()->withIcons()->sortable()->filterable()
+                ->labels(['Rejected', 'Approved']),
 
             Text::make('Resolver comment', 'resolved_comment')->onlyOnDetail(),
 
-            static::makeDatetimeField(__("fields.resolved_at"), "resolved_at")->sortable()->filterable(),
+            DateTime::make(__("fields.resolved_at"), "resolved_at")->sortable()->filterable(),
 
-            static::timestamps()
+            DateTime::timestamps()
         ]);
     }
 

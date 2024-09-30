@@ -6,15 +6,13 @@ use App\Models\User as Model;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rules\Password as PasswordRule;
-use Laravel\Nova\Fields\Avatar;
-use Laravel\Nova\Fields\Badge;
-use Laravel\Nova\Fields\BelongsTo;
-use Laravel\Nova\Fields\BelongsToMany;
-use Laravel\Nova\Fields\Boolean;
-use Laravel\Nova\Fields\Hidden;
-use Laravel\Nova\Fields\ID;
-use Laravel\Nova\Fields\Password;
-use Laravel\Nova\Fields\Text;
+use App\Nova\Fields\Avatar;
+use App\Nova\Fields\BelongsTo;
+use App\Nova\Fields\BelongsToMany;
+use App\Nova\Fields\Hidden;
+use App\Nova\Fields\ID;
+use App\Nova\Fields\Password;
+use App\Nova\Fields\Text;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Outl1ne\DependencyContainer\DependencyContainer;
 use App\Models\Permission as PermissionModel;
@@ -66,7 +64,7 @@ class User extends Resource
     {
         return [
             ID::make(__("fields.id"), "id")->sortable()
-                ->canSee(fn (Request $request) => $request->user()?->is_admin),
+                ->onlyForAdmins(),
 
             Text::make(__("fields.name"), "name")
                 ->rules('required', 'max:100')->sortable(),
@@ -90,11 +88,8 @@ class User extends Resource
                 ->updateRules('nullable'),
 
             Hidden::make("Customer", "customer_id")
-                ->canSee(function (Request $request) {
-                    $user = $request->user();
-
-                    return $user && $user->is_customer && $user->can("customer:user:create");
-                })->fillUsing(function ($request, $model, $attribute) {
+                ->seeIfCan("customer:user:create")
+                ->fillUsing(function ($request, $model, $attribute) {
                     $model->{$attribute} = $request->user()->customer_id;
                 })->onlyOnForms(),
 

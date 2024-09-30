@@ -3,13 +3,14 @@
 namespace App\Nova;
 
 use App\Models\Transaction\Transaction as Model;
+use App\Nova\Fields\DateTime;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
-use Laravel\Nova\Fields\Badge;
-use Laravel\Nova\Fields\BelongsTo;
-use Laravel\Nova\Fields\Currency;
-use Laravel\Nova\Fields\ID;
-use Laravel\Nova\Fields\Text;
+use App\Nova\Fields\Badge;
+use App\Nova\Fields\BelongsTo;
+use App\Nova\Fields\Currency;
+use App\Nova\Fields\ID;
+use App\Nova\Fields\Text;
 use Laravel\Nova\Http\Requests\NovaRequest;
 
 class Transaction extends Resource
@@ -57,7 +58,7 @@ class Transaction extends Resource
             Currency::make(__("fields.amount"), "amount")
                 ->filterable()->hideFromIndex(),
 
-            Currency::make(__("fields.amount"), fn(Model $transaction) => abs($transaction->amount))->onlyOnIndex(),
+            Currency::make(__("fields.amount"), "amount")->displayAsPositive(),
 
             Badge::make(__("fields.type"), "type")->map([
                     "withdraw" => "danger",
@@ -68,19 +69,14 @@ class Transaction extends Resource
                 ])->onlyOnIndex(),
 
             BelongsTo::make(__("fields.customer"), "customer")
-                ->canSee(fn(Request $request) => $request->user()?->is_admin),
+                ->onlyForAdmins(),
 
             Text::make(__("fields.description"), "description"),
 
-            static::makeDatetimeField(__("fields.created_at"), "created_at")->filterable()->sortable(),
-            static::makeDatetimeField(__("fields.updated_at"), "updated_at")->onlyOnDetail(),
+            DateTime::createdAt()->filterable()->sortable(),
+            DateTime::updatedAt(),
         ];
     }
-
-//    public function authorizedTo(Request $request, $ability): false
-//    {
-//        return false;
-//    }
 
     public static function authorizedToCreate(Request $request): false
     {

@@ -7,13 +7,14 @@ use App\Nova\Actions\ActionHelper;
 use App\Nova\Actions\DeleteFinance;
 use App\Nova\Actions\RequestFinance;
 use App\Nova\Actions\ResolveFinance;
+use App\Nova\Fields\DateTime;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
-use Laravel\Nova\Fields\Badge;
-use Laravel\Nova\Fields\BelongsTo;
-use Laravel\Nova\Fields\Currency;
-use Laravel\Nova\Fields\ID;
-use Laravel\Nova\Fields\Text;
+use App\Nova\Fields\Badge;
+use App\Nova\Fields\BelongsTo;
+use App\Nova\Fields\Currency;
+use App\Nova\Fields\ID;
+use App\Nova\Fields\Text;
 use Laravel\Nova\Http\Requests\NovaRequest;
 
 /**
@@ -61,26 +62,22 @@ class Finance extends Resource
     public function fields(NovaRequest $request): array
     {
         return [
-            ID::make(),
+            ID::make(__("fields.id"), "id"),
 
-            BelongsTo::make('Customer', 'customer', Customer::class)
-                ->canSee(fn(Request $request) => $request->user()?->is_admin),
+            BelongsTo::make(__("fields.customer"), 'customer', Customer::class)
+                ->onlyForAdmins(),
 
-            Badge::make('Type', "type")->map([
+            Badge::make(__("fields.type"), "type")->map([
                 'withdraw' => 'danger',
                 'deposit' => 'success',
             ]),
 
-            Currency::make('Amount', function ($amount) {
-                return abs($amount->amount);
-            }),
+            Currency::make(__("fields.amount"), "amount")->displayAsPositive(),
 
             Text::make('Comment', 'comment'),
 
-            static::makeDatetimeField(__("fields.created_at"), "created_at")
-                ->sortable(),
-            static::makeDatetimeField(__("fields.updated_at"), "updated_at")
-                ->onlyOnDetail(),
+            DateTime::createdAt()->sortable(),
+            DateTime::updatedAt(),
         ];
     }
 

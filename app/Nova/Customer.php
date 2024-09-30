@@ -8,12 +8,12 @@ use App\Nova\Metrics\AccountBalance;
 use App\Nova\Metrics\CustomerAvailableBalance;
 use Illuminate\Http\Request;
 use Laravel\Nova\Exceptions\HelperNotSupported;
-use Laravel\Nova\Fields\Avatar;
-use Laravel\Nova\Fields\Badge;
-use Laravel\Nova\Fields\Currency;
-use Laravel\Nova\Fields\HasMany;
-use Laravel\Nova\Fields\ID;
-use Laravel\Nova\Fields\Text;
+use App\Nova\Fields\Avatar;
+use App\Nova\Fields\Badge;
+use App\Nova\Fields\Currency;
+use App\Nova\Fields\HasMany;
+use App\Nova\Fields\ID;
+use App\Nova\Fields\Text;
 use Laravel\Nova\Http\Requests\NovaRequest;
 
 /**
@@ -52,7 +52,7 @@ class Customer extends Resource
     {
         return [
             ID::make(__("fields.id"), "id")->sortable()
-                ->canSee(fn (Request $request) => $request->user()?->is_admin),
+                ->onlyForAdmins(),
 
             Text::make(__("fields.name"), "name")->sortable()->rules("string", "max:100"),
 
@@ -60,22 +60,18 @@ class Customer extends Resource
                 ->deletable()->prunable()->acceptedTypes('.jpg,.jpeg,.png'),
 
             Currency::make(__("fields.balance"), "balance")
-                ->canSee(fn(Request $request) => $request->user()?->is_admin)
-                ->sortable()->filterable(),
+                ->onlyForAdmins()->sortable()->filterable(),
 
             Currency::make(__("fields.balance"), "balance")
-                ->canSee(fn(Request $request) => $request->user()?->is_customer),
+                ->onlyForCustomers(),
 
-            Badge::make("Type", "type")->map([
+            Badge::make(__("fields.type"), "type")->map([
                 Model::TYPE_RESELLER => "info",
                 Model::TYPE_MERCHANT => "success"
             ])->filterable()->onlyForAdmins(),
 
             HasMany::make(__("fields.users"), "users", User::class)
-                ->collapsable()->collapsedByDefault()->canSee(function (Request $request) {
-                    $user = $request->user();
-                    return $user && $user->is_admin && $user->can("user:view-any");
-                })
+                ->collapsable()->collapsedByDefault()->seeIfCan("user:view-any")
         ];
     }
 

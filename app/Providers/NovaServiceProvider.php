@@ -12,10 +12,8 @@ use App\Nova\Customer;
 use App\Nova\Dashboards\Home;
 use App\Nova\Finance;
 use App\Nova\Transaction;
-use App\Nova\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
-use Laravel\Nova\Fields\Field;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Laravel\Nova\Menu\Menu;
 use Laravel\Nova\Menu\MenuItem;
@@ -34,10 +32,6 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
     public function boot(): void
     {
         parent::boot();
-
-        Field::macro('onlyForAdmins', function () {
-            return $this->canSee(fn(Request $request) => $request->user()?->is_admin);
-        });
 
         Nova::footer(fn() => null);
 
@@ -66,7 +60,6 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
             return $menu;
         });
 
-
         Nova::mainMenu(fn(Request $request) => [
             MenuSection::dashboard(Home::class)->icon("home"),
 
@@ -80,9 +73,9 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
                 ->canSee($can(["customer:view-any"])),
 
             MenuSection::make("Vouchers", [
-                MenuItem::resource(ActiveVoucher::class)->canSee($can(["voucher:view", "customer:voucher:view", "customer:voucher:generate", "customer:voucher:redeem"])),
+                MenuItem::resource(ActiveVoucher::class)->canSee($can(["voucher:view", "customer:voucher:view", "customer:voucher:generate", "customer:voucher:redeem", "customer:voucher:freeze"])),
                 MenuItem::resource(ArchivedVoucher::class)->canSee($can(["voucher:view", "customer:voucher:view"])),
-            ])->icon("cash")->canSee($can(["voucher:view", "customer:voucher:view", "customer:voucher:generate", "customer:voucher:redeem"])),
+            ])->icon("cash")->canSee($can(["voucher:view", "customer:voucher:view", "customer:voucher:generate", "customer:voucher:redeem", "customer:voucher:freeze"])),
 
             MenuSection::resource(Transaction::class)
                 ->icon("clipboard-list")->canSee($can(["transaction:view", "customer:transaction:view"])),

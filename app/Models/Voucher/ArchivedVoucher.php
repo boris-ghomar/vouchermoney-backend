@@ -51,6 +51,8 @@ class ArchivedVoucher extends Model
         "resolved_at" => "datetime",
         "customer_data" => "array",
         "recipient_data" => "array",
+        "created_at" => "datetime",
+        "updated_at" => "datetime"
     ];
 
     public function getIsRedeemedAttribute(): bool

@@ -22,7 +22,14 @@ class ArchivedTransaction extends Transaction
     protected $table = "archived_transactions";
     protected $keyType = "string";
     public $incrementing = false;
-    protected $casts = ["archived_at" => "datetime"];
+    public $timestamps = false;
+
+    protected $casts = [
+        "archived_at" => "datetime",
+        "created_at" => "datetime",
+        "updated_at" => "datetime"
+    ];
+
     protected $fillable = [
         'customer_id',
         'amount',

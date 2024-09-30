@@ -2,13 +2,14 @@
 
 namespace App\Nova;
 
+use App\Nova\Fields\DateTime;
 use App\Nova\Fields\FieldHelper;
 use Illuminate\Http\Request;
 use Laravel\Nova\Exceptions\HelperNotSupported;
-use Laravel\Nova\Fields\Badge;
-use Laravel\Nova\Fields\Code;
-use Laravel\Nova\Fields\Currency;
-use Laravel\Nova\Fields\Text;
+use App\Nova\Fields\Badge;
+use App\Nova\Fields\Code;
+use App\Nova\Fields\Currency;
+use App\Nova\Fields\Text;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use App\Models\Voucher\ArchivedVoucher as Model;
 use Illuminate\Database\Eloquent\Builder;
@@ -61,20 +62,14 @@ class ArchivedVoucher extends Resource
             Currency::make(__("fields.amount"), "amount")
                 ->sortable()->filterable(),
 
-            Badge::make(__("fields.resolved_status"), "state")->map([
-                Model::STATE_REDEEMED => "success",
-                Model::STATE_EXPIRED => "danger"
-            ])->labels([
-                Model::STATE_REDEEMED => __("fields.redeemed"),
-                Model::STATE_EXPIRED => __("fields.expired"),
-            ])->filterable()->sortable(),
+            Badge::make(__("fields.resolved_status"), "state")->asBoolean()
+                ->labels([__("fields.expired"), __("fields.redeemed")])->filterable()->sortable(),
 
             Code::make(__("fields.customer"), "customer_data")->json()->onlyOnDetail(),
             Code::make(__("fields.recipient"), "recipient_data")->json()->onlyOnDetail(),
 
-            static::makeDatetimeField(__("fields.resolved_at"), "resolved_at"),
-
-            static::timestamps()
+            DateTime::make(__("fields.resolved_at"), "resolved_at"),
+            DateTime::timestamps()
         ]);
     }
 
