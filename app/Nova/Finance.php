@@ -3,6 +3,7 @@
 namespace App\Nova;
 
 use App\Models\Finance\Finance as Model;
+use App\Nova\Actions\ActionHelper;
 use App\Nova\Actions\DeleteFinance;
 use App\Nova\Actions\RequestFinance;
 use App\Nova\Actions\ResolveFinance;
@@ -126,9 +127,11 @@ class Finance extends Resource
      */
     public function actions(NovaRequest $request): array
     {
-        return array_merge(RequestFinance::get(), [
-            DeleteFinance::make()->canSee(fn(Request $request) => $request->user()?->is_customer)
-        ], ResolveFinance::make());
+        return ActionHelper::make([
+            RequestFinance::make(),
+            DeleteFinance::make()->canSee(fn(Request $request) => $request->user()?->is_customer),
+            ResolveFinance::make()
+        ]);
     }
 
     public static function authorizedToCreate(Request $request): bool

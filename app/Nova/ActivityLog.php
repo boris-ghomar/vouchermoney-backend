@@ -2,6 +2,7 @@
 
 namespace App\Nova;
 
+use App\Nova\Fields\FieldHelper;
 use Illuminate\Http\Request;
 use Laravel\Nova\Fields\Code;
 use Laravel\Nova\Fields\DateTime;
@@ -44,7 +45,7 @@ class ActivityLog extends Resource
      */
     public function fields(NovaRequest $request): array
     {
-        return [
+        return FieldHelper::make([
             ID::make()->sortable(),
 
             Text::make(__('fields.name'), 'log_name'),
@@ -58,8 +59,8 @@ class ActivityLog extends Resource
             MorphTo::make(__('fields.causer'), 'causer'),
             Code::make(__('fields.properties'), 'properties')->json()->onlyOnDetail(),
 
-            ...static::timestamps()
-        ];
+            static::timestamps()
+        ]);
     }
 
     public static function authorizedToCreate(Request $request): false

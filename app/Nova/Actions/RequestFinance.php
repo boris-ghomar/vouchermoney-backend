@@ -102,7 +102,7 @@ class RequestFinance extends Action
         return $fields;
     }
 
-    public static function get(): array
+    public static function make(...$arguments): array
     {
         $deposit = parent::make()->deposit()->confirmButtonText(__("actions.request"))->cancelButtonText(__("actions.cancel"));
         $withdraw = parent::make()->withdraw()->confirmButtonText(__("actions.request"))->cancelButtonText(__("actions.cancel"));

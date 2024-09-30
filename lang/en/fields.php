@@ -21,6 +21,8 @@ return [
     "status" => "Status",
     "recipient" => "Recipient",
     "comment" => "Comment",
+    "request_comment" => "Request comment",
+    "resolve_comment" => "Resolve comment",
 
     "type" => "Type",
     "merchant" => "Merchant",

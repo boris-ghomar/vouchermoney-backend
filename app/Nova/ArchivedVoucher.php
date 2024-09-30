@@ -2,6 +2,7 @@
 
 namespace App\Nova;
 
+use App\Nova\Fields\FieldHelper;
 use Illuminate\Http\Request;
 use Laravel\Nova\Exceptions\HelperNotSupported;
 use Laravel\Nova\Fields\Badge;
@@ -54,7 +55,7 @@ class ArchivedVoucher extends Resource
      */
     public function fields(NovaRequest $request): array
     {
-        return [
+        return FieldHelper::make([
             Text::make(__("fields.code"), "code")->copyable()->filterable(),
 
             Currency::make(__("fields.amount"), "amount")
@@ -73,8 +74,8 @@ class ArchivedVoucher extends Resource
 
             static::makeDatetimeField(__("fields.resolved_at"), "resolved_at"),
 
-            ...static::timestamps()
-        ];
+            static::timestamps()
+        ]);
     }
 
     public static function authorizedToCreate(Request $request): bool

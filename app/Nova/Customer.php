@@ -62,7 +62,8 @@ class Customer extends Resource
                 ->canSee(fn(Request $request) => $request->user()?->is_admin)
                 ->sortable()->filterable(),
 
-            Currency::make(__("fields.balance"), "balance"),
+            Currency::make(__("fields.balance"), "balance")
+                ->canSee(fn(Request $request) => $request->user()?->is_customer),
 
             Badge::make("Type", "type")->map([
                 Model::TYPE_RESELLER => "info",

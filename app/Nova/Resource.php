@@ -2,6 +2,7 @@
 
 namespace App\Nova;
 
+use App\Nova\Fields\FieldHelper;
 use Laravel\Nova\Fields\DateTime;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Laravel\Nova\Resource as NovaResource;
@@ -60,8 +61,7 @@ abstract class Resource extends NovaResource
 
     public static function makeDatetimeField(string $title, string $attribute): DateTime
     {
-        return DateTime::make($title, $attribute)
-            ->displayUsing(fn ($value) => $value ? $value->format('D d/m/Y, g:ia') : '');
+        return FieldHelper::makeDatetimeField($title, $attribute);
     }
 
     public static function timestamps(): array

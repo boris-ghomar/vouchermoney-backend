@@ -2,7 +2,9 @@
 
 namespace App\Nova;
 
+use App\Models\Finance\AbstractFinance;
 use App\Models\Finance\ArchivedFinance as Model;
+use App\Nova\Fields\FieldHelper;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Laravel\Nova\Fields\Badge;
@@ -12,6 +14,9 @@ use Laravel\Nova\Fields\ID;
 use Laravel\Nova\Fields\Text;
 use Laravel\Nova\Http\Requests\NovaRequest;
 
+/**
+ * @mixin Model
+ */
 class ArchivedFinance extends Resource
 {
     /**
@@ -37,16 +42,6 @@ class ArchivedFinance extends Resource
         'id','customer_id','amount','status','resolved_by'
     ];
 
-    public function getKey(): string
-    {
-        return 'archived-finance';
-    }
-
-    public static function label(): string
-    {
-        return "Archived Finances";
-    }
-
     public static function indexQuery(NovaRequest $request, $query): Builder
     {
         $user = $request->user();
@@ -67,34 +62,33 @@ class ArchivedFinance extends Resource
      */
     public function fields(NovaRequest $request): array
     {
-        return [
+        return FieldHelper::make([
             ID::make()->sortable(),
 
-            BelongsTo::make('Customer', 'customer', Customer::class)
+            BelongsTo::make(__("fields.customer"), 'customer', Customer::class)
                 ->canSee(fn(Request $request) => $request->user()?->is_admin),
 
-            Badge::make('Type', function () {
-                return $this->amount < 0 ? 'Withdraw' : 'Deposit';
-            })->map([
-                'Withdraw' => 'danger',
-                'Deposit' => 'success',
+            Badge::make(__("fields.type"), "type")->map([
+                AbstractFinance::TYPE_WITHDRAW => 'danger',
+                AbstractFinance::TYPE_DEPOSIT => 'success',
             ]),
 
-            Currency::make('Amount', function ($amount) {
+            Currency::make(__("fields.amount"), function ($amount) {
                 return abs($amount->amount);
             }),
 
-            Text::make('Request comment', 'request_comment')->onlyOnDetail(),
+            Text::make(__("fields.request_comment"), 'request_comment')->onlyOnDetail(),
 
-            Badge::make('Status', function () {
-                return $this->status;
-            })->map([
-                'approved' => 'success',
-                'rejected' => 'danger',
-            ])->withIcons(),
+            Badge::make(__("fields.status"), "status")
+                ->map(['danger', 'success'])->withIcons()->sortable()->filterable()
+                ->labels(['Approved', 'Rejected']),
 
             Text::make('Resolver comment', 'resolved_comment')->onlyOnDetail(),
-        ];
+
+            static::makeDatetimeField(__("fields.resolved_at"), "resolved_at")->sortable()->filterable(),
+
+            static::timestamps()
+        ]);
     }
 
     /**

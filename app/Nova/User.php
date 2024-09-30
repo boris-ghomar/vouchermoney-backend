@@ -89,9 +89,6 @@ class User extends Resource
                 ->creationRules('required')
                 ->updateRules('nullable'),
 
-            BelongsTo::make("Customer", "customer", Customer::class)
-                ->onlyOnForms()->readonly()->canSee(fn($request) => $request->viaRelationship && $request->viaRelationship !== "customers"),
-
             Hidden::make("Customer", "customer_id")
                 ->canSee(function (Request $request) {
                     $user = $request->user();
@@ -103,8 +100,7 @@ class User extends Resource
 
             DependencyContainer::make([
                 BelongsTo::make(__("fields.customer"), "customer", Customer::class)
-                    ->onlyOnDetail()
-            ])->dependsOnNullOrZero("customer_id"),
+            ])->dependsOnNullOrZero("customer_id")->exceptOnForms()->canSee(fn(Request $request) => $this->customer_id),
 
             BelongsToMany::make(__("fields.permissions"), "permissions", Permission::class)
                 ->canSee(function (Request $request) {
