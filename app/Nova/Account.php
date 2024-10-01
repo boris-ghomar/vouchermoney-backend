@@ -12,7 +12,7 @@ class Account extends User
      */
     public static function label(): string
     {
-        return "Users";
+        return __("fields.users");
     }
 
     public static function indexQuery(NovaRequest $request, $query): Builder

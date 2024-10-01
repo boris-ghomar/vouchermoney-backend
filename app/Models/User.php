@@ -26,6 +26,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property  bool           $is_admin
  * @property  bool           $is_customer
  * @property  Customer|null  $customer
+ * @property  string         $full_name
  */
 class User extends Authenticatable
 {
@@ -80,5 +81,15 @@ class User extends Authenticatable
     public function getIsCustomerAttribute(): bool
     {
         return $this->customer_id !== null;
+    }
+
+    public function canSeeVouchersList(): bool
+    {
+        return $this->can("customer:voucher:view") || $this->can("voucher:view");
+    }
+
+    public function getFullNameAttribute(): string
+    {
+        return $this->name . " [" . $this->customer->name . "]";
     }
 }

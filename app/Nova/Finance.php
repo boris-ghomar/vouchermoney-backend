@@ -67,6 +67,8 @@ class Finance extends Resource
             BelongsTo::make(__("fields.customer"), 'customer', Customer::class)
                 ->onlyForAdmins(),
 
+            BelongsTo::make(__("fields.requested_by"), 'user', User::class),
+
             Badge::make(__("fields.type"), "type")->map([
                 'withdraw' => 'danger',
                 'deposit' => 'success',

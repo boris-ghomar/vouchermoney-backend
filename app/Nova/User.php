@@ -87,7 +87,7 @@ class User extends Resource
                 ->creationRules('required')
                 ->updateRules('nullable'),
 
-            Hidden::make("Customer", "customer_id")
+            Hidden::make(__("fields.customer"), "customer_id")
                 ->seeIfCan("customer:user:create")
                 ->fillUsing(function ($request, $model, $attribute) {
                     $model->{$attribute} = $request->user()->customer_id;

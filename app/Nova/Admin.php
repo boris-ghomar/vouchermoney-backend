@@ -12,7 +12,7 @@ class Admin extends User
      */
     public static function label(): string
     {
-        return "Admins";
+        return __("fields.admins");
     }
 
     public static function indexQuery(NovaRequest $request, $query): Builder

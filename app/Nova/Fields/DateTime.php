@@ -9,7 +9,7 @@ class DateTime extends NovaDateTime
 {
     use FieldMacro;
 
-    const FORMAT = 'D d/m/Y, g:ia';
+    const FORMAT = 'd/m/Y, H:i';
 
     public function __construct($name, $attribute = null, callable $resolveCallback = null)
     {

@@ -39,9 +39,7 @@ class ArchivedFinance extends Resource
      *
      * @var array
      */
-    public static $search = [
-        'id','customer_id','amount','status','resolved_by'
-    ];
+    public static $search = ['id'];
 
     public static function indexQuery(NovaRequest $request, $query): Builder
     {
@@ -69,6 +67,8 @@ class ArchivedFinance extends Resource
             BelongsTo::make(__("fields.customer"), 'customer', Customer::class)
                 ->onlyForAdmins(),
 
+            BelongsTo::make(__("fields.requested_by"), 'user', User::class),
+
             Badge::make(__("fields.type"), "type")->map([
                 AbstractFinance::TYPE_WITHDRAW => 'danger',
                 AbstractFinance::TYPE_DEPOSIT => 'success',
@@ -86,7 +86,8 @@ class ArchivedFinance extends Resource
 
             DateTime::make(__("fields.resolved_at"), "resolved_at")->sortable()->filterable(),
 
-            DateTime::timestamps()
+            DateTime::createdAt(),
+            DateTime::updatedAt()->onlyForAdmins()
         ]);
     }
 

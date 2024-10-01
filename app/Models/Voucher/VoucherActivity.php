@@ -15,6 +15,8 @@ use App\Models\Voucher\VoucherActivityLog\VoucherActivityLog;
  * @property  string|null  $description
  * @property  string|null  $user_data
  * @property  Carbon       $time
+ *
+ * @property  User|null    $user
  */
 class VoucherActivity extends Model
 {
@@ -41,6 +43,19 @@ class VoucherActivity extends Model
         "time" => "datetime"
     ];
 
+    public function getUserAttribute(): User|null
+    {
+        if (empty($this->user_data["id"]))
+            return null;
+
+        $user = User::find($this->user_data["id"]);
+
+        if (!$user)
+            return null;
+
+        return $user;
+    }
+
     public static function make(string $code, string $from, string $to, User|null $user = null, string|null $description = null): static
     {
         $activity = new static();
@@ -57,12 +72,12 @@ class VoucherActivity extends Model
         return $activity;
     }
 
-    public static function log(string $voucherCode, User|null $user = null): VoucherActivityLog
+    public static function log(string $voucherCode, User $user = null): VoucherActivityLog
     {
         $voucherActivity = new static();
         $voucherActivity->code = $voucherCode;
 
-        if (!empty($user)) $voucherActivity->user_data = $user->toJson();
+        if (!empty($user)) $voucherActivity->user_data = $user;
 
         return new VoucherActivityLog($voucherActivity);
     }

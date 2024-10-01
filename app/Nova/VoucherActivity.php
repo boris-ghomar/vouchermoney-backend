@@ -2,23 +2,19 @@
 
 namespace App\Nova;
 
-use App\Nova\Fields\DateTime;
-use App\Nova\Fields\FieldHelper;
-use App\Nova\Fields\HasMany;
-use Illuminate\Http\Request;
-use Laravel\Nova\Exceptions\HelperNotSupported;
 use App\Nova\Fields\Badge;
 use App\Nova\Fields\Code;
-use App\Nova\Fields\Currency;
+use App\Nova\Fields\DateTime;
 use App\Nova\Fields\Text;
+use Illuminate\Http\Request;
+use Laravel\Nova\Fields\ID;
 use Laravel\Nova\Http\Requests\NovaRequest;
-use App\Models\Voucher\ArchivedVoucher as Model;
-use Illuminate\Database\Eloquent\Builder;
+use App\Models\Voucher\VoucherActivity as Model;
 
 /**
  * @mixin Model
  */
-class ArchivedVoucher extends Resource
+class VoucherActivity extends Resource
 {
     /**
      * The model the resource corresponds to.
@@ -32,64 +28,64 @@ class ArchivedVoucher extends Resource
      *
      * @var string
      */
-    public static $title = 'code';
+    public static $title = 'id';
 
     /**
      * The columns that should be searched.
      *
      * @var array
      */
-    public static $search = [
-        'code',
-    ];
-
-    public static function indexQuery(NovaRequest $request, $query): Builder
-    {
-        if ($request->user()?->is_customer)
-            $query->where("customer_data->", $request->user()->customer_id);
-
-        /** @var \App\Models\User $user */
-        $user = $request->user();
-
-        if (!$user?->canSeeVouchersList()) return $query->whereRaw('1 = 0');
-
-        return $query;
-    }
+    public static $search = ['id'];
 
     /**
      * Get the fields displayed by the resource.
      *
-     * @param NovaRequest $request
+     * @param  NovaRequest  $request
      * @return array
-     * @throws HelperNotSupported
      */
     public function fields(NovaRequest $request): array
     {
-        return FieldHelper::make([
-            Text::make(__("fields.code"), "code")->copyable()->filterable(),
+        return [
+            ID::make(__("fields.id"), "id")->sortable(),
 
-            Currency::make(__("fields.amount"), "amount")
-                ->sortable()->filterable(),
+            Text::make(__("fields.code"), "code")->filterable(),
 
-            Badge::make(__("fields.resolved_status"), "state")->asBoolean()
-                ->labels([__("fields.expired"), __("fields.redeemed")])->filterable()->sortable(),
+            Badge::make(__("fields.from_state"), "from_state")
+                ->map([
+                    Model::STATE_CREATED => "info",
+                    Model::STATE_ACTIVE => "success",
+                    Model::STATE_FROZEN => "warning"
+                ]),
 
-            Code::make(__("fields.customer"), "customer_data")->json()->onlyOnDetail()
-                ->onlyForAdmins(),
-            Code::make(__("fields.recipient"), "recipient_data")->json()->onlyOnDetail()
-                ->onlyForAdmins(),
+            Badge::make(__("fields.to_state"), "to_state")
+                ->map([
+                    Model::STATE_ACTIVE => "success",
+                    Model::STATE_FROZEN => "warning",
+                    Model::STATE_REDEEMED => "info",
+                    Model::STATE_EXPIRED => "danger",
+                ]),
 
-//            Text::make(__("fields.resolved_by"), function () {
-//                return $this->reso
-//            }),
+            Text::make(__("fields.description"), "description"),
 
-            DateTime::make(__("fields.resolved_at"), "resolved_at"),
-            DateTime::createdAt()->sortable()->filterable(),
-            DateTime::updatedAt()->onlyForAdmins(),
+            Text::make(__("fields.user"), function () {
+                return $this->user?->full_name;
+            })->onlyOnIndex(),
 
-            HasMany::make("Activities", "activities", VoucherActivity::class)
-                ->onlyForAdmins()->readonly()
-        ]);
+            Code::make(__("fields.user_data"), "user_data")->json(),
+
+            DateTime::make(__("fields.time"), "time")
+                ->filterable()->sortable()
+        ];
+    }
+
+    public static function authorizedToViewAny(Request $request): bool
+    {
+        return $request->user()?->can("voucher:view") ?: false;
+    }
+
+    public function authorizedToView(Request $request): bool
+    {
+        return static::authorizedToViewAny($request);
     }
 
     public static function authorizedToCreate(Request $request): bool

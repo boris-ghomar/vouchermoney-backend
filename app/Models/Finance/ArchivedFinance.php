@@ -92,6 +92,7 @@ class ArchivedFinance extends AbstractFinance
         $archivedFinance->customer_id = $finance->customer_id;
         $archivedFinance->amount = $finance->amount;
         $archivedFinance->status = $status;
+        $archivedFinance->user_id = $finance->user_id;
 
         if (!empty($finance->comment)) $archivedFinance->request_comment = $finance->comment;
         if (!empty($resolvedComment)) $archivedFinance->resolved_comment = $resolvedComment;

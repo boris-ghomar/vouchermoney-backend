@@ -4,9 +4,12 @@ namespace App\Models\Voucher;
 
 use App\Exceptions\VoucherArchivingFailed;
 use App\Models\Customer;
+use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property  string        $code
@@ -22,6 +25,9 @@ use Illuminate\Database\Eloquent\Builder;
  * @property  Customer      $recipient
  * @property  bool          $is_redeemed
  * @property  bool          $is_expired
+ * @property  User|null     $resolver
+ *
+ * @property  Collection<VoucherActivity>  $activities
  *
  * @method  Builder|static  onlyRedeemed()
  * @method  Builder|static  onlyExpired()
@@ -54,6 +60,14 @@ class ArchivedVoucher extends Model
         "created_at" => "datetime",
         "updated_at" => "datetime"
     ];
+
+    public function getResolverAttribute(): User|null
+    {
+        /** @var VoucherActivity $activity */
+        $activity = $this->activities()->latest();
+
+        return $activity->user;
+    }
 
     public function getIsRedeemedAttribute(): bool
     {
@@ -100,14 +114,19 @@ class ArchivedVoucher extends Model
         $archivedVoucher->code = $voucher->code;
         $archivedVoucher->amount = $voucher->amount;
         $archivedVoucher->state = $state;
-        $archivedVoucher->customer_data = $voucher->customer->toJson();
+        $archivedVoucher->customer_data = $voucher->customer;
         $archivedVoucher->created_at = $voucher->created_at;
         $archivedVoucher->updated_at = $voucher->updated_at;
 
-        if (!empty($recipient)) $archivedVoucher->recipient_data = $recipient->toJson();
+        if (!empty($recipient)) $archivedVoucher->recipient_data = $recipient;
 
         $archivedVoucher->save();
 
         return $archivedVoucher;
+    }
+
+    public function activities(): HasMany
+    {
+        return $this->hasMany(VoucherActivity::class, "code", "code");
     }
 }

@@ -87,21 +87,59 @@ class Customer extends Model
 
     /**
      * @param string $message
+     * @param string $visitActionUrl
      * @param string $type Supported types - info, success, error or warning
+     * @param string $icon
      * @return void
      */
-    public function notify(string $message, string $type = "info"): void
+    public function notify(string $message, string $visitActionUrl = "", string $type = "info", string $icon = "", bool $onlyAdmin = false): void
     {
-        $users = $this->users->filter(function ($user) {
-            return $user->can("customer:notifications");
-        });
+        if ($onlyAdmin) {
+            $users = $this->getAdminUser();
+        } else {
+            $users = $this->users->filter(function ($user) {
+                return $user->can("customer:notifications");
+            });
+        }
 
-        Notification::send(
-            $users,
-            (new NovaNotification())
-                ->message($message)
-                ->type($type)
-        );
+        $notification = (new NovaNotification())
+            ->message($message)
+            ->type($type);
+
+        if ($visitActionUrl) $notification->action(__("actions.view"), $visitActionUrl);
+
+        if ($icon) $notification->icon($icon);
+
+        Notification::send($users, $notification);
+    }
+
+    public function notifyAdministrator(string $message, string $visitActionUrl = "", string $type = "info", string $icon = ""): void
+    {
+        $this->notify($message, $visitActionUrl, $type, $icon, true);
+    }
+
+    public function sendFinanceRequestedNotification(Finance $finance): void
+    {
+        $message = __("notifications.customer_finance_requested" . ($finance->user_id === $this->getAdminUserId() ? "" : "_by"), [
+            "amount" => $finance->amount,
+            "type" => $finance->type,
+            "by" => $finance->user->name
+        ]);
+
+        $this->notifyAdministrator($message, "/resources/finances/" . $finance->id);
+    }
+
+    /**
+     * @param string $financeId
+     * @param bool $state true if approved, false if rejected
+     * @return void
+     */
+    public function sendFinanceResolvedNotification(string $financeId, bool $state): void
+    {
+        $this->notify(
+            __("notifications.customer_finance", ["status" => __("actions." . ($state ? "approved" : "rejected"))]),
+            "/resources/archived-finances/" . $financeId,
+            $state ? "success" : "error", "currency-dollar");
     }
 
     public function hasEnoughBalance(float $amount): bool
@@ -176,19 +214,29 @@ class Customer extends Model
         if (!$this->hasEnoughBalance($amount)) throw new InsufficientBalance();
     }
 
-    public function requestWithdraw(float $amount, string $comment): Finance
+    public function requestWithdraw(User $requestedBy, float $amount, string $comment): Finance
     {
-        return Finance::withdraw($this, $amount, $comment);
+        return Finance::withdraw($requestedBy, $this, $amount, $comment);
     }
 
-    public function requestDeposit(float $amount, string $comment): Finance
+    public function requestDeposit(User $requestedBy, float $amount, string $comment): Finance
     {
-        return Finance::deposit($this, $amount, $comment);
+        return Finance::deposit($requestedBy, $this, $amount, $comment);
     }
 
     public static function toOptionsArray(): Closure
     {
         return fn() => Customer::query()->select(["id", "name"])
             ->pluck('name','id')->toArray();
+    }
+
+    public function getAdminUser(): User
+    {
+        return $this->users()->oldest()->first();
+    }
+
+    public function getAdminUserId(): string
+    {
+        return $this->users()->oldest()->select("id")->limit(1)->first()->id;
     }
 }

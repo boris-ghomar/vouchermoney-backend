@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('finances', function (Blueprint $table) {
             $table->ulid("id")->primary();
             $table->foreignUlid('customer_id')->constrained()->cascadeOnDelete();
+            $table->foreignUlid('user_id')->nullable()->constrained()->nullOnDelete();
             $table->decimal('amount');
             $table->text('comment')->nullable();
             $table->timestamps();
@@ -22,6 +23,7 @@ return new class extends Migration
         Schema::create('archived_finances', function (Blueprint $table) {
             $table->ulid("id")->primary();
             $table->foreignUlid('customer_id')->constrained()->cascadeOnDelete();
+            $table->foreignUlid('user_id')->nullable()->constrained()->nullOnDelete();
             $table->decimal('amount');
             $table->boolean('status');
             $table->text('request_comment')->nullable();

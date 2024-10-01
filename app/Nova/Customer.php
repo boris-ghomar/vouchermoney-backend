@@ -60,10 +60,10 @@ class Customer extends Resource
                 ->deletable()->prunable()->acceptedTypes('.jpg,.jpeg,.png'),
 
             Currency::make(__("fields.balance"), "balance")
-                ->onlyForAdmins()->sortable()->filterable(),
+                ->onlyForAdmins()->sortable()->filterable()->exceptOnForms(),
 
             Currency::make(__("fields.balance"), "balance")
-                ->onlyForCustomers(),
+                ->onlyForCustomers()->exceptOnForms(),
 
             Badge::make(__("fields.type"), "type")->map([
                 Model::TYPE_RESELLER => "info",

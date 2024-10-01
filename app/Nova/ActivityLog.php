@@ -33,9 +33,7 @@ class ActivityLog extends Resource
      *
      * @var array
      */
-    public static $search = [
-        "log_name",
-    ];
+    public static $search = ["log_name"];
 
     /**
      * Get the fields displayed by the resource.
@@ -46,7 +44,7 @@ class ActivityLog extends Resource
     public function fields(NovaRequest $request): array
     {
         return FieldHelper::make([
-            ID::make()->sortable(),
+            ID::make(__("fields.id"), "id")->sortable(),
 
             Text::make(__('fields.name'), 'log_name'),
             Text::make(__('fields.event'), 'event')->onlyOnDetail(),

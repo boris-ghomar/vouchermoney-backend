@@ -4,6 +4,8 @@ namespace App\Nova;
 
 use App\Nova\Actions\FreezeVoucher;
 use App\Nova\Actions\GenerateVoucher;
+use App\Nova\Actions\RedeemVoucher;
+use App\Nova\Fields\DateTime;
 use Illuminate\Http\Request;
 use Laravel\Nova\Exceptions\HelperNotSupported;
 use App\Nova\Fields\Badge;
@@ -41,7 +43,10 @@ class ActiveVoucher extends Resource
 
     public static function indexQuery(NovaRequest $request, $query): Builder
     {
+        /** @var \App\Models\User $user */
         $user = $request->user();
+
+        if (!$user?->canSeeVouchersList()) return $query->whereRaw('1 = 0');
 
         $query->when(empty($request->get('orderBy')), function(Builder $q) {
             $q->getQuery()->orders = [];
@@ -81,10 +86,8 @@ class ActiveVoucher extends Resource
                 ])
                 ->filterable()->sortable(),
 
-            static::makeDatetimeField(__("fields.created_at"), "created_at")
-                ->sortable()->filterable(),
-            static::makeDatetimeField(__("fields.updated_at"), "updated_at")
-                ->onlyOnDetail(),
+            DateTime::createdAt()->sortable()->filterable(),
+            DateTime::updatedAt()
         ];
     }
 
@@ -155,6 +158,9 @@ class ActiveVoucher extends Resource
     public function actions(NovaRequest $request): array
     {
         return [
+            RedeemVoucher::make()
+                ->canSee(fn(Request $request) => $request->user()?->can("customer:voucher:redeem")),
+
             GenerateVoucher::make()
                 ->canSee(fn(Request $request) => $request->user()?->can("customer:voucher:generate"))
                 ->confirmButtonText(__("actions.generate"))
@@ -163,7 +169,6 @@ class ActiveVoucher extends Resource
             FreezeVoucher::make($this)
                 ->canSee(fn(Request $request) => $request->user()?->can("customer:voucher:freeze"))
                 ->canRun(fn(Request $request) => $request->user()?->can("customer:voucher:freeze"))
-
         ];
     }
 

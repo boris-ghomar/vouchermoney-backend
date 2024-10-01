@@ -135,7 +135,7 @@ class Voucher extends Model
     {
         $archivedVoucher = ArchivedVoucher::make($this, $state, $recipient);
 
-        $this->makeLog()->fromActive()->to($state, "Archiving voucher");
+        $this->makeLog()->fromActive()->to($state ? VoucherActivity::STATE_REDEEMED : VoucherActivity::STATE_EXPIRED, "Archiving voucher");
 
         $this->delete();
 

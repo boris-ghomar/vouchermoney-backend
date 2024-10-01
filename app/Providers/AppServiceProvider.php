@@ -4,7 +4,9 @@ namespace App\Providers;
 
 use App\Models\Voucher\ArchivedVoucher;
 use App\Models\Voucher\Voucher;
+use App\Models\Voucher\VoucherActivity;
 use App\Policies\ArchivedVoucherPolicy;
+use App\Policies\VoucherActivityPolicy;
 use App\Policies\VoucherPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -26,5 +28,6 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::policy(Voucher::class, VoucherPolicy::class);
         Gate::policy(ArchivedVoucher::class, ArchivedVoucherPolicy::class);
+        Gate::policy(VoucherActivity::class, VoucherActivityPolicy::class);
     }
 }

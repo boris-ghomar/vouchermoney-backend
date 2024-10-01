@@ -4,6 +4,7 @@ namespace App\Nova\Actions;
 
 use App\Exceptions\InsufficientBalance;
 use App\Models\Customer;
+use App\Models\Finance\AbstractFinance;
 use App\Models\Finance\Finance;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
@@ -29,12 +30,12 @@ class RequestFinance extends Action
 
     public function withdraw(): static
     {
-        return $this->setType(Finance::TYPE_WITHDRAW);
+        return $this->setType(AbstractFinance::TYPE_WITHDRAW);
     }
 
     public function deposit(): static
     {
-        return $this->setType(Finance::TYPE_DEPOSIT);
+        return $this->setType(AbstractFinance::TYPE_DEPOSIT);
     }
 
     private function setType(string $type): static
@@ -65,14 +66,14 @@ class RequestFinance extends Action
         /** @var User $authUser */
         $authUser = auth()->user();
 
-        if (!$authUser) return ActionResponse::danger("Something went wrong");
+        if (!$authUser) return ActionResponse::danger("Not authorized for that action");
 
         if (!empty($fields->customer_id)) $customer = Customer::find($fields->customer_id);
         else $customer = $authUser->customer;
 
         try {
-            if ($this->type === Finance::TYPE_DEPOSIT) $customer->requestDeposit($fields->amount, $fields->comment ?: "");
-            else $customer->requestWithdraw($fields->amount, $fields->comment ?: "");
+            if ($this->type === AbstractFinance::TYPE_DEPOSIT) $customer->requestDeposit($authUser, $fields->amount, $fields->comment ?: "");
+            else $customer->requestWithdraw($authUser, $fields->amount, $fields->comment ?: "");
         } catch (InsufficientBalance $exception) {
             return ActionResponse::danger($exception->getMessage());
         }

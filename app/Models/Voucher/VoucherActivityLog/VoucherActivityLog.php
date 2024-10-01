@@ -37,7 +37,7 @@ class VoucherActivityLog
         return new ToResolvedState($this->activity);
     }
 
-    public function fromFrozenToExpired(string $description = ""): VoucherActivity
+    public function fromFrozenToExpired(string $description = "Voucher has been expired"): VoucherActivity
     {
         $this->activity->from_state = VoucherActivity::STATE_FROZEN;
         $this->activity->to_state = VoucherActivity::STATE_EXPIRED;
@@ -49,8 +49,8 @@ class VoucherActivityLog
         return $this->activity;
     }
 
-    public function fromFrozenToActive(string $description = ""): VoucherActivity
+    public function fromFrozenToActive(): VoucherActivity
     {
-        return $this->fromToActive(VoucherActivity::STATE_FROZEN, $description);
+        return $this->fromToActive(VoucherActivity::STATE_FROZEN, "Voucher [" . $this->activity->code . "] activated");
     }
 }

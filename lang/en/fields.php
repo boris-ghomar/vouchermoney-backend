@@ -6,6 +6,7 @@ return [
     "created_at" => "Created at",
     "updated_at" => "Updated at",
     "users" => "Users",
+    "user" => "User",
     "avatar" => "Avatar",
     "balance" => "Balance",
     "email" => "Email",
@@ -23,6 +24,7 @@ return [
     "comment" => "Comment",
     "request_comment" => "Request comment",
     "resolve_comment" => "Resolve comment",
+    "requested_by" => "Requested by",
     "archived_at" => "Archived at",
 
     "type" => "Type",
@@ -49,5 +51,13 @@ return [
     "deposit" => "Deposit",
 
     "resolved_status" => "Resolved status",
-    "resolved_at" => "Resolved at"
+    "resolved_at" => "Resolved at",
+    "resolved_by" => "Resolved by",
+    "user_data" => "User data",
+    "time" => "Time",
+
+    "from_state" => "From state",
+    "to_state" => "To state",
+
+    "admins" => "Admins"
 ];

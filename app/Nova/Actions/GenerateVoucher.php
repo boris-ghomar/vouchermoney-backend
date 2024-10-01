@@ -25,7 +25,7 @@ class GenerateVoucher extends Action
 
     public function name(): string
     {
-        return __("actions.generate_voucher");
+        return __("actions.generate");
     }
 
     public function getConfirmButtonText(): string
