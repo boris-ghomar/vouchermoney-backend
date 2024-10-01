@@ -55,10 +55,8 @@ class Transaction extends Resource
         return [
             ID::make(__("fields.id"), "id")->sortable(),
 
-            Currency::make(__("fields.amount"), "amount")
-                ->filterable()->hideFromIndex(),
-
-            Currency::make(__("fields.amount"), "amount")->displayAsPositive(),
+            BelongsTo::make(__("fields.customer"), "customer")
+                ->onlyForAdmins(),
 
             Badge::make(__("fields.type"), "type")->map([
                     "withdraw" => "danger",
@@ -66,10 +64,10 @@ class Transaction extends Resource
                 ])->labels([
                     "withdraw" => __("fields.withdraw"),
                     "deposit" => __("fields.deposit")
-                ])->onlyOnIndex(),
+                ]),
 
-            BelongsTo::make(__("fields.customer"), "customer")
-                ->onlyForAdmins(),
+            Currency::make(__("fields.amount"), "amount")
+                ->displayAsPositive()->sortable()->filterable(),
 
             Text::make(__("fields.description"), "description"),
 
