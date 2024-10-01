@@ -16,7 +16,8 @@ class VoucherPolicy
             "voucher:view",
             "customer:voucher:view",
             "customer:voucher:generate",
-            "customer:voucher:redeem"
+            "customer:voucher:redeem",
+            "customer:voucher:freeze",
         ]);
     }
 

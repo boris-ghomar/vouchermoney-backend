@@ -64,10 +64,10 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
             MenuSection::dashboard(Home::class)->icon("home"),
 
             MenuSection::resource(Admin::class)->icon('users')
-                ->canSee($can(["user:view-any"])),
+                ->canSee($can(["user:view-any", "user:create"])),
 
             MenuSection::resource(Account::class)->icon('users')
-                ->canSee($can(["customer:user:view-any"])),
+                ->canSee($can(["customer:user:view-any","customer:user:create"])),
 
             MenuSection::resource(Customer::class)->icon("user-group")
                 ->canSee($can(["customer:view-any"])),

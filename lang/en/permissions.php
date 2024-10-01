@@ -19,6 +19,7 @@ return [
     'finance:request' => "Request finance",
     'finance:resolve' => "Resolve finance",
 
+    "voucher:view" => "View voucher",
     "customer:voucher:generate" => "Generate voucher",
     "customer:voucher:redeem" => "Redeem voucher",
     "customer:voucher:view" => "View vouchers",

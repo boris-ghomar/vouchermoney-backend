@@ -12,7 +12,10 @@ class ArchivedVoucherPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can("voucher:view");
+        return $user->canAny([
+            "voucher:view",
+            "customer:voucher:view"
+        ]);
     }
 
     /**
