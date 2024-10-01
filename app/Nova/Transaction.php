@@ -4,6 +4,7 @@ namespace App\Nova;
 
 use App\Models\Transaction\Transaction as Model;
 use App\Nova\Fields\DateTime;
+use App\Nova\Filters\AmountFilter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use App\Nova\Fields\Badge;
@@ -120,7 +121,10 @@ class Transaction extends Resource
      */
     public function filters(NovaRequest $request): array
     {
-        return [];
+        return [
+            AmountFilter::make()->withFilterType('min'),
+            AmountFilter::make()->withFilterType('max'),
+        ];
     }
 
     /**

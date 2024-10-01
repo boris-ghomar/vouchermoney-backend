@@ -6,6 +6,7 @@ use App\Nova\Actions\FreezeVoucher;
 use App\Nova\Actions\GenerateVoucher;
 use App\Nova\Actions\RedeemVoucher;
 use App\Nova\Fields\DateTime;
+use App\Nova\Filters\AmountFilter;
 use Illuminate\Http\Request;
 use Laravel\Nova\Exceptions\HelperNotSupported;
 use App\Nova\Fields\Badge;
@@ -135,7 +136,10 @@ class ActiveVoucher extends Resource
      */
     public function filters(NovaRequest $request): array
     {
-        return [];
+        return [
+            AmountFilter::make()->withFilterType('min'),
+            AmountFilter::make()->withFilterType('max'),
+        ];
     }
 
     /**

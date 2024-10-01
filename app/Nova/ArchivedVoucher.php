@@ -5,6 +5,7 @@ namespace App\Nova;
 use App\Nova\Fields\DateTime;
 use App\Nova\Fields\FieldHelper;
 use App\Nova\Fields\HasMany;
+use App\Nova\Filters\AmountFilter;
 use Illuminate\Http\Request;
 use Laravel\Nova\Exceptions\HelperNotSupported;
 use App\Nova\Fields\Badge;
@@ -136,9 +137,11 @@ class ArchivedVoucher extends Resource
      */
     public function filters(NovaRequest $request): array
     {
-        return [];
+        return [
+            AmountFilter::make()->withFilterType('min'),
+            AmountFilter::make()->withFilterType('max'),
+        ];
     }
-
     /**
      * Get the lenses available for the resource.
      *

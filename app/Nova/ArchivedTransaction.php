@@ -3,6 +3,7 @@
 namespace App\Nova;
 
 use App\Nova\Fields\DateTime;
+use App\Nova\Filters\AmountFilter;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use App\Models\Transaction\ArchivedTransaction as Model;
 
@@ -26,5 +27,12 @@ class ArchivedTransaction extends Transaction
         return array_merge(parent::fields($request), [
             DateTime::make(__("fields.archived_at"), "archived_at")
         ]);
+    }
+    public function filters(NovaRequest $request): array
+    {
+        return [
+            AmountFilter::make()->withFilterType('min'),
+            AmountFilter::make()->withFilterType('max'),
+        ];
     }
 }
