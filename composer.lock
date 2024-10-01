@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "38ee40c0065ff08d7cacf49b5a31f012",
+    "content-hash": "1aa49ca2ff84db736d4177e8cc9ab151",
     "packages": [
         {
             "name": "brianium/paratest",
@@ -3594,6 +3594,74 @@
                 "source": "https://github.com/outl1ne/nova-dependency-container/tree/2.0.4"
             },
             "time": "2023-07-24T08:43:14+00:00"
+        },
+        {
+            "name": "outl1ne/nova-input-filter",
+            "version": "2.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/outl1ne/nova-input-filter.git",
+                "reference": "6b221f8136146a4dc663effa159fcd595cdc7adc"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/outl1ne/nova-input-filter/zipball/6b221f8136146a4dc663effa159fcd595cdc7adc",
+                "reference": "6b221f8136146a4dc663effa159fcd595cdc7adc",
+                "shasum": ""
+            },
+            "require": {
+                "laravel/nova": "^4.0",
+                "php": ">=8.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Outl1ne\\NovaInputFilter\\FilterServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Outl1ne\\NovaInputFilter\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Kaspar Rosin",
+                    "email": "kaspar@outl1ne.com",
+                    "role": "Developer"
+                },
+                {
+                    "name": "Tarvo Reinpalu",
+                    "email": "tarvo@outl1ne.com",
+                    "role": "Developer"
+                },
+                {
+                    "name": "Outl1ne",
+                    "email": "info@outl1ne.com",
+                    "role": "Maintainer"
+                }
+            ],
+            "description": "An input filter for Laravel Nova",
+            "keywords": [
+                "filter",
+                "input",
+                "laravel",
+                "laravel-nova",
+                "nova",
+                "outl1ne",
+                "search"
+            ],
+            "support": {
+                "issues": "https://github.com/outl1ne/nova-input-filter/issues",
+                "source": "https://github.com/outl1ne/nova-input-filter/tree/2.0.1"
+            },
+            "time": "2024-02-27T15:07:07+00:00"
         },
         {
             "name": "outl1ne/nova-multiselect-field",
