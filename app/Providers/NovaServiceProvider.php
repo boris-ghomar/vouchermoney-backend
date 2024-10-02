@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\Permission;
+use App\Models\User;
 use App\Nova\Account;
 use App\Nova\ActiveVoucher;
 use App\Nova\ActivityLog;
@@ -15,10 +17,9 @@ use App\Nova\Finance;
 use App\Nova\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
-use Laravel\Nova\Http\Requests\NovaRequest;
 use Laravel\Nova\Menu\Menu;
-use Laravel\Nova\Menu\MenuItem;
-use Laravel\Nova\Menu\MenuSection;
+use App\Nova\Menu\MenuItem;
+use App\Nova\Menu\MenuSection;
 use Laravel\Nova\Nova;
 use Laravel\Nova\NovaApplicationServiceProvider;
 use App\Models\Finance\Finance as FinanceModel;
@@ -38,25 +39,18 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
 
         Nova::initialPath("/dashboards/home");
 
-        Nova::userTimezone(fn(Request $request) => $request->user()?->timezone ?: config("app.timezone"));
-
-        $can = fn(...$permissions) => fn(NovaRequest $request) => $request->user()?->canAny(...$permissions);
+//        Nova::userTimezone(fn(Request $request) => $request->user()?->timezone ?: config("app.timezone"));
 
         Nova::userMenu(function (Request $request, Menu $menu) {
-            if ($request->user()?->is_customer && $request->user()->can("customer:view-balance"))
-                $menu->prepend(
-                    MenuItem::make(
-                        'Customer',
-                        "/resources/customers/{$request->user()->customer_id}"
-                    ),
-                );
+            /** @var User $user */
+            $user = $request->user();
 
-            $menu->prepend(
-                MenuItem::make(
-                    'Profile',
-                    "/resources/users/{$request->user()?->getKey()}"
-                ),
-            );
+            if (!$user) return $menu;
+
+            if ($user->is_customer_admin || $user->can(Permission::CUSTOMER_VIEW))
+                $menu->prepend(MenuItem::make(__("menu.customer"), "/resources/customers/{$user->customer_id}"));
+
+            $menu->prepend(MenuItem::make(__("menu.profile"), "/resources/" . ($user->is_admin ? "admins" : "accounts") . "/{$user->id}"));
 
             return $menu;
         });
@@ -65,45 +59,57 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
             MenuSection::dashboard(Home::class)->icon("home"),
 
             MenuSection::resource(Admin::class)->icon('users')
-                ->canSee($can(["user:view-any", "user:create"])),
+                ->onlyForAdmins(),
 
             MenuSection::resource(Account::class)->icon('users')
-                ->canSee($can(["customer:user:view-any","customer:user:create"])),
+                ->onlyForCustomers([Permission::CUSTOMER_USER_VIEW]),
 
             MenuSection::resource(Customer::class)->icon("user-group")
-                ->canSee($can(["customer:view-any"])),
+                ->onlyForAdmins([Permission::CUSTOMERS_VIEW]),
 
-            MenuSection::make("Vouchers", [
-                MenuItem::resource(ActiveVoucher::class)->canSee($can(["voucher:view", "customer:voucher:view", "customer:voucher:generate", "customer:voucher:redeem", "customer:voucher:freeze"])),
-                MenuItem::resource(ArchivedVoucher::class)->canSee($can(["voucher:view", "customer:voucher:view"])),
-            ])->icon("cash")->canSee($can(["voucher:view", "customer:voucher:view", "customer:voucher:generate", "customer:voucher:redeem", "customer:voucher:freeze"])),
+            MenuSection::make(__("menu.vouchers"), [
+                MenuItem::resource(ActiveVoucher::class)->canAny([Permission::VOUCHERS_VIEW], [
+                    Permission::CUSTOMER_VOUCHER_FREEZE,
+                    Permission::CUSTOMER_VOUCHER_GENERATE,
+                    Permission::CUSTOMER_VOUCHER_VIEW,
+                    Permission::CUSTOMER_VOUCHER_REDEEM
+                ]),
+                MenuItem::resource(ArchivedVoucher::class)->canAny(
+                    [Permission::VOUCHERS_VIEW], [Permission::CUSTOMER_VOUCHER_VIEW]
+                ),
+            ])->icon("cash")->canAny([Permission::VOUCHERS_VIEW], [
+                Permission::CUSTOMER_VOUCHER_FREEZE,
+                Permission::CUSTOMER_VOUCHER_GENERATE,
+                Permission::CUSTOMER_VOUCHER_VIEW,
+                Permission::CUSTOMER_VOUCHER_REDEEM
+            ])->collapsable()->collapsedByDefault(),
 
-            MenuSection::make("Transactions", [
+            MenuSection::make(__("menu.transactions"), [
                 MenuItem::resource(Transaction::class),
                 MenuItem::resource(ArchivedTransaction::class)
-            ])->icon("clipboard-list")->canSee($can(["transaction:view", "customer:transaction:view"])),
+            ])->icon("clipboard-list")->canAny([Permission::TRANSACTIONS_VIEW], [Permission::CUSTOMER_TRANSACTIONS_VIEW])
+                ->collapsable()->collapsedByDefault(),
 
-            MenuSection::make("Finance", [
-                MenuItem::resource(Finance::class)->withBadgeIf(function () use ($request) {
-                    $user = $request->user();
+            MenuSection::resource(Finance::class)
+                ->icon("currency-dollar")->withBadgeIf(
+                    fn() => FinanceModel::query()->count(), "danger",
+                    fn() => FinanceModel::query()->count() > 0
+                )->canAnyAdmin([Permission::FINANCES_VIEW, Permission::FINANCES_MANAGEMENT]),
 
-                    if ($user->is_admin) $count = FinanceModel::all()->count();
-                    else $count = $user->customer->finances()->count();
+            MenuSection::resource(ArchivedFinance::class)
+                ->icon("archive")->canAnyAdmin([Permission::FINANCES_VIEW]),
 
-                    return $count;
-                }, "info", function () use ($request) {
-                    $user = $request->user();
-
-                    if ($user->is_admin) $count = FinanceModel::all()->count();
-                    else $count = $user->customer->finances()->count();
-
-                    return $count > 0;
-                }),
+            MenuSection::make(__("menu.finances"), [
+                MenuItem::resource(Finance::class)
+                    ->withBadgeIf(
+                        fn() => $request->user()?->customer->finances()->count(), "info",
+                        fn() => $request->user()?->customer->finances()->count() > 0
+                    ),
                 MenuItem::resource(ArchivedFinance::class),
-            ])->icon("currency-dollar")->canSee($can(["finance:request", "customer:finance"])),
+            ])->icon("currency-dollar")->canAnyCustomer([Permission::CUSTOMER_FINANCE]),
 
             MenuSection::resource(ActivityLog::class)->icon('lightning-bolt')
-                ->canSee(fn (Request $request) => $request->user()?->is_admin && $request->user()?->can("activity:view")),
+                ->onlyForAdmins([Permission::ACTIVITY_VIEW])
         ]);
     }
 

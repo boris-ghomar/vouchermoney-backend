@@ -2,6 +2,7 @@
 
 namespace App\Nova;
 
+use App\Nova\Actions\ActionHelper;
 use App\Nova\Actions\FreezeVoucher;
 use App\Nova\Actions\GenerateVoucher;
 use App\Nova\Actions\RedeemVoucher;
@@ -84,8 +85,7 @@ class ActiveVoucher extends Resource
                 ->map(["info", "success"])->labels([
                     __("fields.frozen"),
                     __("fields.active")
-                ])
-                ->filterable()->sortable(),
+                ])->filterable()->sortable(),
 
             DateTime::createdAt()->sortable()->filterable(),
             DateTime::updatedAt()
@@ -118,17 +118,6 @@ class ActiveVoucher extends Resource
     }
 
     /**
-     * Get the cards available for the request.
-     *
-     * @param  NovaRequest  $request
-     * @return array
-     */
-    public function cards(NovaRequest $request): array
-    {
-        return [];
-    }
-
-    /**
      * Get the filters available for the resource.
      *
      * @param  NovaRequest  $request
@@ -136,21 +125,9 @@ class ActiveVoucher extends Resource
      */
     public function filters(NovaRequest $request): array
     {
-        return [
-            AmountFilter::make()->withFilterType('min'),
-            AmountFilter::make()->withFilterType('max'),
-        ];
-    }
-
-    /**
-     * Get the lenses available for the resource.
-     *
-     * @param  NovaRequest  $request
-     * @return array
-     */
-    public function lenses(NovaRequest $request): array
-    {
-        return [];
+        return ActionHelper::make([
+            AmountFilter::make()
+        ]);
     }
 
     /**

@@ -14,7 +14,9 @@ use App\Nova\Fields\Currency;
 use App\Nova\Fields\HasMany;
 use App\Nova\Fields\ID;
 use App\Nova\Fields\Text;
+use App\Nova\Fields\Select;
 use Laravel\Nova\Http\Requests\NovaRequest;
+use App\Models\Permission as PermissionModel;
 
 /**
  * @mixin Model
@@ -54,7 +56,14 @@ class Customer extends Resource
             ID::make(__("fields.id"), "id")->sortable()
                 ->onlyForAdmins(),
 
-            Text::make(__("fields.name"), "name")->sortable()->rules("string", "max:100"),
+            Text::make(__("fields.name"), "name")
+                ->sortable()->onlyForAdmins()->exceptOnForms(),
+
+            Text::make(__("fields.name"), "name")->onlyOnForms()
+                ->hideWhenCreating()->rules("string", "max:180")->onlyForCustomersAdmin(),
+
+            Text::make(__("fields.name"), "name")->onlyOnForms()
+                ->hideWhenCreating()->rules("string", "max:180")->onlyForSuper(),
 
             Avatar::make(__("fields.avatar"), "avatar")->nullable()->disableDownload()
                 ->deletable()->prunable()->acceptedTypes('.jpg,.jpeg,.png'),
@@ -65,27 +74,20 @@ class Customer extends Resource
             Currency::make(__("fields.balance"), "balance")
                 ->onlyForCustomers()->exceptOnForms(),
 
+            Select::make(__("fields.type"), "type")->onlyOnForms()
+                ->options([
+                    Model::TYPE_RESELLER => __("fields.reseller"),
+                    Model::TYPE_MERCHANT => __("fields.merchant")
+                ])->onlyForSuper(),
+
             Badge::make(__("fields.type"), "type")->map([
                 Model::TYPE_RESELLER => "info",
                 Model::TYPE_MERCHANT => "success"
             ])->filterable()->onlyForAdmins(),
 
-            HasMany::make(__("fields.users"), "users", User::class)
-                ->collapsable()->collapsedByDefault()->seeIfCan("user:view-any")
+            HasMany::make(__("fields.users"), "users", Account::class)
+                ->collapsable()->collapsedByDefault()->onlyForAdmins([PermissionModel::CUSTOMERS_VIEW])
         ];
-    }
-
-    public function authorizedToDelete(Request $request): bool
-    {
-        $user = $request->user();
-        return $user && $user->is_admin && $user->can("customer:delete");
-    }
-
-    public function authorizedToAdd(NovaRequest $request, $model): bool
-    {
-        $user = $request->user();
-
-        return $user && $user->is_customer && $user->customer_id === $model->id && $user->can("customer:user:create");
     }
 
     public static function authorizedToCreate(Request $request): bool
@@ -114,28 +116,6 @@ class Customer extends Resource
     }
 
     /**
-     * Get the filters available for the resource.
-     *
-     * @param NovaRequest $request
-     * @return array
-     */
-    public function filters(NovaRequest $request): array
-    {
-        return [];
-    }
-
-    /**
-     * Get the lenses available for the resource.
-     *
-     * @param NovaRequest $request
-     * @return array
-     */
-    public function lenses(NovaRequest $request): array
-    {
-        return [];
-    }
-
-    /**
      * Get the actions available for the resource.
      *
      * @param NovaRequest $request
@@ -144,8 +124,7 @@ class Customer extends Resource
     public function actions(NovaRequest $request): array
     {
         return [
-            CreateCustomer::make()
-                ->canSee(fn(Request $request) => $request->user()?->is_admin && $request->user()->can("customer:create")),
+            CreateCustomer::make()->canSee(fn(Request $request) => $request->user()?->is_super),
         ];
     }
 }

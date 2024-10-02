@@ -16,9 +16,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Laravel\Nova\Notifications\NovaNotification;
 use Closure;
+use Exception;
 
 /**
  * @property  string       $id
@@ -42,6 +44,8 @@ class Customer extends Model
 
     const TYPE_RESELLER = "reseller";
     const TYPE_MERCHANT = "merchant";
+
+    const DEFAULT_CUSTOMER_ADMIN_NAME = "Admin";
 
     protected $fillable = [
         'name',
@@ -90,6 +94,7 @@ class Customer extends Model
      * @param string $visitActionUrl
      * @param string $type Supported types - info, success, error or warning
      * @param string $icon
+     * @param bool $onlyAdmin
      * @return void
      */
     public function notify(string $message, string $visitActionUrl = "", string $type = "info", string $icon = "", bool $onlyAdmin = false): void
@@ -238,5 +243,33 @@ class Customer extends Model
     public function getAdminUserId(): string
     {
         return $this->users()->oldest()->select("id")->limit(1)->first()->id;
+    }
+
+    /**
+     * @throws Exception
+     */
+    public static function make(string $customerName, string $type, string $email, string $password): static
+    {
+        if (! in_array($type, [static::TYPE_RESELLER, static::TYPE_MERCHANT]))
+            throw new Exception("Incorrect type of customer");
+
+        return DB::transaction(function () use ($customerName, $type, $email, $password) {
+            $customer = new static();
+            $customer->name = $customerName;
+            $customer->type = $type;
+            $customer->save();
+
+            $user = new User();
+            $user->name = static::DEFAULT_CUSTOMER_ADMIN_NAME;
+            $user->email = $email;
+            $user->email_verified_at = now();
+            $user->customer_id = $customer->id;
+            $user->password = $password;
+            $user->save();
+
+            $user->assignRole(Role::CUSTOMER_ADMIN);
+
+            return $customer;
+        });
     }
 }

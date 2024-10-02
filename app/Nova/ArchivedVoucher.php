@@ -2,6 +2,7 @@
 
 namespace App\Nova;
 
+use App\Nova\Actions\ActionHelper;
 use App\Nova\Fields\DateTime;
 use App\Nova\Fields\FieldHelper;
 use App\Nova\Fields\HasMany;
@@ -80,10 +81,6 @@ class ArchivedVoucher extends Resource
             Code::make(__("fields.recipient"), "recipient_data")->json()->onlyOnDetail()
                 ->onlyForAdmins(),
 
-//            Text::make(__("fields.resolved_by"), function () {
-//                return $this->reso
-//            }),
-
             DateTime::make(__("fields.resolved_at"), "resolved_at"),
             DateTime::createdAt()->sortable()->filterable(),
             DateTime::updatedAt()->onlyForAdmins(),
@@ -119,17 +116,6 @@ class ArchivedVoucher extends Resource
     }
 
     /**
-     * Get the cards available for the request.
-     *
-     * @param  NovaRequest  $request
-     * @return array
-     */
-    public function cards(NovaRequest $request): array
-    {
-        return [];
-    }
-
-    /**
      * Get the filters available for the resource.
      *
      * @param  NovaRequest  $request
@@ -137,30 +123,8 @@ class ArchivedVoucher extends Resource
      */
     public function filters(NovaRequest $request): array
     {
-        return [
-            AmountFilter::make()->withFilterType('min'),
-            AmountFilter::make()->withFilterType('max'),
-        ];
-    }
-    /**
-     * Get the lenses available for the resource.
-     *
-     * @param  NovaRequest  $request
-     * @return array
-     */
-    public function lenses(NovaRequest $request): array
-    {
-        return [];
-    }
-
-    /**
-     * Get the actions available for the resource.
-     *
-     * @param  NovaRequest  $request
-     * @return array
-     */
-    public function actions(NovaRequest $request): array
-    {
-        return [];
+        return ActionHelper::make([
+            AmountFilter::make()
+        ]);
     }
 }

@@ -2,7 +2,6 @@
 
 namespace App\Nova\Actions;
 
-use App\Models\Permission;
 use Illuminate\Bus\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
 use Laravel\Nova\Actions\Action;
@@ -11,7 +10,7 @@ use Laravel\Nova\Fields\ActionFields;
 use Laravel\Nova\Fields\Password;
 use Laravel\Nova\Fields\Select;
 use Laravel\Nova\Fields\Text;
-use App\Models\User;
+use Exception;
 use App\Models\Customer;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Lednerb\ActionButtonSelector\ShowAsButton;
@@ -38,25 +37,17 @@ class CreateCustomer extends Action
      * Perform the action on the given models.
      *
      * @param ActionFields $fields
-     * @return Action|ActionResponse
+     * @return ActionResponse
      */
-    public function handle(ActionFields $fields): ActionResponse|Action
+    public function handle(ActionFields $fields): ActionResponse
     {
-        $customer = new Customer();
-        $customer->name = $fields->name;
-        $customer->type = $fields->type;
-        $customer->save();
+        try {
+            $customer = Customer::make($fields->name, $fields->type, $fields->email, $fields->password);
+        } catch (Exception $exception) {
+            return ActionResponse::danger($exception->getMessage());
+        }
 
-        $user = new User();
-        $user->name = "Admin";
-        $user->email = $fields->email;
-        $user->customer_id = $customer->id;
-        $user->password = $fields->password;
-        $user->save();
-
-        $user->syncPermissions(Permission::getCustomerPermissions());
-
-        return Action::visit("/resources/customers/" . $customer->id);
+        return ActionResponse::visit("/resources/customers/" . $customer->id);
     }
 
     /**

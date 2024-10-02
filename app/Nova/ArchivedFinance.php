@@ -4,6 +4,7 @@ namespace App\Nova;
 
 use App\Models\Finance\AbstractFinance;
 use App\Models\Finance\ArchivedFinance as Model;
+use App\Nova\Actions\ActionHelper;
 use App\Nova\Fields\DateTime;
 use App\Nova\Fields\FieldHelper;
 use App\Nova\Filters\AmountFilter;
@@ -93,17 +94,6 @@ class ArchivedFinance extends Resource
     }
 
     /**
-     * Get the cards available for the request.
-     *
-     * @param NovaRequest $request
-     * @return array
-     */
-    public function cards(NovaRequest $request): array
-    {
-        return [];
-    }
-
-    /**
      * Get the filters available for the resource.
      *
      * @param NovaRequest $request
@@ -111,32 +101,9 @@ class ArchivedFinance extends Resource
      */
     public function filters(NovaRequest $request): array
     {
-        return [
-            AmountFilter::make()->withFilterType('min'),
-            AmountFilter::make()->withFilterType('max'),
-        ];
-    }
-
-    /**
-     * Get the lenses available for the resource.
-     *
-     * @param NovaRequest $request
-     * @return array
-     */
-    public function lenses(NovaRequest $request): array
-    {
-        return [];
-    }
-
-    /**
-     * Get the actions available for the resource.
-     *
-     * @param NovaRequest $request
-     * @return array
-     */
-    public function actions(NovaRequest $request): array
-    {
-        return [];
+        return ActionHelper::make([
+            AmountFilter::make()
+        ]);
     }
 
    public static function authorizedToCreate(Request $request): false

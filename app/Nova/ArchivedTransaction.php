@@ -2,6 +2,7 @@
 
 namespace App\Nova;
 
+use App\Nova\Actions\ActionHelper;
 use App\Nova\Fields\DateTime;
 use App\Nova\Filters\AmountFilter;
 use Laravel\Nova\Http\Requests\NovaRequest;
@@ -30,9 +31,8 @@ class ArchivedTransaction extends Transaction
     }
     public function filters(NovaRequest $request): array
     {
-        return [
-            AmountFilter::make()->withFilterType('min'),
-            AmountFilter::make()->withFilterType('max'),
-        ];
+        return ActionHelper::make([
+            AmountFilter::make()
+        ]);
     }
 }

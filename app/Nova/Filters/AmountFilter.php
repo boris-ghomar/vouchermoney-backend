@@ -54,4 +54,12 @@ class AmountFilter extends InputFilter
     {
         $query->whereRaw("ABS(" . $this->column . ") " . ($this->filterType === 'max' ? "<" : ">") . "= ?", [$search]);
     }
+
+    public static function make(...$arguments): array
+    {
+        return [
+            parent::make()->withFilterType('min'),
+            parent::make()->withFilterType('max'),
+        ];
+    }
 }

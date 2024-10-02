@@ -31,13 +31,17 @@ class Permission extends Resource
 
     public static $searchable = false;
 
-
     public function title(): string
     {
-        return __("permissions." . $this->name);
+        return $this->name_label . " - " . $this->description;
     }
 
-     /**
+    public function subtitle(): string
+    {
+        return $this->description_long;
+    }
+
+    /**
      * Get the fields displayed by the resource.
      *
      * @param  NovaRequest  $request
@@ -46,64 +50,24 @@ class Permission extends Resource
     public function fields(NovaRequest $request): array
     {
         return [
-            ID::make(__("fields.id"), "id")->onlyOnDetail(),
+            ID::make(__("fields.id"), "id")->onlyForAdmins()->onlyOnDetail(),
 
-            Text::make(__("fields.name"), fn () => $this->title()),
+            Text::make(__("fields.name"), "name")->exceptOnForms()->onlyForAdmins(),
+            Text::make(__("fields.name"), "name_label")->exceptOnForms()->onlyForCustomers(),
+            Text::make(__("fields.title"), "name_title")->exceptOnForms(),
+            Text::make(__("fields.description"), "description")->exceptOnForms(),
+            Text::make(__("fields.description_long"), "description_long")->onlyOnDetail(),
 
             BelongsToMany::make(__("fields.users"), "users", User::class)
-                ->onlyOnDetail()->onlyForAdmins(),
+                ->onlyOnDetail()->onlyForAdmins([Model::CUSTOMERS_VIEW]),
 
-            DateTime::createdAt()->onlyOnDetail(),
-            DateTime::updatedAt(),
+            DateTime::createdAt()->onlyForAdmins()->onlyOnDetail(),
+            DateTime::updatedAt()->onlyForAdmins(),
         ];
     }
 
     public function authorizedToUpdate(Request $request): false
     {
         return false;
-    }
-
-    /**
-     * Get the cards available for the request.
-     *
-     * @param  NovaRequest  $request
-     * @return array
-     */
-    public function cards(NovaRequest $request): array
-    {
-        return [];
-    }
-
-    /**
-     * Get the filters available for the resource.
-     *
-     * @param  NovaRequest  $request
-     * @return array
-     */
-    public function filters(NovaRequest $request): array
-    {
-        return [];
-    }
-
-    /**
-     * Get the lenses available for the resource.
-     *
-     * @param  NovaRequest  $request
-     * @return array
-     */
-    public function lenses(NovaRequest $request): array
-    {
-        return [];
-    }
-
-    /**
-     * Get the actions available for the resource.
-     *
-     * @param  NovaRequest  $request
-     * @return array
-     */
-    public function actions(NovaRequest $request): array
-    {
-        return [];
     }
 }

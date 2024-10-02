@@ -112,48 +112,4 @@ class VoucherActivity extends Resource
     {
         return false;
     }
-
-    /**
-     * Get the cards available for the request.
-     *
-     * @param  NovaRequest  $request
-     * @return array
-     */
-    public function cards(NovaRequest $request): array
-    {
-        return [];
-    }
-
-    /**
-     * Get the filters available for the resource.
-     *
-     * @param  NovaRequest  $request
-     * @return array
-     */
-    public function filters(NovaRequest $request): array
-    {
-        return [];
-    }
-
-    /**
-     * Get the lenses available for the resource.
-     *
-     * @param  NovaRequest  $request
-     * @return array
-     */
-    public function lenses(NovaRequest $request): array
-    {
-        return [];
-    }
-
-    /**
-     * Get the actions available for the resource.
-     *
-     * @param  NovaRequest  $request
-     * @return array
-     */
-    public function actions(NovaRequest $request): array
-    {
-        return [];
-    }
 }

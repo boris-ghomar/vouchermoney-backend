@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -25,8 +26,12 @@ use Spatie\Permission\Traits\HasRoles;
  *
  * @property  bool           $is_admin
  * @property  bool           $is_customer
+ * @property  bool           $is_super
+ * @property  bool           $is_customer_admin
  * @property  Customer|null  $customer
  * @property  string         $full_name
+ *
+ * @property  Collection<Permission>  $permissions
  */
 class User extends Authenticatable
 {
@@ -73,9 +78,19 @@ class User extends Authenticatable
         return $this->belongsTo(Customer::class);
     }
 
+    public function getIsSuperAttribute(): bool
+    {
+        return $this->hasRole(Role::SUPER_ADMIN);
+    }
+
     public function getIsAdminAttribute(): bool
     {
         return $this->customer_id === null;
+    }
+
+    public function getIsCustomerAdminAttribute(): bool
+    {
+        return $this->hasRole(Role::CUSTOMER_ADMIN);
     }
 
     public function getIsCustomerAttribute(): bool
@@ -91,5 +106,10 @@ class User extends Authenticatable
     public function getFullNameAttribute(): string
     {
         return $this->name . " [" . $this->customer->name . "]";
+    }
+
+    public function isOwnerOf(User $user): bool
+    {
+        return $this->id !== $user->id && $this->is_customer_admin && $this->customer_id === $user->customer_id;
     }
 }

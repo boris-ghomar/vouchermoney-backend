@@ -37,6 +37,8 @@ class Finance extends Resource
      */
     public static $title = 'id';
 
+    public static $polling = true;
+
     /**
      * The columns that should be searched.
      *
@@ -85,17 +87,6 @@ class Finance extends Resource
     }
 
     /**
-     * Get the cards available for the request.
-     *
-     * @param NovaRequest $request
-     * @return array
-     */
-    public function cards(NovaRequest $request): array
-    {
-        return [];
-    }
-
-    /**
      * Get the filters available for the resource.
      *
      * @param NovaRequest $request
@@ -103,24 +94,10 @@ class Finance extends Resource
      */
     public function filters(NovaRequest $request): array
     {
-        return [
-            AmountFilter::make()->withFilterType('min'),
-            AmountFilter::make()->withFilterType('max'),
-        ];
+        return ActionHelper::make([
+            AmountFilter::make()
+        ]);
     }
-
-    /**
-     * Get the lenses available for the resource.
-     *
-     * @param NovaRequest $request
-     * @return array
-     */
-    public function lenses(NovaRequest $request): array
-    {
-        return [];
-    }
-
-    public static $polling = true;
 
     /**
      * Get the actions available for the resource.

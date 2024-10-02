@@ -3,6 +3,7 @@
 namespace App\Nova;
 
 use App\Models\Transaction\Transaction as Model;
+use App\Nova\Actions\ActionHelper;
 use App\Nova\Fields\DateTime;
 use App\Nova\Filters\AmountFilter;
 use Illuminate\Database\Eloquent\Builder;
@@ -103,17 +104,6 @@ class Transaction extends Resource
     }
 
     /**
-     * Get the cards available for the request.
-     *
-     * @param  NovaRequest  $request
-     * @return array
-     */
-    public function cards(NovaRequest $request): array
-    {
-        return [];
-    }
-
-    /**
      * Get the filters available for the resource.
      *
      * @param  NovaRequest  $request
@@ -121,31 +111,8 @@ class Transaction extends Resource
      */
     public function filters(NovaRequest $request): array
     {
-        return [
-            AmountFilter::make()->withFilterType('min'),
-            AmountFilter::make()->withFilterType('max'),
-        ];
-    }
-
-    /**
-     * Get the lenses available for the resource.
-     *
-     * @param  NovaRequest  $request
-     * @return array
-     */
-    public function lenses(NovaRequest $request): array
-    {
-        return [];
-    }
-
-    /**
-     * Get the actions available for the resource.
-     *
-     * @param  NovaRequest  $request
-     * @return array
-     */
-    public function actions(NovaRequest $request): array
-    {
-        return [];
+        return ActionHelper::make([
+            AmountFilter::make()
+        ]);
     }
 }
