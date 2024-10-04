@@ -2,13 +2,14 @@
 
 namespace App\Nova;
 
-use Illuminate\Http\Request;
+use App\Models\Permission as Model;
 use App\Nova\Fields\BelongsToMany;
 use App\Nova\Fields\DateTime;
 use App\Nova\Fields\ID;
 use App\Nova\Fields\Text;
+use App\Nova\Resources\User\User;
+use Illuminate\Http\Request;
 use Laravel\Nova\Http\Requests\NovaRequest;
-use App\Models\Permission as Model;
 
 /**
  * @mixin Model

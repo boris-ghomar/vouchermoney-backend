@@ -1,14 +1,15 @@
 <?php
 
-namespace App\Nova;
+namespace App\Nova\Resources\User;
 
+use App\Models\Permission;
 use App\Models\Permission as PermissionModel;
 use App\Models\User as Model;
+use App\Nova\Customer;
 use App\Nova\Fields\BelongsTo;
 use App\Nova\Fields\Hidden;
 use Illuminate\Database\Eloquent\Builder;
 use Laravel\Nova\Http\Requests\NovaRequest;
-use App\Models\Permission;
 
 class Account extends User
 {
@@ -31,10 +32,10 @@ class Account extends User
 
         if (!$user) return $query->whereRaw("1 = 0");
 
-        if ($request->viaRelationship && ($user->is_super || ($user->is_admin && $user->can(Permission::CUSTOMERS_VIEW))))
+        if ($user->is_super || $request->viaRelationship && ($user->is_admin && $user->can(PermissionModel::CUSTOMERS_VIEW)))
             return parent::indexQuery($request, $query);
 
-        if (!$user->is_customer || !$user->can(Permission::CUSTOMER_USER_VIEW))
+        if (!$user->is_customer_admin && !$user->can(PermissionModel::CUSTOMER_USER_VIEW))
             return $query->whereRaw("1 = 0");
 
         return $query->where("customer_id", $user->customer_id)

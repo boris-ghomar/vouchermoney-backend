@@ -27,7 +27,7 @@ class NotificationService
             return $user->can(Permission::CUSTOMER_FINANCE) || $user->is_customer_admin;
         });
 
-        $notification = NovaNotification::{$method}("Finance request has been sent!");
+        $notification = NovaNotification::{$method}("Finance request " . ($finance->is_approved ? "approved" : "rejected") . "!");
         $notification->action("/resources/archived-finances/" . $finance->id);
         $notification->icon(FinanceResource::ICON);
         $notification->send($users);

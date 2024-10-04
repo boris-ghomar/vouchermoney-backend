@@ -24,13 +24,13 @@ trait HasFinances
         return $this->hasMany(ArchivedFinance::class);
     }
 
-    public function requestWithdraw(User $requestedBy, float $amount, string $comment): Finance
+    public function requestWithdraw(User $requester, float $amount, string $comment): Finance
     {
-        return Finance::withdraw($requestedBy, $this, $amount, $comment);
+        return Finance::withdraw($requester, $this, $amount, $comment);
     }
 
-    public function requestDeposit(User $requestedBy, float $amount, string $comment): Finance
+    public function requestDeposit(User $requester, float $amount, string $comment): Finance
     {
-        return Finance::deposit($requestedBy, $this, $amount, $comment);
+        return Finance::deposit($requester, $this, $amount, $comment);
     }
 }

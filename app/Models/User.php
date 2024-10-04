@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Customer\Customer;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -10,6 +11,8 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Permission\Traits\HasRoles;
 
 /**
@@ -24,18 +27,19 @@ use Spatie\Permission\Traits\HasRoles;
  * @property  Carbon|null  $created_at
  * @property  Carbon|null  $updated_at
  *
- * @property  bool           $is_admin
- * @property  bool           $is_customer
- * @property  bool           $is_super
- * @property  bool           $is_customer_admin
- * @property  Customer|null  $customer
- * @property  string         $full_name
+ * @property-read  Customer|null           $customer
+ * @property-read  Collection<Permission>  $permissions
+ * @property-read  Collection<Role>        $roles
  *
- * @property  Collection<Permission>  $permissions
+ * @property-read  bool           $is_admin
+ * @property-read  bool           $is_customer
+ * @property-read  bool           $is_super
+ * @property-read  bool           $is_customer_admin
+ * @property-read  string         $full_name
  */
 class User extends Authenticatable
 {
-    use Notifiable, HasApiTokens, HasRoles, SoftDeletes, HasUlids;
+    use Notifiable, HasApiTokens, HasRoles, SoftDeletes, HasUlids, LogsActivity;
 
     /**
      * The attributes that are mass assignable.
@@ -98,18 +102,39 @@ class User extends Authenticatable
         return $this->customer_id !== null;
     }
 
-    public function canSeeVouchersList(): bool
-    {
-        return $this->is_customer_admin || $this->canAny([Permission::CUSTOMER_VOUCHER_VIEW, Permission::VOUCHERS_VIEW]) || $this->is_super;
-    }
-
     public function getFullNameAttribute(): string
     {
         return $this->name . " [" . $this->customer->name . "]";
     }
 
+    // FIXME:
+    public function canSeeVouchersList(): bool
+    {
+        return $this->is_customer_admin || $this->canAny([Permission::CUSTOMER_VOUCHER_VIEW, Permission::VOUCHERS_VIEW]) || $this->is_super;
+    }
+
     public function isOwnerOf(User $user): bool
     {
         return $this->id !== $user->id && $this->is_customer_admin && $this->customer_id === $user->customer_id;
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly([
+                'name',
+                "email",
+                "email_verified_at",
+                "customer_id",
+                "created_at",
+                "updated_at",
+                "deleted_at",
+                "is_admin",
+                "is_super",
+                "is_customer_admin",
+                "is_customer",
+                "roles",
+                "permissions"
+            ]);
     }
 }

@@ -2,7 +2,7 @@
 
 namespace App\Policies;
 
-use App\Models\Customer;
+use App\Models\Customer\Customer;
 use App\Models\Permission;
 use App\Models\User;
 

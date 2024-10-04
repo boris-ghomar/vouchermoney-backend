@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 /**
  * @property  string       $id
@@ -27,7 +29,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  */
 class Customer extends Model
 {
-    use SoftDeletes, HasUlids, HasFinances, HasTransactions, HasNotifications;
+    use SoftDeletes, HasUlids, HasFinances, HasTransactions, HasNotifications, LogsActivity;
 
     const TYPE_RESELLER = "reseller";
     const TYPE_MERCHANT = "merchant";
@@ -85,5 +87,11 @@ class Customer extends Model
 
             return $customer;
         });
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['name', 'balance', "available_balance", "type", "created_at", "updated_at", "deleted_at"]);
     }
 }

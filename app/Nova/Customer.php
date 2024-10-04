@@ -3,20 +3,20 @@
 namespace App\Nova;
 
 use App\Models\Customer\Customer as Model;
+use App\Models\Permission as PermissionModel;
 use App\Nova\Actions\CreateCustomer;
-use App\Nova\Metrics\AccountBalance;
-use App\Nova\Metrics\CustomerAvailableBalance;
-use Illuminate\Http\Request;
-use Laravel\Nova\Exceptions\HelperNotSupported;
-use App\Nova\Fields\Avatar;
 use App\Nova\Fields\Badge;
 use App\Nova\Fields\Currency;
 use App\Nova\Fields\HasMany;
 use App\Nova\Fields\ID;
-use App\Nova\Fields\Text;
 use App\Nova\Fields\Select;
+use App\Nova\Fields\Text;
+use App\Nova\Metrics\AccountBalance;
+use App\Nova\Metrics\CustomerAvailableBalance;
+use App\Nova\Resources\User\Account;
+use Illuminate\Http\Request;
+use Laravel\Nova\Exceptions\HelperNotSupported;
 use Laravel\Nova\Http\Requests\NovaRequest;
-use App\Models\Permission as PermissionModel;
 
 /**
  * @mixin Model
@@ -65,9 +65,6 @@ class Customer extends Resource
             Text::make(__("fields.name"), "name")->onlyOnForms()
                 ->hideWhenCreating()->rules("string", "max:180")->onlyForSuper(),
 
-            Avatar::make(__("fields.avatar"), "avatar")->nullable()->disableDownload()
-                ->deletable()->prunable()->acceptedTypes('.jpg,.jpeg,.png'),
-
             Currency::make(__("fields.balance"), "balance")
                 ->onlyForAdmins()->sortable()->filterable()->exceptOnForms(),
 
@@ -110,8 +107,10 @@ class Customer extends Resource
     public function cards(NovaRequest $request): array
     {
         return [
-            CustomerAvailableBalance::make()->onlyOnDetail()->canSee(fn (Request $request) => $request->user()?->is_admin),
-            AccountBalance::make()->onlyOnDetail()->canSee(fn (Request $request) => $request->user()?->is_admin),
+            CustomerAvailableBalance::make()->onlyOnDetail()
+                ->canSee(fn (Request $request) => $request->user()?->is_super || $request->user()?->can(PermissionModel::CUSTOMERS_VIEW)),
+            AccountBalance::make()->onlyOnDetail()
+                ->canSee(fn (Request $request) => $request->user()?->is_super || $request->user()?->can(PermissionModel::CUSTOMERS_VIEW)),
         ];
     }
 
@@ -124,7 +123,9 @@ class Customer extends Resource
     public function actions(NovaRequest $request): array
     {
         return [
-            CreateCustomer::make()->canSee(fn(Request $request) => $request->user()?->is_super),
+            CreateCustomer::make()
+                ->canSee(fn(Request $request) => $request->user()?->is_super)
+                ->canRun(fn(Request $request) => $request->user()?->is_super),
         ];
     }
 }

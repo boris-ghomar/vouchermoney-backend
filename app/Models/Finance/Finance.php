@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\Activitylog\LogOptions;
 
 /**
  * @property string       $id
@@ -121,5 +122,11 @@ class Finance extends AbstractFinance
         $finance->save();
 
         return $finance;
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['customer_id', 'requester_id', 'amount', 'comment', 'created_at', 'updated_at']);
     }
 }

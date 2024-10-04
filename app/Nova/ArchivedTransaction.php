@@ -29,10 +29,16 @@ class ArchivedTransaction extends Transaction
             DateTime::make(__("fields.archived_at"), "archived_at")
         ]);
     }
+
     public function filters(NovaRequest $request): array
     {
         return ActionHelper::make([
             AmountFilter::make()
         ]);
+    }
+
+    public static function label(): string
+    {
+        return auth()->user()?->is_customer ? "Transaction History" : "Archived Transactions";
     }
 }

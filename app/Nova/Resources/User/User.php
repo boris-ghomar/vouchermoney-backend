@@ -1,17 +1,18 @@
 <?php
 
-namespace App\Nova;
+namespace App\Nova\Resources\User;
 
 use App\Models\User as Model;
-use App\Nova\Fields\FieldHelper;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rules\Password as PasswordRule;
-use App\Nova\Fields\Avatar;
 use App\Nova\Fields\BelongsToMany;
+use App\Nova\Fields\FieldHelper;
 use App\Nova\Fields\ID;
 use App\Nova\Fields\Password;
 use App\Nova\Fields\Text;
+use App\Nova\Permission;
+use App\Nova\Resource;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rules\Password as PasswordRule;
 use Laravel\Nova\Http\Requests\NovaRequest;
 
 /**
@@ -44,6 +45,7 @@ class User extends Resource
 
     public static function indexQuery(NovaRequest $request, $query): Builder
     {
+        /** @var Model $user */
         $user = $request->user();
 
         if (!$user) return $query->whereRaw("1 = 0");
@@ -51,7 +53,7 @@ class User extends Resource
         if ($request->viaRelationship) return $query;
 
         return $query->where("customer_id", $user->customer_id)
-            ->$query->whereNot("id", $user->id);
+            ->whereNot("id", $user->id);
     }
 
     /**
@@ -68,9 +70,6 @@ class User extends Resource
 
             // "name" attribute
             $this->getNameFields(),
-
-            Avatar::make(__("fields.avatar"), "customer.avatar")
-                ->canSee(fn() => $this->is_customer)->exceptOnForms()->hideFromIndex(),
 
             Text::make(__("fields.email"), "email")->sortable()
                 ->rules('required', 'email:dns', 'max:255')

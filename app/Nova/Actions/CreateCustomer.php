@@ -2,6 +2,7 @@
 
 namespace App\Nova\Actions;
 
+use App\Models\Customer\Customer;
 use Illuminate\Bus\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
 use Laravel\Nova\Actions\Action;
@@ -11,7 +12,6 @@ use Laravel\Nova\Fields\Password;
 use Laravel\Nova\Fields\Select;
 use Laravel\Nova\Fields\Text;
 use Exception;
-use App\Models\Customer;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Lednerb\ActionButtonSelector\ShowAsButton;
 use Illuminate\Validation\Rules\Password as PasswordRule;
@@ -22,7 +22,7 @@ class CreateCustomer extends Action
 
     public function name(): string
     {
-        return __("actions.create_customer");
+        return "Add";
     }
 
     public $standalone = true;
@@ -31,7 +31,7 @@ class CreateCustomer extends Action
 
     public $onlyOnIndex = true;
 
-    public $confirmButtonText = "Create";
+    public $confirmButtonText = "Add";
 
     /**
      * Perform the action on the given models.
@@ -42,7 +42,8 @@ class CreateCustomer extends Action
     public function handle(ActionFields $fields): ActionResponse
     {
         try {
-            $customer = Customer::make($fields->name, $fields->type, $fields->email, $fields->password);
+            /** @var Customer $customer */
+            $customer = Customer::{"make" . ucfirst($fields->type)}($fields->name, $fields->email, $fields->password);
         } catch (Exception $exception) {
             return ActionResponse::danger($exception->getMessage());
         }
@@ -66,7 +67,7 @@ class CreateCustomer extends Action
                 ->rules('required', 'email:dns', 'unique:users,email'),
 
             Password::make(__("fields.password"), "password")
-                ->rules('required', PasswordRule::default()),
+                ->rules('required', PasswordRule::default(), "min:8"),
 
             Select::make(__("fields.type"), "type")
                 ->options([

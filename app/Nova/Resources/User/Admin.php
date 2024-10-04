@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Nova;
+namespace App\Nova\Resources\User;
 
 use App\Models\Permission as PermissionModel;
 use App\Models\User as Model;

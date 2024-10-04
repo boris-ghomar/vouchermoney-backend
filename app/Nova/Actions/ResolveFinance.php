@@ -27,17 +27,13 @@ class ResolveFinance extends Action
 
     public function approve(): static
     {
-        return $this->setType("approve");
+        $this->type = "approve";
+        return $this;
     }
 
     public function reject(): static
     {
-        return $this->setType("reject");
-    }
-
-    private function setType(string $type): static
-    {
-        $this->type = $type;
+        $this->type = "reject";
         return $this;
     }
 
@@ -45,6 +41,7 @@ class ResolveFinance extends Action
     {
         /** @var User $user */
         $user = $request->user();
+
         if (! $user || $user->is_customer) return false;
 
         return $user->is_super || $user->can(Permission::FINANCES_MANAGEMENT);
@@ -69,7 +66,11 @@ class ResolveFinance extends Action
      */
     public function handle(ActionFields $fields, Collection $models): ActionResponse
     {
+        /** @var User $user */
         $user = auth()->user();
+
+        if (!($user->is_super || ($user->is_admin && $user->can(Permission::FINANCES_MANAGEMENT))))
+            return ActionResponse::danger("Not authorized to make that action");
 
         try {
             foreach ($models as $model) $model->{$this->type}($user, $fields->comment ?: "");
@@ -85,7 +86,7 @@ class ResolveFinance extends Action
             return ActionResponse::danger("Something went wrong");
         }
 
-        return ActionResponse::message("Successfully " . ucfirst($this->type) . "ed");
+        return ActionResponse::message("Successfully " . ucfirst($this->type) . ($this->type === "approve" ? "" : "e") . "d");
     }
 
     /**
@@ -98,6 +99,7 @@ class ResolveFinance extends Action
     {
         return [
             Text::make(__("fields.comment"), "comment")
+                ->rules("nullable", "string")
         ];
     }
 

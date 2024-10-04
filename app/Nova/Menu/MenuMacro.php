@@ -14,9 +14,7 @@ trait MenuMacro
             /** @var User $user */
             $user = $request->user();
 
-            if (!$user || !$user->is_admin) return false;
-
-            return $user->is_super || $user->canAny($canAny);
+            return $user && $user->is_admin && ($user->is_super || empty($canAny) || $user->canAny($canAny));
         });
 
         return $this;
@@ -28,7 +26,7 @@ trait MenuMacro
             /** @var User $user */
             $user = $request->user();
 
-            return ! (!$user || !$user->is_super);
+            return $user && $user->is_super;
         });
 
         return $this;
@@ -40,9 +38,19 @@ trait MenuMacro
             /** @var User $user */
             $user = $request->user();
 
-            if (!$user || !$user->is_customer) return false;
+            return $user && $user->is_customer && ($user->is_customer_admin || empty($canAny) || $user->canAny($canAny));
+        });
 
-            return $user->is_customer_admin || $user->canAny($canAny);
+        return $this;
+    }
+
+    public function onlyForCustomerAdmin(): static
+    {
+        $this->canSee(function (Request $request) {
+            /** @var User $user */
+            $user = $request->user();
+
+            return $user && $user->is_customer_admin;
         });
 
         return $this;
@@ -54,43 +62,12 @@ trait MenuMacro
             /** @var User $user */
             $user = $request->user();
 
-            if (!$user) return false;
-
-            if ($user->is_super || ($user->is_admin && $user->canAny($adminAbilities)))
-                return true;
-
-            if ($user->is_customer_admin || ($user->is_customer && $user->canAny($customerAbilities)))
-                return true;
-
-            return false;
-        });
-
-        return $this;
-    }
-
-    public function canAnyCustomer(array $abilities = []): static
-    {
-        $this->canSee(function (Request $request) use ($abilities) {
-            /** @var User $user */
-            $user = $request->user();
-
-            if (!$user || !$user->is_customer) return false;
-
-            return $user->is_customer_admin || $user->canAny($abilities);
-        });
-
-        return $this;
-    }
-
-    public function canAnyAdmin(array $abilities = []): static
-    {
-        $this->canSee(function (Request $request) use ($abilities) {
-            /** @var User $user */
-            $user = $request->user();
-
-            if (!$user || !$user->is_admin) return false;
-
-            return $user->is_super || $user->canAny($abilities);
+            return $user && (
+                $user->is_super ||
+                ($user->is_admin && (empty($adminAbilities) || $user->canAny($adminAbilities))) ||
+                $user->is_customer_admin ||
+                ($user->is_customer && (empty($customerAbilities) || $user->canAny($customerAbilities)))
+            );
         });
 
         return $this;

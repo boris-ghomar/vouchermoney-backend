@@ -15,7 +15,7 @@ use App\Nova\Fields\ID;
 use App\Nova\Fields\Text;
 use App\Nova\Filters\AmountFilter;
 use App\Nova\Resource;
-use App\Nova\User;
+use App\Nova\Resources\User\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Laravel\Nova\Http\Requests\NovaRequest;
@@ -126,5 +126,10 @@ class ArchivedFinance extends Resource
     public function authorizedToDelete(Request $request): false
     {
         return false;
+    }
+
+    public static function label(): string
+    {
+        return auth()->user()?->is_customer ? "Finance History" : "Archived Finances";
     }
 }

@@ -2,7 +2,9 @@
 
 namespace App\Nova\Resources\Finance;
 
+use App\Models\Finance\AbstractFinance;
 use App\Models\Finance\Finance as Model;
+use App\Models\Permission;
 use App\Nova\Actions\ActionHelper;
 use App\Nova\Actions\DeleteFinance;
 use App\Nova\Actions\RequestFinance;
@@ -16,6 +18,7 @@ use App\Nova\Fields\ID;
 use App\Nova\Fields\Text;
 use App\Nova\Filters\AmountFilter;
 use App\Nova\Resource;
+use App\Nova\Resources\User\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Laravel\Nova\Http\Requests\NovaRequest;
@@ -50,8 +53,11 @@ class Finance extends Resource
      */
     public static $search = ['id', 'comment'];
 
+    public static $globallySearchable = false;
+
     public static function indexQuery(NovaRequest $request, $query): Builder
     {
+        /** @var User $user */
         $user = $request->user();
 
         if ($user?->is_customer)
@@ -72,13 +78,17 @@ class Finance extends Resource
             ID::make(__("fields.id"), "id"),
 
             BelongsTo::make(__("fields.customer"), 'customer', Customer::class)
-                ->onlyForAdmins(),
+                ->onlyForAdmins([Permission::CUSTOMERS_VIEW]),
 
-//            BelongsTo::make(__("fields.requested_by"), 'user', User::class),
+            Text::make(__("fields.requester"), fn() => $this->requester->is_admin ? "Administrator" : $this->requester->name)
+                ->onlyForCustomerAdmin(),
+
+            BelongsTo::make(__("fields.requester"), 'requester', User::class)
+                ->onlyForAdmins([Permission::CUSTOMERS_VIEW]),
 
             Badge::make(__("fields.type"), "type")->map([
-                'withdraw' => 'danger',
-                'deposit' => 'success',
+                AbstractFinance::TYPE_WITHDRAW => 'danger',
+                AbstractFinance::TYPE_DEPOSIT => 'success',
             ]),
 
             Currency::make(__("fields.amount"), "amount")->displayAsPositive(),
@@ -127,10 +137,12 @@ class Finance extends Resource
     {
         return false;
     }
+
     public function authorizedToReplicate(Request $request): bool
     {
         return false;
     }
+
     public function authorizedToDelete(Request $request): bool
     {
         return false;

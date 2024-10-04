@@ -25,6 +25,7 @@ return [
     "request_comment" => "Request comment",
     "resolve_comment" => "Resolve comment",
     "requested_by" => "Requested by",
+    "requester" => "Requester",
     "archived_at" => "Archived at",
 
     "type" => "Type",

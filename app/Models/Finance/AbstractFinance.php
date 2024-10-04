@@ -4,6 +4,7 @@ namespace App\Models\Finance;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 /**
  * @property-read  string  $type "withdraw" or "deposit"
@@ -15,6 +16,8 @@ use Illuminate\Database\Eloquent\Model;
  */
 abstract class AbstractFinance extends Model
 {
+    use LogsActivity;
+
     const TYPE_WITHDRAW = "withdraw";
     const TYPE_DEPOSIT = "deposit";
 

@@ -6,6 +6,7 @@ use App\Models\Customer\Customer;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
+use Spatie\Activitylog\LogOptions;
 
 /**
  * @property  string       $id
@@ -144,5 +145,22 @@ class ArchivedFinance extends AbstractFinance
         $archived->save();
 
         return $archived;
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly([
+                'amount',
+                'status',
+                'customer_data',
+                'requester_data',
+                'resolver_data',
+                'requester_comment',
+                'resolver_comment',
+                'resolved_at',
+                'created_at',
+                'updated_at'
+            ]);
     }
 }

@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Permission\Models\Permission as SpatiePermission;
 
 /**
@@ -12,6 +14,8 @@ use Spatie\Permission\Models\Permission as SpatiePermission;
  */
 class Permission extends SpatiePermission
 {
+    use LogsActivity;
+
     /**
      * Only for admins.
      * Allow to see all customers.
@@ -175,5 +179,11 @@ class Permission extends SpatiePermission
     public function getNameTitleAttribute(): string
     {
         return __("permissions." . $this->name . ".title");
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['name', 'guard_name']);
     }
 }
