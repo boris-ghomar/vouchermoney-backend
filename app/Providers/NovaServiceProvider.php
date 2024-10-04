@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\Finance\Finance as FinanceModel;
 use App\Models\Permission;
 use App\Models\User;
 use App\Nova\Account;
@@ -10,19 +11,18 @@ use App\Nova\ActivityLog;
 use App\Nova\Admin;
 use App\Nova\ArchivedTransaction;
 use App\Nova\ArchivedVoucher;
-use App\Nova\ArchivedFinance;
 use App\Nova\Customer;
 use App\Nova\Dashboards\Home;
-use App\Nova\Finance;
+use App\Nova\Menu\MenuItem;
+use App\Nova\Menu\MenuSection;
+use App\Nova\Resources\Finance\ArchivedFinance;
+use App\Nova\Resources\Finance\Finance;
 use App\Nova\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Laravel\Nova\Menu\Menu;
-use App\Nova\Menu\MenuItem;
-use App\Nova\Menu\MenuSection;
 use Laravel\Nova\Nova;
 use Laravel\Nova\NovaApplicationServiceProvider;
-use App\Models\Finance\Finance as FinanceModel;
 
 class NovaServiceProvider extends NovaApplicationServiceProvider
 {
@@ -38,8 +38,6 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
         Nova::footer(fn() => null);
 
         Nova::initialPath("/dashboards/home");
-
-//        Nova::userTimezone(fn(Request $request) => $request->user()?->timezone ?: config("app.timezone"));
 
         Nova::userMenu(function (Request $request, Menu $menu) {
             /** @var User $user */
@@ -91,7 +89,7 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
                 ->collapsable()->collapsedByDefault(),
 
             MenuSection::resource(Finance::class)
-                ->icon("currency-dollar")->withBadgeIf(
+                ->icon(Finance::ICON)->withBadgeIf(
                     fn() => FinanceModel::query()->count(), "danger",
                     fn() => FinanceModel::query()->count() > 0
                 )->canAnyAdmin([Permission::FINANCES_VIEW, Permission::FINANCES_MANAGEMENT]),
@@ -106,7 +104,7 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
                         fn() => $request->user()?->customer->finances()->count() > 0
                     ),
                 MenuItem::resource(ArchivedFinance::class),
-            ])->icon("currency-dollar")->canAnyCustomer([Permission::CUSTOMER_FINANCE]),
+            ])->icon(Finance::ICON)->canAnyCustomer([Permission::CUSTOMER_FINANCE]),
 
             MenuSection::resource(ActivityLog::class)->icon('lightning-bolt')
                 ->onlyForAdmins([Permission::ACTIVITY_VIEW])

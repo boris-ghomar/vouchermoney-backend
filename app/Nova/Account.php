@@ -56,11 +56,6 @@ class Account extends User
 
     public static function relatablePermissions(NovaRequest $request, $query)
     {
-        /** @var Model $user */
-        $user = $request->user();
-
-        if (!$user) return $query;
-
-        return $query->whereIn('name', PermissionModel::getAvailableCustomerPermissionsForUser($user));
+        return $query->whereIn('name', PermissionModel::$customerPermissions);
     }
 }

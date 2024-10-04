@@ -2,7 +2,7 @@
 
 namespace App\Nova;
 
-use App\Models\Customer as Model;
+use App\Models\Customer\Customer as Model;
 use App\Nova\Actions\CreateCustomer;
 use App\Nova\Metrics\AccountBalance;
 use App\Nova\Metrics\CustomerAvailableBalance;

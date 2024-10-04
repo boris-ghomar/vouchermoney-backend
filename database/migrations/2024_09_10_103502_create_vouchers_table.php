@@ -3,6 +3,8 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use App\Models\Voucher\ArchivedVoucher;
+use App\Models\Voucher\VoucherActivity;
 
 return new class extends Migration
 {
@@ -12,34 +14,57 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('voucher_codes', function (Blueprint $table) {
-            $table->string('code', 40)->primary();
+            $table->string('code')->primary();
         });
 
         Schema::create('vouchers', function (Blueprint $table) {
-            $table->string('code')->primary();
-            $table->foreignUlid("customer_id")->nullable()->constrained()->nullOnDelete();
-            $table->decimal('amount');
+            $table->ulid("id")->primary();
+            $table->string('code')->unique();
+            $table->decimal('amount')->unsigned();
             $table->boolean("active")->default(true);
+            $table->foreignUlid("customer_id")->constrained()->cascadeOnDelete();
             $table->timestamps();
         });
 
         Schema::create('archived_vouchers', function (Blueprint $table) {
-            $table->string('code')->primary();
-            $table->decimal('amount');
-            $table->boolean('state')->comment("1 if redeemed, 0 if expired");
-            $table->timestamp("resolved_at")->useCurrent();
+            $table->ulid("id")->primary();
+            $table->string('code')->unique();
+            $table->decimal('amount')->unsigned();
+
+            $table->enum("state", [ArchivedVoucher::STATE_EXPIRED, ArchivedVoucher::STATE_REDEEMED])
+                ->default(ArchivedVoucher::STATE_REDEEMED);
+
+            // Who create voucher
+            $table->foreignUlid("customer_id")->nullable()->constrained()->nullOnDelete();
             $table->json("customer_data");
+
+            // Who redeem voucher. If null - creator customer redeemed voucher
+            $table->foreignUlid("recipient_id")->nullable()->constrained("customers")->nullOnDelete();
             $table->json("recipient_data")->nullable();
+            $table->string("recipient_note")->nullable();
+
+            $table->timestamp("resolved_at")->useCurrent();
             $table->timestamps();
         });
 
         Schema::create('voucher_activity', function (Blueprint $table) {
             $table->id();
             $table->string('code');
-            $table->enum('from_state', ["created", "active", "frozen"]);
-            $table->enum('to_state', ["active", "frozen", "redeemed", "expired"]);
-            $table->string("description")->nullable();
+
+            $table->enum("state", [
+                VoucherActivity::STATE_CREATED,
+                VoucherActivity::STATE_FROZEN,
+                VoucherActivity::STATE_ACTIVATED,
+                VoucherActivity::STATE_REDEEMED,
+                VoucherActivity::STATE_EXPIRED
+            ]);
+
+            $table->json("properties")->nullable();
+
+            // Who make action
+            $table->foreignUlid("user_id")->nullable()->constrained()->nullOnDelete();
             $table->json("user_data")->nullable();
+
             $table->timestamp("time")->useCurrent();
         });
     }

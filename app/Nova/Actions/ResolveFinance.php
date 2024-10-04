@@ -3,6 +3,8 @@
 namespace App\Nova\Actions;
 
 use App\Models\Finance\Finance;
+use App\Models\Permission;
+use App\Models\User;
 use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Http\Request;
@@ -41,7 +43,11 @@ class ResolveFinance extends Action
 
     public function authorizedToSee(Request $request): bool
     {
-        return $request->user()?->is_admin && $request->user()->can("finance:resolve");
+        /** @var User $user */
+        $user = $request->user();
+        if (! $user || $user->is_customer) return false;
+
+        return $user->is_super || $user->can(Permission::FINANCES_MANAGEMENT);
     }
 
     /**

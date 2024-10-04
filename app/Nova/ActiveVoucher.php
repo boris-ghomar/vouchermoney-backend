@@ -140,16 +140,15 @@ class ActiveVoucher extends Resource
     {
         return [
             RedeemVoucher::make()
-                ->canSee(fn(Request $request) => $request->user()?->can("customer:voucher:redeem")),
+                ->canSee(fn(Request $request) => $request->user()?->is_customer_admin || $request->user()->can(\App\Models\Permission::CUSTOMER_VOUCHER_REDEEM)),
 
             GenerateVoucher::make()
-                ->canSee(fn(Request $request) => $request->user()?->can("customer:voucher:generate"))
+                ->canSee(fn(Request $request) => $request->user()?->is_customer_admin || $request->user()->can(\App\Models\Permission::CUSTOMER_VOUCHER_GENERATE))
                 ->confirmButtonText(__("actions.generate"))
                 ->cancelButtonText(__("actions.cancel")),
 
             FreezeVoucher::make($this)
-                ->canSee(fn(Request $request) => $request->user()?->can("customer:voucher:freeze"))
-                ->canRun(fn(Request $request) => $request->user()?->can("customer:voucher:freeze"))
+                ->canSee(fn(Request $request) => $request->user()?->is_customer_admin || $request->user()->can(\App\Models\Permission::CUSTOMER_VOUCHER_FREEZE))
         ];
     }
 

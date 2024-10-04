@@ -2,8 +2,9 @@
 
 namespace App\Models\Voucher;
 
-use App\Exceptions\VoucherArchivingFailed;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use App\Models\Customer;
+use App\Models\Transaction\Transaction;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
@@ -12,11 +13,13 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
+ * @property  string        $id
  * @property  string        $code
  * @property  float         $amount
- * @property  boolean       $state
+ * @property  string        $state
  * @property  array         $customer_data
  * @property  array         $recipient_data
+ * @property  string|null   $note
  * @property  Carbon        $resolved_at
  * @property  Carbon|null   $created_at
  * @property  Carbon|null   $updated_at
@@ -40,8 +43,8 @@ class ArchivedVoucher extends Model
     public $incrementing = false;
     public $timestamps = false;
 
-    const STATE_REDEEMED = true;
-    const STATE_EXPIRED = false;
+    const STATE_REDEEMED = "redeemed";
+    const STATE_EXPIRED = "expired";
 
     protected $fillable = [
         "code",
@@ -50,6 +53,7 @@ class ArchivedVoucher extends Model
         "resolved_at",
         "customer_data",
         "recipient_data",
+        "note",
     ];
 
     protected $casts = [
@@ -99,16 +103,19 @@ class ArchivedVoucher extends Model
         return empty($this->recipient_data["id"]) ? null : Customer::find($this->recipient_data["id"]);
     }
 
-    /**
-     * @param  bool  $state True if 'redeemed' or false if 'expired'
-     * @throws VoucherArchivingFailed
-     */
-    public static function make(Voucher $voucher, bool $state, Customer $recipient = null): static
+    public static function makeRedeemed(Voucher $voucher, string $note = "", Customer $recipient = null): static
+    {
+        return static::make($voucher, true, $note, $recipient);
+    }
+
+    public static function makeExpired(Voucher $voucher, string $note = "", Customer $recipient = null): static
+    {
+        return static::make($voucher, false, $note, $recipient);
+    }
+
+    private static function make(Voucher $voucher, bool $state, string $note = "", Customer $recipient = null): static
     {
         $customer = $voucher->customer;
-
-        if (empty($customer))
-            throw new VoucherArchivingFailed($voucher);
 
         $archivedVoucher = new static();
         $archivedVoucher->code = $voucher->code;
@@ -118,7 +125,8 @@ class ArchivedVoucher extends Model
         $archivedVoucher->created_at = $voucher->created_at;
         $archivedVoucher->updated_at = $voucher->updated_at;
 
-        if (!empty($recipient)) $archivedVoucher->recipient_data = $recipient;
+        if (!empty($recipient) && $recipient->id !== $customer->id) $archivedVoucher->recipient_data = $recipient;
+        if (!empty($note)) $archivedVoucher->note = $note;
 
         $archivedVoucher->save();
 
@@ -128,5 +136,10 @@ class ArchivedVoucher extends Model
     public function activities(): HasMany
     {
         return $this->hasMany(VoucherActivity::class, "code", "code");
+    }
+
+    public function transaction(): MorphOne
+    {
+        return $this->morphOne(Transaction::class, "model");
     }
 }

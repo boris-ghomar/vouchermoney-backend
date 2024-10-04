@@ -3,69 +3,82 @@
 namespace App\Models\Voucher;
 
 use App\Exceptions\AttemptToRedeemFrozenVoucher;
-use App\Exceptions\InsufficientBalance;
-use App\Exceptions\TransactionWithZeroAmount;
-use App\Exceptions\VoucherArchivingFailed;
 use App\Models\Customer;
-use App\Models\Voucher\VoucherActivityLog\VoucherActivityLog;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\DB;
 
 /**
+ * @property  string       $id
  * @property  string       $code
- * @property  string       $customer_id
  * @property  float        $amount
  * @property  bool         $active
- * @property  Carbon|null  $created_at
- * @property  Carbon|null  $updated_at
+ * @property  string       $customer_id
+ * @property  Carbon       $created_at
+ * @property  Carbon       $updated_at
  *
- * @property  Customer|null $customer
+ * @property  Customer     $customer
  *
  * @method  Builder|static  onlyActive()
  * @method  Builder|static  onlyFrozen()
  */
 class Voucher extends Model
 {
-    protected $primaryKey = "code";
-    protected $keyType = "string";
-    public $incrementing = false;
+    use HasUlids;
 
     protected $fillable = [
         "code",
         "customer_id",
+        "amount",
         "active"
     ];
 
     protected $casts = [
-        "active" => "boolean"
+        "active" => "boolean",
+        "amount" => "decimal:2"
     ];
 
     const STATE_ACTIVE = true;
     const STATE_FROZEN = false;
+
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class);
+    }
+
+    public function scopeOnlyActive(Builder $query): void
+    {
+        $query->where("active", self::STATE_ACTIVE);
+    }
+
+    public function scopeOnlyFrozen(Builder $query): void
+    {
+        $query->where("active", self::STATE_FROZEN);
+    }
 
     public static function generate(Customer $customer, float $amount): static
     {
         return DB::transaction(function () use ($customer, $amount) {
             $customer->withdraw($amount, "Generating voucher");
 
+            $customer->notifyAdministrator(
+                "Voucher [$this->code] has been created",
+                "/resources/vouchers/" . $this->code
+            );
+
             $voucher = new static();
             $voucher->code = VoucherCode::generate();
-            $voucher->amount = $amount;
+            $voucher->amount = abs($amount);
             $voucher->customer_id = $customer->id;
             $voucher->save();
 
-            $voucher->makeLog()->fromCreationToActive();
+            VoucherActivity::makeCreated($voucher->code);
 
             return $voucher;
         });
-    }
-
-    public function customer(): BelongsTo
-    {
-        return $this->belongsTo(Customer::class);
     }
 
     public function freeze(): static
@@ -94,20 +107,19 @@ class Voucher extends Model
 
     /**
      * Make voucher redeemed
-     *
      * @throws AttemptToRedeemFrozenVoucher
      */
-    public function redeem(Customer $recipient = null): ArchivedVoucher
+    public function redeem(string $note = "", Customer $recipient = null)
     {
-        if (!$this->active)
-            throw new AttemptToRedeemFrozenVoucher($this->customer, $this, auth()->user(), $recipient);
+        if (! $this->active)
+            throw new AttemptToRedeemFrozenVoucher();
 
-        return DB::transaction(function () use ($recipient) {
+        return DB::transaction(function () use ($recipient, $note) {
             $customer = !empty($recipient) ? $recipient : $this->customer;
 
-            $customer->deposit($this->amount, "Redeem voucher [" . $this->code . "]");
+            $customer->deposit($this->amount, $this->getVoucherRedeemedActivityDescription());
 
-            return $this->archive(ArchivedVoucher::STATE_REDEEMED, $recipient);
+            return $this->archive(ArchivedVoucher::STATE_REDEEMED, $note, $recipient);
         });
     }
 
@@ -126,14 +138,10 @@ class Voucher extends Model
     /**
      * Archive voucher. Delete it from `vouchers` table and create in `archived_vouchers` table
      *
-     * @param bool $state true if 'redeemed' or false if 'expired'
-     * @param Customer|null $recipient
-     * @return ArchivedVoucher
-     * @throws VoucherArchivingFailed
      */
-    private function archive(bool $state, Customer $recipient = null): ArchivedVoucher
+    private function archive(bool $state, string $note = "", Customer $recipient = null): ArchivedVoucher
     {
-        $archivedVoucher = ArchivedVoucher::make($this, $state, $recipient);
+        $archivedVoucher = ArchivedVoucher::make($this, $state, $note, $recipient);
 
         $this->makeLog()->fromActive()->to($state ? VoucherActivity::STATE_REDEEMED : VoucherActivity::STATE_EXPIRED, "Archiving voucher");
 
@@ -142,18 +150,8 @@ class Voucher extends Model
         return $archivedVoucher;
     }
 
-    private function makeLog(): VoucherActivityLog
+    private function getVoucherRedeemedActivityDescription(): string
     {
-        return VoucherActivity::log($this->code, auth()->user());
-    }
-
-    public function scopeOnlyActive(Builder $query): void
-    {
-        $query->where("active", self::STATE_ACTIVE);
-    }
-
-    public function scopeOnlyFrozen(Builder $query): void
-    {
-        $query->where("active", self::STATE_FROZEN);
+        return "Voucher [$this->code] has been redeemed";
     }
 }

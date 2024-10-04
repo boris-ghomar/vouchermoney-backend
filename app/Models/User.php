@@ -100,7 +100,7 @@ class User extends Authenticatable
 
     public function canSeeVouchersList(): bool
     {
-        return $this->can("customer:voucher:view") || $this->can("voucher:view");
+        return $this->is_customer_admin || $this->canAny([Permission::CUSTOMER_VOUCHER_VIEW, Permission::VOUCHERS_VIEW]) || $this->is_super;
     }
 
     public function getFullNameAttribute(): string

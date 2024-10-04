@@ -63,5 +63,6 @@ return [
     "from_state" => "From state",
     "to_state" => "To state",
 
-    "admins" => "Admins"
+    "admins" => "Admins",
+    "note" => "Note"
 ];

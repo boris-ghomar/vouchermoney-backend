@@ -15,7 +15,8 @@ return new class extends Migration
             $table->ulid("id")->primary();
             $table->foreignUlid("customer_id")->constrained()->cascadeOnDelete();
             $table->decimal("amount");
-            $table->string("description")->nullable();
+            $table->string("description");
+            $table->nullableUlidMorphs("model");
             $table->timestamps();
         });
 
@@ -23,7 +24,8 @@ return new class extends Migration
             $table->ulid("id")->primary();
             $table->foreignUlid("customer_id")->constrained()->cascadeOnDelete();
             $table->decimal("amount");
-            $table->string("description")->nullable();
+            $table->string("description");
+            $table->nullableUlidMorphs("model");
             $table->timestamp("archived_at")->useCurrent();
             $table->timestamps();
         });
