@@ -3,15 +3,20 @@
 namespace App\Models\Customer;
 
 use App\Models\CustomerApiToken;
-use App\Models\Role;
+use App\Models\Finance\ArchivedFinance;
+use App\Models\Finance\Finance;
+use App\Models\Transaction\ArchivedTransaction;
+use App\Models\Transaction\Transaction;
 use App\Models\User;
+use App\Models\Voucher\ArchivedVoucher;
+use App\Models\Voucher\Voucher;
+use App\Services\Customer\Contracts\CustomerServiceContract;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -26,12 +31,20 @@ use Staudenmeir\EloquentJsonRelations\HasJsonRelationships;
  * @property  Carbon       $created_at
  * @property  Carbon       $updated_at
  *
- * @property-read  Collection<User>  $users
- * @property-read  User              $admin
+ * @property-read  float  $available_balance
+ *
+ * @property-read  Collection<User>                 $users
+ * @property-read  User                             $admin
+ * @property-read  Collection<Transaction>          $transactions
+ * @property-read  Collection<ArchivedTransaction>  $archived_transactions
+ * @property-read  Collection<Finance>              $finances
+ * @property-read  Collection<ArchivedFinance>      $archived_finances
+ * @property-read  Collection<Voucher>              $vouchers
+ * @property-read  Collection<ArchivedVoucher>      $archived_vouchers
  */
 class Customer extends Model
 {
-    use SoftDeletes, HasUlids, HasFinances, HasTransactions, HasNotifications, LogsActivity, HasVouchers, HasJsonRelationships;
+    use SoftDeletes, HasUlids, LogsActivity, HasJsonRelationships;
 
     const TYPE_RESELLER = "reseller";
     const TYPE_MERCHANT = "merchant";
@@ -59,46 +72,52 @@ class Customer extends Model
         return $this->hasOne(User::class)->oldestOfMany();
     }
 
-    public static function makeMerchant(string $name, string $email, string $password): static
+    public function apiTokens(): HasMany
     {
-        return static::make($name, static::TYPE_MERCHANT, $email, $password);
+        return $this->hasMany(CustomerApiToken::class);
     }
 
-    public static function makeReseller(string $name, string $email, string $password): static
+    public function transactions(): HasMany
     {
-        return static::make($name, static::TYPE_RESELLER, $email, $password);
+        return $this->hasMany(Transaction::class);
     }
 
-    private static function make(string $customerName, string $type, string $email, string $password): static
+    public function archivedTransactions(): HasMany
     {
-        return DB::transaction(function () use ($customerName, $type, $email, $password) {
-            $customer = new static();
-            $customer->name = $customerName;
-            $customer->type = $type;
-            $customer->save();
+        return $this->hasMany(ArchivedTransaction::class);
+    }
 
-            $user = new User();
-            $user->name = "Admin";
-            $user->email = $email;
-            $user->email_verified_at = now();
-            $user->customer_id = $customer->id;
-            $user->password = $password;
-            $user->save();
+    public function getAvailableBalanceAttribute(): float
+    {
+        /** @var CustomerServiceContract $service */
+        $service = app(CustomerServiceContract::class);
 
-            $user->assignRole(Role::CUSTOMER_ADMIN);
+        return $service->computeBalance($this);
+    }
 
-            return $customer;
-        });
+    public function finances(): HasMany
+    {
+        return $this->hasMany(Finance::class);
+    }
+
+    public function archivedFinances(): HasMany
+    {
+        return $this->hasMany(ArchivedFinance::class, "customer_data->id");
+    }
+
+    public function vouchers(): HasMany
+    {
+        return $this->hasMany(Voucher::class);
+    }
+
+    public function archivedVouchers(): HasMany
+    {
+        return $this->hasMany(ArchivedVoucher::class, "customer_data->id");
     }
 
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['name', 'balance', "available_balance", "type", "created_at", "updated_at", "deleted_at"]);
-    }
-
-    public function apiTokens(): HasMany
-    {
-        return $this->hasMany(CustomerApiToken::class);
+            ->logOnly(['name', 'balance', "type", "created_at", "updated_at", "deleted_at"]);
     }
 }

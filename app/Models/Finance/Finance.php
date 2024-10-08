@@ -112,44 +112,6 @@ class Finance extends AbstractFinance
         });
     }
 
-    public static function deposit(User $requester, Customer $customer, float $amount, string $comment = ""): static
-    {
-        return DB::transaction(function () use ($customer, $amount, $comment, $requester) {
-            $finance = static::make($requester, $customer, abs($amount), $comment);
-
-            $customer->sendFinanceRequestedNotification($finance);
-
-            return $finance;
-        });
-    }
-
-    public static function withdraw(User $requester, Customer $customer, float $amount, string $comment = ""): static
-    {
-        return DB::transaction(function () use ($customer, $amount, $comment, $requester) {
-            $finance = static::make($requester, $customer, abs($amount) * -1, $comment);
-
-            $customer->withdraw($amount, "Make withdrawal finance request", $finance);
-
-            $customer->sendFinanceRequestedNotification($finance);
-
-            return $finance;
-        });
-    }
-
-    private static function make(User $requester, Customer $customer, float $amount, string $comment = ""): static
-    {
-        $finance = new static();
-        $finance->customer_id = $customer->id;
-        $finance->amount = $amount;
-        $finance->requester_id = $requester->id;
-
-        if (! empty($comment)) $finance->comment = $comment;
-
-        $finance->save();
-
-        return $finance;
-    }
-
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()

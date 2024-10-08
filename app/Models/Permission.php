@@ -129,38 +129,6 @@ class Permission extends SpatiePermission
         self::ACTIVITY_VIEW
     ];
 
-    public static function getAvailableAdminPermissionsForUser(User $user): array
-    {
-        if ($user->is_customer) return [];
-
-        if ($user->is_super) return self::$adminPermissions;
-
-        $result = [];
-
-        foreach ($user->getPermissionNames() as $userPermissionName) {
-            if (in_array($userPermissionName, static::$adminPermissions))
-                $result[] = $userPermissionName;
-        }
-
-        return $result;
-    }
-
-    public static function getAvailableCustomerPermissionsForUser(User $user): array
-    {
-        if ($user->is_admin) return [];
-
-        if ($user->is_customer_admin) return self::$customerPermissions;
-
-        $result = [];
-
-        foreach ($user->getPermissionNames() as $userPermissionName) {
-            if (in_array($userPermissionName, static::$customerPermissions))
-                $result[] = $userPermissionName;
-        }
-
-        return $result;
-    }
-
     public function getDescriptionAttribute(): string
     {
         return __("permissions." . $this->name . ".description.short");

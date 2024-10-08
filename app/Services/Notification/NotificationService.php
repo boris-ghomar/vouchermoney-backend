@@ -11,22 +11,30 @@ use App\Models\Voucher\ArchivedVoucher;
 use App\Models\Voucher\Voucher;
 use App\Nova\Resources\Finance\Finance as FinanceResource;
 use App\Nova\Resources\Voucher\ActiveVoucher;
+use App\Services\Notification\Contracts\NotificationServiceContract;
 
-class NotificationService
+class NotificationService implements NotificationServiceContract
 {
-    public static function sendFinanceRequestedNotification(Customer $customer, Finance $finance): void
+    public function financeHasBeenRequested(Finance $finance): void
     {
         $notification = NovaNotification::info("Finance request has been sent!");
         $notification->action("/resources/finances/" . $finance->id);
         $notification->icon(FinanceResource::ICON);
-        $notification->send($customer->admin);
+        $notification->send($finance->customer->admin);
     }
 
-    public static function sendFinanceResolvedNotification(Customer $customer, ArchivedFinance $finance): void
+    public function financeHasBeenCanceled(Finance $finance): void
+    {
+        $notification = NovaNotification::error("Finance request has been canceled!");
+        $notification->icon(FinanceResource::ICON);
+        $notification->send($finance->customer->admin);
+    }
+
+    public function financeHasBeenResolved(ArchivedFinance $finance): void
     {
         $method = $finance->is_approved ? NovaNotification::TYPE_SUCCESS : NovaNotification::TYPE_ERROR;
 
-        $users = $customer->users->filter(function (User $user) {
+        $users = $finance->customer->users->filter(function (User $user) {
             return $user->can(Permission::CUSTOMER_FINANCE) || $user->is_customer_admin;
         });
 
@@ -36,27 +44,19 @@ class NotificationService
         $notification->send($users);
     }
 
-    public static function sendVoucherGeneratedNotification(Customer $customer, Voucher $voucher): void
+    public function voucherHasBeenGenerated(Voucher $voucher): void
     {
-        $notification = NovaNotification::info("Voucher [$voucher->code] has been created");
+        $notification = NovaNotification::info("Voucher [$voucher->code] has been created!");
         $notification->action("/resources/active-vouchers/$voucher->id");
         $notification->icon(ActiveVoucher::ICON);
-        $notification->send($customer->admin);
+        $notification->send($voucher->customer->admin);
     }
 
-    public static function sendVoucherRedeemedNotification(Customer $customer, ArchivedVoucher $voucher): void
+    public function voucherHasBeenRedeemed(ArchivedVoucher $voucher): void
     {
-        $notification = NovaNotification::info("Voucher [$voucher->code] redeemed");
+        $notification = NovaNotification::info("Voucher [$voucher->code] redeemed!");
         $notification->action("/resources/archived-vouchers/$voucher->id");
         $notification->icon(ActiveVoucher::ICON);
-        $notification->send($customer->admin);
-    }
-
-    public static function sendRedeemVoucherNotification(Customer $customer, ArchivedVoucher $voucher): void
-    {
-        $notification = NovaNotification::success("Redeem [$voucher->code] voucher");
-        $notification->action("/resources/archived-vouchers/$voucher->id");
-        $notification->icon(ActiveVoucher::ICON);
-        $notification->send($customer->admin);
+        $notification->send($voucher->customer->admin);
     }
 }

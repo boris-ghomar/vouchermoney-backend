@@ -42,12 +42,17 @@ class PermissionSeeder extends Seeder
         $user->password = "123123123";
         $user->save();
 
-        $roles = [Role::SUPER_ADMIN, Role::CUSTOMER_ADMIN];
+        $roles = [
+            Role::SUPER_ADMIN => Permission::$adminPermissions,
+            Role::CUSTOMER_ADMIN => Permission::$customerPermissions
+        ];
 
-        foreach ($roles as $name) {
+        foreach ($roles as $name => $permissions) {
             $role = new Role();
             $role->name = $name;
             $role->save();
+
+            $role->permissions()->sync($permissions);
         }
 
         $user->assignRole(Role::SUPER_ADMIN);
