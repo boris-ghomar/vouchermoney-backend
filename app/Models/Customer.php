@@ -10,6 +10,7 @@ use App\Models\Transaction\ArchivedTransaction;
 use App\Models\Transaction\Transaction;
 use App\Models\Voucher\Voucher;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -42,7 +43,7 @@ class Customer extends Model
 
     const TYPE_RESELLER = "reseller";
     const TYPE_MERCHANT = "merchant";
-
+    const LIMIT_TOKEN = 5;
     protected $fillable = [
         'name',
         'balance',
@@ -195,6 +196,10 @@ class Customer extends Model
     {
         return Voucher::generate($this, $amount);
     }
+    public function vouchers(): HasMany
+    {
+        return $this->hasMany(Voucher::class);
+    }
 
     /**
      * @throws TransactionWithZeroAmount
@@ -239,4 +244,9 @@ class Customer extends Model
     {
         return $this->users()->oldest()->select("id")->limit(1)->first()->id;
     }
+    public function apiTokens()
+    {
+        return $this->hasMany(CustomerApiToken::class);
+    }
+
 }

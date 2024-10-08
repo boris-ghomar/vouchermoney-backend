@@ -45,6 +45,8 @@ class Voucher extends Model
 
     const STATE_ACTIVE = true;
     const STATE_FROZEN = false;
+    const FREEZE_VOUCHER = 'freeze';
+    const ACTIVATE_VOUCHER = 'activate';
 
     public static function generate(Customer $customer, float $amount): static
     {

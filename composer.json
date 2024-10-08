@@ -2,10 +2,14 @@
     "name": "laravel/laravel",
     "type": "project",
     "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "keywords": [
+        "laravel",
+        "framework"
+    ],
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "alexwenzel/nova-dependency-container": "^1.12",
         "kiritokatklian/nova-permission": "^4.0",
         "laravel/framework": "^11.9",
         "laravel/nova": "^4.0",
@@ -14,11 +18,11 @@
         "lednerb/nova-action-button-selectors": "^2.0",
         "outl1ne/nova-dependency-container": "^2.0",
         "outl1ne/nova-input-filter": "^2.0",
-        "outl1ne/nova-multiselect-field": "^4.5",
         "pestphp/pest": "3.x-dev",
         "pestphp/pest-plugin-laravel": "v3.0.0",
         "spatie/laravel-activitylog": "^4.8",
-        "spatie/laravel-permission": "^6.9"
+        "spatie/laravel-permission": "^6.9",
+        "vm/api-token-modal": "@dev"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
@@ -74,6 +78,10 @@
         {
             "type": "composer",
             "url": "https://nova.laravel.com"
+        },
+        {
+            "type": "path",
+            "url": "./nova-components/ApiTokenModal"
         }
     ],
     "minimum-stability": "stable",

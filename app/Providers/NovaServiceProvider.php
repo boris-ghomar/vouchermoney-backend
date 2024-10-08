@@ -10,8 +10,10 @@ use App\Nova\ArchivedTransaction;
 use App\Nova\ArchivedVoucher;
 use App\Nova\ArchivedFinance;
 use App\Nova\Customer;
+use App\Nova\CustomerApiToken;
 use App\Nova\Dashboards\Home;
 use App\Nova\Finance;
+use App\Nova\PersonalAccessToken;
 use App\Nova\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -104,6 +106,8 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
 
             MenuSection::resource(ActivityLog::class)->icon('lightning-bolt')
                 ->canSee(fn (Request $request) => $request->user()?->is_admin && $request->user()?->can("activity:view")),
+            MenuSection::resource(CustomerApiToken::class)->icon('key')
+                ->canSee(fn(Request $request) => $request->user()->is_customer)
         ]);
     }
 
