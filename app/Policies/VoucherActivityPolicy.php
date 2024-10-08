@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Models\Permission;
 use App\Models\User;
 
 class VoucherActivityPolicy
@@ -11,7 +12,7 @@ class VoucherActivityPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can("voucher:view");
+        return $user->is_super || $user->can(Permission::VOUCHERS_VIEW);
     }
 
     /**

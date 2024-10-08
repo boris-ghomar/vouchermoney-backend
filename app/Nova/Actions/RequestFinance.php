@@ -3,11 +3,12 @@
 namespace App\Nova\Actions;
 
 use App\Exceptions\InsufficientBalance;
-use App\Models\Customer;
+use App\Models\Customer\Customer;
 use App\Models\Finance\AbstractFinance;
-use App\Models\Finance\Finance;
+use App\Models\Permission;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
+use Illuminate\Http\Request;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Collection;
 use Laravel\Nova\Actions\Action;
@@ -30,18 +31,29 @@ class RequestFinance extends Action
 
     public function withdraw(): static
     {
-        return $this->setType(AbstractFinance::TYPE_WITHDRAW);
+        $this->type = AbstractFinance::TYPE_WITHDRAW;
+
+        return $this;
     }
 
     public function deposit(): static
     {
-        return $this->setType(AbstractFinance::TYPE_DEPOSIT);
+        $this->type = AbstractFinance::TYPE_DEPOSIT;
+
+        return $this;
     }
 
-    private function setType(string $type): static
+    public function authorizedToRun(Request $request, $model): bool
     {
-        $this->type = $type;
-        return $this;
+        return $this->authorizedToSee($request);
+    }
+
+    public function authorizedToSee(Request $request): bool
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        return $user && ($user->canAdmin(Permission::FINANCES_MANAGEMENT) || $user->canCustomer(Permission::CUSTOMER_FINANCE));
     }
 
     /**
@@ -51,7 +63,7 @@ class RequestFinance extends Action
      */
     public function name(): string
     {
-        return "Request " . $this->type;
+        return ucfirst($this->type);
     }
 
     /**
@@ -63,18 +75,26 @@ class RequestFinance extends Action
      */
     public function handle(ActionFields $fields, Collection $models): ActionResponse
     {
-        /** @var User $authUser */
-        $authUser = auth()->user();
+        /** @var User $user */
+        $user = auth()->user();
 
-        if (!$authUser) return ActionResponse::danger("Not authorized for that action");
+        $customer_id = $fields->customer_id ?? null;
+        $comment = $fields->comment ?: "";
+        $amount = $fields->amount;
 
-        if (!empty($fields->customer_id)) $customer = Customer::find($fields->customer_id);
-        else $customer = $authUser->customer;
+        $customer = !empty($customer_id) ? Customer::find($customer_id) : $user->customer;
 
         try {
-            if ($this->type === AbstractFinance::TYPE_DEPOSIT) $customer->requestDeposit($authUser, $fields->amount, $fields->comment ?: "");
-            else $customer->requestWithdraw($authUser, $fields->amount, $fields->comment ?: "");
+            $customer->{"request" . ucfirst($this->type)}($user, $amount, $comment);
         } catch (InsufficientBalance $exception) {
+            activity(static::class)
+                ->causedBy($user)
+                ->withProperties([
+                    "user" => $user,
+                    "fields" => $fields,
+                    "exception" => $exception->getMessage()
+                ])
+                ->log("Failed to make finance request");
             return ActionResponse::danger($exception->getMessage());
         }
 
@@ -89,16 +109,17 @@ class RequestFinance extends Action
      */
     public function fields(NovaRequest $request): array
     {
+        /** @var User $user */
         $user = $request->user();
+
         $fields = [
             Currency::make(__("fields.amount"), "amount")->rules('required', "min:1", "max:10000"),
-            Text::make(__("fields.comment"), 'comment')->rules('nullable'),
+            Text::make(__("fields.comment"), 'comment')->rules('nullable', 'string'),
         ];
 
         if ($user?->is_admin)
             array_unshift($fields, Select::make(__("fields.customer"), 'customer_id')
-                ->rules('required')->options(Customer::toOptionsArray())
-                ->searchable());
+                ->rules('required')->options(Customer::pluck("name", "id"))->searchable());
 
         return $fields;
     }

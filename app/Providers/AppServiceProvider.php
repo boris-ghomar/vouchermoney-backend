@@ -2,10 +2,12 @@
 
 namespace App\Providers;
 
+use App\Models\Transaction\ArchivedTransaction;
 use App\Auth\CustomerApiGuard;
 use App\Models\Voucher\ArchivedVoucher;
 use App\Models\Voucher\Voucher;
 use App\Models\Voucher\VoucherActivity;
+use App\Policies\ArchivedTransactionPolicy;
 use App\Policies\ArchivedVoucherPolicy;
 use App\Policies\VoucherActivityPolicy;
 use App\Policies\VoucherPolicy;
@@ -31,6 +33,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Voucher::class, VoucherPolicy::class);
         Gate::policy(ArchivedVoucher::class, ArchivedVoucherPolicy::class);
         Gate::policy(VoucherActivity::class, VoucherActivityPolicy::class);
+        Gate::policy(ArchivedTransaction::class, ArchivedTransactionPolicy::class);
         Auth::extend('customer-api', function ($app, $name, array $config) {
             return new CustomerApiGuard($app['auth']->createUserProvider($config['provider']), $app['request']);
         });

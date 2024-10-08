@@ -2,7 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\Customer;
+use App\Models\Customer\Customer;
+use App\Models\Permission;
 use App\Models\User;
 
 class CustomerPolicy
@@ -12,7 +13,7 @@ class CustomerPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can("customer:view-any");
+        return $user->is_super || $user->can(Permission::CUSTOMERS_VIEW);
     }
 
     /**
@@ -20,11 +21,16 @@ class CustomerPolicy
      */
     public function view(User $user, Customer $customer): bool
     {
-        if ($user->is_customer && $user->customer_id === $customer->id && $user->can("customer:view-balance")) {
-            return true;
-        }
+        if (
+            $user->is_super ||
+            $user->can(Permission::CUSTOMERS_VIEW) ||
+            (
+                $user->customer_id === $customer->id &&
+                ($user->is_customer_admin || $user->can(Permission::CUSTOMER_VIEW))
+            )
+        ) return true;
 
-        return $this->viewAny($user);
+        return false;
     }
 
     /**
@@ -32,7 +38,7 @@ class CustomerPolicy
      */
     public function create(User $user): bool
     {
-        return $user->is_admin && $user->can("customer:create");
+        return $user->is_super;
     }
 
     /**
@@ -40,7 +46,9 @@ class CustomerPolicy
      */
     public function update(User $user, Customer $customer): bool
     {
-        return $user->customer_id === $customer->id && $user->can("customer:update");
+        return $user->is_super || (
+            $user->customer_id === $customer->id && $user->is_customer_admin
+        );
     }
 
     /**
@@ -48,15 +56,15 @@ class CustomerPolicy
      */
     public function delete(User $user): bool
     {
-        return $user->is_admin && $user->can("customer:delete");
+        return $user->is_super;
     }
 
     /**
      * Determine whether the user can restore the model.
      */
-    public function restore(User $user, Customer $customer): bool
+    public function restore(User $user): bool
     {
-        return $this->update($user, $customer);
+        return $this->delete($user);
     }
 
     /**

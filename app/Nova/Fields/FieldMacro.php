@@ -2,37 +2,24 @@
 
 namespace App\Nova\Fields;
 
+use App\Models\User;
+use App\Nova\Menu\MenuMacro;
 use Illuminate\Http\Request;
 
 trait FieldMacro
 {
-    public function onlyForAdmins(): static
+    use MenuMacro;
+
+    public function onlyForCustomersAdmin(): static
     {
-        $this->canSee(fn(Request $request) => $request->user()?->is_admin);
+        $this->canSee(function (Request $request) {
+            /** @var User $user */
+            $user = $request->user();
 
-        return $this;
-    }
+            if (!$user || !$user->is_customer_admin)
+                return false;
 
-    public function onlyForCustomers(): static
-    {
-        $this->canSee(fn(Request $request) => $request->user()?->is_customer);
-
-        return $this;
-    }
-
-    public function seeIfCan(...$abilities): static
-    {
-        $this->canSee(function (Request $request) use ($abilities) {
-            return $request->user()?->can(...$abilities);
-        });
-
-        return $this;
-    }
-
-    public function seeIfCanAny(array $abilities): static
-    {
-        $this->canSee(function (Request $request) use ($abilities) {
-            return $request->user()?->canAny(...$abilities);
+            return true;
         });
 
         return $this;

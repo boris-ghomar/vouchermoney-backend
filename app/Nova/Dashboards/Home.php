@@ -2,7 +2,8 @@
 
 namespace App\Nova\Dashboards;
 
-use App\Nova\Metrics\AccountBalance;
+use App\Models\Permission;
+use App\Models\User;
 use App\Nova\Metrics\CustomerAvailableBalance;
 use Illuminate\Http\Request;
 use Laravel\Nova\Dashboard;
@@ -27,10 +28,10 @@ class Home extends Dashboard
     {
         return [
             (new CustomerAvailableBalance())->canSee(function (Request $request) {
-                return $request->user()?->is_customer && $request->user()?->can("customer:view-balance");
-            }),
-            (new AccountBalance())->canSee(function (Request $request) {
-                return $request->user()?->is_customer && $request->user()?->can("customer:view-balance");
+                /** @var User $user */
+                $user = $request->user();
+
+                return $user && ($user->is_customer_admin || $user->can(Permission::CUSTOMER_VIEW));
             }),
         ];
     }

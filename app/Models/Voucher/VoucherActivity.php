@@ -5,41 +5,44 @@ namespace App\Models\Voucher;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\Voucher\VoucherActivityLog\VoucherActivityLog;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 /**
  * @property  int          $id
  * @property  string       $code
- * @property  string       $from_state
- * @property  string       $to_state
- * @property  string|null  $description
- * @property  string|null  $user_data
+ * @property  string       $state
+ * @property  array        $properties
+ * @property  string|null  $user_id
+ * @property  array        $user_data
  * @property  Carbon       $time
  *
  * @property  User|null    $user
  */
 class VoucherActivity extends Model
 {
+    use LogsActivity;
+
     protected $table = "voucher_activity";
     public $timestamps = false;
 
     const STATE_CREATED = "created";
-    const STATE_ACTIVE = "active";
+    const STATE_ACTIVATED = "activated";
     const STATE_FROZEN = "frozen";
     const STATE_REDEEMED = "redeemed";
     const STATE_EXPIRED = "expired";
 
     protected $fillable = [
         "code",
-        "from_state",
-        "to_state",
+        "state",
         "description",
         "user",
         "time"
     ];
 
     protected $casts = [
-        "user" => "array",
+        "properties" => "array",
+        "user_data" => "array",
         "time" => "datetime"
     ];
 
@@ -48,37 +51,58 @@ class VoucherActivity extends Model
         if (empty($this->user_data["id"]))
             return null;
 
-        $user = User::find($this->user_data["id"]);
-
-        if (!$user)
-            return null;
-
-        return $user;
+        return User::find($this->user_data["id"]);
     }
 
-    public static function make(string $code, string $from, string $to, User|null $user = null, string|null $description = null): static
+    public static function makeCreated(string $code, array $properties = []): static
     {
+        return self::make($code, static::STATE_CREATED, $properties);
+    }
+
+    public static function makeRedeemed(string $code, array $properties = []): static
+    {
+        return self::make($code, static::STATE_REDEEMED, $properties);
+    }
+
+    public static function makeFrozen(string $code, array $properties = []): static
+    {
+        return self::make($code, static::STATE_FROZEN, $properties);
+    }
+
+    public static function makeActivated(string $code, array $properties = []): static
+    {
+        return self::make($code, static::STATE_ACTIVATED, $properties);
+    }
+
+    public static function makeExpired(string $code, array $properties = []): static
+    {
+        return self::make($code, static::STATE_EXPIRED, $properties);
+    }
+
+    private static function make(
+        string $code,
+        string $state,
+        array $properties = []
+    ): static {
         $activity = new static();
         $activity->code = $code;
-        $activity->from_state = $from;
-        $activity->to_state = $to;
+        $activity->state = $state;
 
-        if (!empty($user)) $activity->user_data = $user->toJson();
+        if (! empty($properties)) $activity->properties = $properties;
 
-        if (!empty($description)) $activity->description = $description;
+        /** @var User $user */
+        $user = request()->user();
+
+        if (! empty($user)) $activity->user_data = $user;
 
         $activity->save();
 
         return $activity;
     }
 
-    public static function log(string $voucherCode, User $user = null): VoucherActivityLog
+    public function getActivitylogOptions(): LogOptions
     {
-        $voucherActivity = new static();
-        $voucherActivity->code = $voucherCode;
-
-        if (!empty($user)) $voucherActivity->user_data = $user;
-
-        return new VoucherActivityLog($voucherActivity);
+        return LogOptions::defaults()
+            ->logOnly(['code', 'state', 'properties', 'user_data', 'time']);
     }
 }

@@ -3,6 +3,8 @@
 namespace App\Nova\Actions;
 
 use App\Models\Finance\Finance;
+use App\Models\Permission;
+use App\Models\User;
 use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Http\Request;
@@ -25,23 +27,27 @@ class ResolveFinance extends Action
 
     public function approve(): static
     {
-        return $this->setType("approve");
+        $this->type = "approve";
+        return $this;
     }
 
     public function reject(): static
     {
-        return $this->setType("reject");
+        $this->type = "reject";
+        return $this;
     }
 
-    private function setType(string $type): static
+    public function authorizedToRun(Request $request, $model): bool
     {
-        $this->type = $type;
-        return $this;
+        return $this->authorizedToSee($request);
     }
 
     public function authorizedToSee(Request $request): bool
     {
-        return $request->user()?->is_admin && $request->user()->can("finance:resolve");
+        /** @var User $user */
+        $user = $request->user();
+
+        return $user && $user->canAdmin(Permission::FINANCES_MANAGEMENT);
     }
 
     /**
@@ -63,6 +69,7 @@ class ResolveFinance extends Action
      */
     public function handle(ActionFields $fields, Collection $models): ActionResponse
     {
+        /** @var User $user */
         $user = auth()->user();
 
         try {
@@ -79,7 +86,7 @@ class ResolveFinance extends Action
             return ActionResponse::danger("Something went wrong");
         }
 
-        return ActionResponse::message("Successfully " . ucfirst($this->type) . "ed");
+        return ActionResponse::message("Successfully " . ucfirst($this->type) . ($this->type === "approve" ? "" : "e") . "d");
     }
 
     /**
@@ -92,6 +99,7 @@ class ResolveFinance extends Action
     {
         return [
             Text::make(__("fields.comment"), "comment")
+                ->rules("nullable", "string")
         ];
     }
 

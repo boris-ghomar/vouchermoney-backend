@@ -2,6 +2,8 @@
 
 namespace App\Nova;
 
+use App\Models\Permission;
+use App\Models\User;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Laravel\Nova\Resource as NovaResource;
 use Illuminate\Database\Eloquent\Builder;
@@ -44,5 +46,75 @@ abstract class Resource extends NovaResource
     public static function relatableQuery(NovaRequest $request, $query): Builder
     {
         return parent::relatableQuery($request, $query);
+    }
+
+    /**
+     * Get the cards available for the request.
+     *
+     * @param NovaRequest $request
+     * @return array
+     */
+    public function cards(NovaRequest $request): array
+    {
+        return [];
+    }
+
+    /**
+     * Get the filters available for the resource.
+     *
+     * @param NovaRequest $request
+     * @return array
+     */
+    public function filters(NovaRequest $request): array
+    {
+        return [];
+    }
+
+    /**
+     * Get the lenses available for the resource.
+     *
+     * @param NovaRequest $request
+     * @return array
+     */
+    public function lenses(NovaRequest $request): array
+    {
+        return [];
+    }
+
+    /**
+     * Get the actions available for the resource.
+     *
+     * @param NovaRequest $request
+     * @return array
+     */
+    public function actions(NovaRequest $request): array
+    {
+        return [];
+    }
+
+    public static function forCustomer(NovaRequest $request, Builder $query, string $column = "customer_id"): void
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        if ($user && $user->is_customer)
+            $query->where($column, $user->customer_id);
+    }
+
+    public static function hideQuery(Builder $query): void
+    {
+        $query->whereRaw("1 = 0");
+    }
+
+    public static function hideWhenNotAuthorized(NovaRequest $request, Builder $query, string $admin, string $customer): void
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        if (
+            ! $user ||
+            ($user->is_admin && ! $user->canAdmin($admin)) ||
+            ($user->is_customer && ! $user->canCustomer($customer))
+        ) static::hideQuery($query);
     }
 }

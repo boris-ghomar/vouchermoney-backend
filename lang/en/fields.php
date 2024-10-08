@@ -23,8 +23,11 @@ return [
     "recipient" => "Recipient",
     "comment" => "Comment",
     "request_comment" => "Request comment",
+    "requester_comment" => "Requester comment",
     "resolve_comment" => "Resolve comment",
+    "resolver_comment" => "Resolver comment",
     "requested_by" => "Requested by",
+    "requester" => "Requester",
     "archived_at" => "Archived at",
 
     "type" => "Type",
@@ -40,12 +43,16 @@ return [
     "code" => "Code",
 
     "description" => "Description",
+    "description_long" => "Long Description",
     "subject" => "Subject",
     "subject_id" => "Subject ID",
     "subject_type" => "Subject Type",
     "causer" => "Causer",
     "causer_ip" => "Causer IP",
     "properties" => "Properties",
+    "title" => "Title",
+    "subtitle" => "Subtitle",
+    "label" => "Label",
     "batch_uuid" => "Batch UUID",
     "withdraw" => "Withdraw",
     "deposit" => "Deposit",
@@ -58,6 +65,8 @@ return [
 
     "from_state" => "From state",
     "to_state" => "To state",
+    "creator" => "Creator",
 
-    "admins" => "Admins"
+    "admins" => "Admins",
+    "note" => "Note"
 ];

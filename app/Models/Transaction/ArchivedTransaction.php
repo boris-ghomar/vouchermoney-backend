@@ -2,9 +2,7 @@
 
 namespace App\Models\Transaction;
 
-use App\Models\Customer;
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property  Carbon       $archived_at
@@ -16,6 +14,7 @@ class ArchivedTransaction extends AbstractTransaction
     public $timestamps = false;
 
     protected $casts = [
+        "amount" => "decimal:2",
         "archived_at" => "datetime",
         "created_at" => "datetime",
         "updated_at" => "datetime"
@@ -24,17 +23,21 @@ class ArchivedTransaction extends AbstractTransaction
     protected $fillable = [
         'customer_id',
         'amount',
-        'archived_at'
+        'description',
+        'model_type',
+        'model_id',
+        'archived_at',
     ];
 
     public static function make(Transaction $transaction): static
     {
         $archivedTransaction = new static();
         $archivedTransaction->id = $transaction->id;
-        $archivedTransaction->customer_id = $transaction->customer->id;
+        $archivedTransaction->customer_id = $transaction->customer_id;
         $archivedTransaction->amount = $transaction->amount;
+        $archivedTransaction->description = $transaction->description;
 
-        if (!empty($transaction->description)) $archivedTransaction->description = $transaction->description;
+        if (! empty($transaction->model)) $archivedTransaction->model()->associate($transaction->model);
 
         $archivedTransaction->created_at = $transaction->created_at;
         $archivedTransaction->updated_at = $transaction->updated_at;

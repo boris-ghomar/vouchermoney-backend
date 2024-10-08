@@ -2,20 +2,33 @@
 
 namespace App\Models\Finance;
 
+use App\Models\Customer\Customer;
+use App\Models\Transaction\ArchivedTransaction;
+use App\Models\Transaction\Transaction;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Support\Carbon;
+use Spatie\Activitylog\LogOptions;
 
 /**
+ * @property  string       $id
+ * @property  float        $amount
  * @property  bool         $status
- * @property  string|null  $request_comment
- * @property  string|null  $resolved_comment
+ * @property  array        $customer_data
+ * @property  array        $requester_data
  * @property  array        $resolver_data
+ * @property  string|null  $requester_comment
+ * @property  string|null  $resolver_comment
  * @property  Carbon       $resolved_at
+ * @property  Carbon       $created_at
+ * @property  Carbon       $updated_at
  *
- * @property-read  User|null  $resolver
- * @property-read  bool       $is_approved
- * @property-read  bool       $is_rejected
+ * @property-read  Customer|null  $customer
+ * @property-read  User|null      $requester
+ * @property-read  User|null      $resolver
+ * @property-read  bool           $is_approved
+ * @property-read  bool           $is_rejected
  *
  * @method  Builder|static  onlyApproved()
  * @method  Builder|static  onlyRejected()
@@ -30,26 +43,41 @@ class ArchivedFinance extends AbstractFinance
     const STATUS_REJECTED = false;
 
     protected $fillable = [
-        'customer_id',
+        'id',
         'amount',
         'status',
-        'request_comment',
-        'resolved_comment',
+        'customer_data',
+        'requester_data',
         'resolver_data',
-        'resolved_at',
+        'requester_comment',
+        'resolver_comment',
+        "created_at",
+        "updated_at"
     ];
 
     protected $casts = [
-        "resolved_at" => "datetime",
+        "customer_data" => "array",
+        "requester_data" => "array",
         "resolver_data" => "array",
+
         "status" => "boolean",
+        "amount" => "decimal:2",
+
+        "resolved_at" => "datetime",
         "created_at" => "datetime",
-        "updated_at" => "datetime"
+        "updated_at" => "datetime",
     ];
 
-    /**
-     * Relationship to the user, who approve/reject a finance
-     */
+    public function getCustomerAttribute(): Customer|null
+    {
+        return !empty($this->customer_data["id"]) ? Customer::find($this->customer_data["id"]) : null;
+    }
+
+    public function getRequesterAttribute(): Customer|null
+    {
+        return !empty($this->requester_data["id"]) ? User::find($this->requester_data["id"]) : null;
+    }
+
     public function getResolverAttribute(): User|null
     {
         return !empty($this->resolver_data["id"]) ? User::find($this->resolver_data["id"]) : null;
@@ -75,33 +103,77 @@ class ArchivedFinance extends AbstractFinance
         $query->where("status", self::STATUS_REJECTED);
     }
 
-    public static function makeApproved(Finance $finance, User $resolver, string $resolvedComment = ""): static
+    /**
+     * Create approved archived finance
+     *
+     * @param   Finance  $finance
+     * @param   User     $resolver
+     * @param   string   $resolver_comment
+     * @return  static
+     */
+    public static function approved(Finance $finance, User $resolver, string $resolver_comment = ""): static
     {
-        return static::make($finance, $resolver, static::STATUS_APPROVED, $resolvedComment);
+        return static::make($finance, $resolver, static::STATUS_APPROVED, $resolver_comment);
     }
 
-    public static function makeRejected(Finance $finance, User $resolver, string $resolvedComment = ""): static
+    /**
+     * Create rejected archived finance
+     *
+     * @param   Finance  $finance
+     * @param   User     $resolver
+     * @param   string   $resolver_comment
+     * @return  static
+     */
+    public static function rejected(Finance $finance, User $resolver, string $resolver_comment = ""): static
     {
-        return static::make($finance, $resolver, static::STATUS_REJECTED, $resolvedComment);
+        return static::make($finance, $resolver, static::STATUS_REJECTED, $resolver_comment);
     }
 
-    public static function make(Finance $finance, User $resolver, bool $status, string $resolvedComment = ""): static
+    private static function make(Finance $finance, User $resolver, bool $status, string $resolver_comment = ""): static
     {
-        $archivedFinance = new static();
-        $archivedFinance->id = $finance->id;
-        $archivedFinance->customer_id = $finance->customer_id;
-        $archivedFinance->amount = $finance->amount;
-        $archivedFinance->status = $status;
-        $archivedFinance->user_id = $finance->user_id;
+        $archived = new static();
+        $archived->id = $finance->id;
+        $archived->amount = $finance->amount;
+        $archived->status = $status;
 
-        if (!empty($finance->comment)) $archivedFinance->request_comment = $finance->comment;
-        if (!empty($resolvedComment)) $archivedFinance->resolved_comment = $resolvedComment;
+        $archived->customer_data = $finance->customer;
+        $archived->requester_data = $finance->requester;
+        $archived->resolver_data = $resolver;
 
-        $archivedFinance->resolver_data = $resolver->toJson();
-        $archivedFinance->created_at = $finance->created_at;
-        $archivedFinance->updated_at = $finance->updated_at;
-        $archivedFinance->save();
+        if (! empty($finance->comment)) $archived->requester_comment = $finance->comment;
+        if (! empty($resolver_comment)) $archived->resolver_comment = $resolver_comment;
 
-        return $archivedFinance;
+        $archived->created_at = $finance->created_at;
+        $archived->updated_at = $finance->updated_at;
+        $archived->save();
+
+        return $archived;
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly([
+                'amount',
+                'status',
+                'customer_data',
+                'requester_data',
+                'resolver_data',
+                'requester_comment',
+                'resolver_comment',
+                'resolved_at',
+                'created_at',
+                'updated_at'
+            ]);
+    }
+
+    public function transaction(): MorphOne
+    {
+        return $this->morphOne(Transaction::class, "model");
+    }
+
+    public function archived_transaction(): MorphOne
+    {
+        return $this->morphOne(ArchivedTransaction::class, "model");
     }
 }

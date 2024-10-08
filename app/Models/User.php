@@ -2,13 +2,17 @@
 
 namespace App\Models;
 
+use App\Models\Customer\Customer;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Permission\Traits\HasRoles;
 
 /**
@@ -23,14 +27,19 @@ use Spatie\Permission\Traits\HasRoles;
  * @property  Carbon|null  $created_at
  * @property  Carbon|null  $updated_at
  *
- * @property  bool           $is_admin
- * @property  bool           $is_customer
- * @property  Customer|null  $customer
- * @property  string         $full_name
+ * @property-read  Customer|null           $customer
+ * @property-read  Collection<Permission>  $permissions
+ * @property-read  Collection<Role>        $roles
+ *
+ * @property-read  bool           $is_admin
+ * @property-read  bool           $is_customer
+ * @property-read  bool           $is_super
+ * @property-read  bool           $is_customer_admin
+ * @property-read  string         $full_name
  */
 class User extends Authenticatable
 {
-    use Notifiable, HasApiTokens, HasRoles, SoftDeletes, HasUlids;
+    use Notifiable, HasApiTokens, HasRoles, SoftDeletes, HasUlids, LogsActivity;
 
     /**
      * The attributes that are mass assignable.
@@ -73,9 +82,19 @@ class User extends Authenticatable
         return $this->belongsTo(Customer::class);
     }
 
+    public function getIsSuperAttribute(): bool
+    {
+        return $this->hasRole(Role::SUPER_ADMIN);
+    }
+
     public function getIsAdminAttribute(): bool
     {
         return $this->customer_id === null;
+    }
+
+    public function getIsCustomerAdminAttribute(): bool
+    {
+        return $this->hasRole(Role::CUSTOMER_ADMIN);
     }
 
     public function getIsCustomerAttribute(): bool
@@ -83,13 +102,43 @@ class User extends Authenticatable
         return $this->customer_id !== null;
     }
 
-    public function canSeeVouchersList(): bool
-    {
-        return $this->can("customer:voucher:view") || $this->can("voucher:view");
-    }
-
     public function getFullNameAttribute(): string
     {
         return $this->name . " [" . $this->customer->name . "]";
+    }
+
+    public function isOwnerOf(User $user): bool
+    {
+        return $this->id !== $user->id && $this->is_customer_admin && $this->customer_id === $user->customer_id;
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly([
+                'name',
+                "email",
+                "email_verified_at",
+                "customer_id",
+                "created_at",
+                "updated_at",
+                "deleted_at",
+                "is_admin",
+                "is_super",
+                "is_customer_admin",
+                "is_customer",
+                "roles",
+                "permissions"
+            ]);
+    }
+
+    public function canAdmin(string $ability): bool
+    {
+        return $this->is_super || ($this->is_admin && $this->can($ability));
+    }
+
+    public function canCustomer(string $ability): bool
+    {
+        return $this->is_customer_admin || ($this->is_customer && $this->can($ability));
     }
 }
