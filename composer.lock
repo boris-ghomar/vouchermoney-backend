@@ -4,20 +4,85 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "ae6837363900ff494c3be2b9250f7e2b",
+    "content-hash": "6d523666fd60146a257b8a99f2e671d2",
     "packages": [
         {
-            "name": "brianium/paratest",
-            "version": "v7.5.6",
+            "name": "alexwenzel/nova-dependency-container",
+            "version": "1.12",
             "source": {
                 "type": "git",
-                "url": "https://github.com/paratestphp/paratest.git",
-                "reference": "8134d62d5b6f98b145f00db1421f39eb1fd0687b"
+                "url": "https://github.com/alexwenzel/nova-dependency-container.git",
+                "reference": "72d21696ac2cd3b75f20261693ec7b089d15e8b3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/paratestphp/paratest/zipball/8134d62d5b6f98b145f00db1421f39eb1fd0687b",
-                "reference": "8134d62d5b6f98b145f00db1421f39eb1fd0687b",
+                "url": "https://api.github.com/repos/alexwenzel/nova-dependency-container/zipball/72d21696ac2cd3b75f20261693ec7b089d15e8b3",
+                "reference": "72d21696ac2cd3b75f20261693ec7b089d15e8b3",
+                "shasum": ""
+            },
+            "require": {
+                "laravel/framework": "^8.0|^9.0|^10.0|^11.0",
+                "laravel/nova": "^4.0",
+                "php": "^8.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Alexwenzel\\DependencyContainer\\FieldServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Alexwenzel\\DependencyContainer\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "alexwenzel",
+                    "email": "alexander.wenzel.berlin@gmail.com"
+                },
+                {
+                    "name": "Epartment E-commerce",
+                    "email": "support@epartment.nl"
+                }
+            ],
+            "description": "A Laravel Nova 4 form container for grouping fields that depend on other field values.",
+            "keywords": [
+                "field",
+                "laravel",
+                "nova",
+                "nova-4"
+            ],
+            "support": {
+                "issues": "https://github.com/alexwenzel/nova-dependency-container/issues",
+                "source": "https://github.com/alexwenzel/nova-dependency-container/tree/1.12"
+            },
+            "funding": [
+                {
+                    "url": "https://www.paypal.com/donate/?hosted_button_id=LHJQRG9FXSYCU",
+                    "type": "custom"
+                }
+            ],
+            "time": "2024-06-02T20:37:02+00:00"
+        },
+        {
+            "name": "brianium/paratest",
+            "version": "v7.5.7",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/paratestphp/paratest.git",
+                "reference": "4890b17f569efea5e034e519dc883da53a67448d"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/paratestphp/paratest/zipball/4890b17f569efea5e034e519dc883da53a67448d",
+                "reference": "4890b17f569efea5e034e519dc883da53a67448d",
                 "shasum": ""
             },
             "require": {
@@ -31,22 +96,22 @@
                 "phpunit/php-code-coverage": "^11.0.6",
                 "phpunit/php-file-iterator": "^5.1.0",
                 "phpunit/php-timer": "^7.0.1",
-                "phpunit/phpunit": "^11.3.6",
+                "phpunit/phpunit": "^11.4.0",
                 "sebastian/environment": "^7.2.0",
-                "symfony/console": "^6.4.11 || ^7.1.4",
-                "symfony/process": "^6.4.8 || ^7.1.3"
+                "symfony/console": "^6.4.11 || ^7.1.5",
+                "symfony/process": "^6.4.8 || ^7.1.5"
             },
             "require-dev": {
                 "doctrine/coding-standard": "^12.0.0",
                 "ext-pcov": "*",
                 "ext-posix": "*",
-                "infection/infection": "^0.29.6",
-                "phpstan/phpstan": "^1.12.5",
+                "infection/infection": "^0.29.7",
+                "phpstan/phpstan": "^1.12.6",
                 "phpstan/phpstan-deprecation-rules": "^1.2.1",
                 "phpstan/phpstan-phpunit": "^1.4.0",
                 "phpstan/phpstan-strict-rules": "^1.6.1",
                 "squizlabs/php_codesniffer": "^3.10.3",
-                "symfony/filesystem": "^6.4.9 || ^7.1.2"
+                "symfony/filesystem": "^6.4.9 || ^7.1.5"
             },
             "bin": [
                 "bin/paratest",
@@ -86,7 +151,7 @@
             ],
             "support": {
                 "issues": "https://github.com/paratestphp/paratest/issues",
-                "source": "https://github.com/paratestphp/paratest/tree/v7.5.6"
+                "source": "https://github.com/paratestphp/paratest/tree/v7.5.7"
             },
             "funding": [
                 {
@@ -98,7 +163,7 @@
                     "type": "paypal"
                 }
             ],
-            "time": "2024-10-02T05:22:28+00:00"
+            "time": "2024-10-07T06:27:54+00:00"
         },
         {
             "name": "brick/math",
@@ -3016,24 +3081,24 @@
         },
         {
             "name": "nette/schema",
-            "version": "v1.3.0",
+            "version": "v1.3.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/nette/schema.git",
-                "reference": "a6d3a6d1f545f01ef38e60f375d1cf1f4de98188"
+                "reference": "da801d52f0354f70a638673c4a0f04e16529431d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nette/schema/zipball/a6d3a6d1f545f01ef38e60f375d1cf1f4de98188",
-                "reference": "a6d3a6d1f545f01ef38e60f375d1cf1f4de98188",
+                "url": "https://api.github.com/repos/nette/schema/zipball/da801d52f0354f70a638673c4a0f04e16529431d",
+                "reference": "da801d52f0354f70a638673c4a0f04e16529431d",
                 "shasum": ""
             },
             "require": {
                 "nette/utils": "^4.0",
-                "php": "8.1 - 8.3"
+                "php": "8.1 - 8.4"
             },
             "require-dev": {
-                "nette/tester": "^2.4",
+                "nette/tester": "^2.5.2",
                 "phpstan/phpstan-nette": "^1.0",
                 "tracy/tracy": "^2.8"
             },
@@ -3072,9 +3137,9 @@
             ],
             "support": {
                 "issues": "https://github.com/nette/schema/issues",
-                "source": "https://github.com/nette/schema/tree/v1.3.0"
+                "source": "https://github.com/nette/schema/tree/v1.3.2"
             },
-            "time": "2023-12-11T11:54:22+00:00"
+            "time": "2024-10-06T23:10:23+00:00"
         },
         {
             "name": "nette/utils",
@@ -3219,60 +3284,6 @@
                 "source": "https://github.com/nikic/PHP-Parser/tree/v5.3.0"
             },
             "time": "2024-09-29T13:56:26+00:00"
-        },
-        {
-            "name": "nova-kit/nova-packages-tool",
-            "version": "v1.17.2",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/nova-kit/nova-packages-tool.git",
-                "reference": "1d7910d1e5d6d8bfa31e61e393dd1723e8b16c08"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/nova-kit/nova-packages-tool/zipball/1d7910d1e5d6d8bfa31e61e393dd1723e8b16c08",
-                "reference": "1d7910d1e5d6d8bfa31e61e393dd1723e8b16c08",
-                "shasum": ""
-            },
-            "require": {
-                "laravel/nova": ">=4.35.2 <4.36.0",
-                "php": "^7.3 || ^8.0"
-            },
-            "require-dev": {
-                "nova-kit/nova-devtool": "^1.3",
-                "orchestra/testbench": "^6.35 || ^7.29 || ^8.9 || ^9.0"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-develop": "2.x-dev"
-                },
-                "laravel": {
-                    "providers": [
-                        "NovaKit\\NovaPackagesTool\\LaravelServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "NovaKit\\NovaPackagesTool\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Mior Muhammad Zaki",
-                    "email": "crynobone@gmail.com"
-                }
-            ],
-            "description": "Tool for Laravel Nova Packages Development",
-            "support": {
-                "source": "https://github.com/nova-kit/nova-packages-tool/tree/v1.17.2"
-            },
-            "time": "2024-09-25T16:20:09+00:00"
         },
         {
             "name": "nunomaduro/collision",
@@ -3666,156 +3677,37 @@
             "time": "2024-02-27T15:07:07+00:00"
         },
         {
-            "name": "outl1ne/nova-multiselect-field",
-            "version": "4.5.6",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/outl1ne/nova-multiselect-field.git",
-                "reference": "1855f77ceb106e700224c7e4f0e2e3e79e44d9f4"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/outl1ne/nova-multiselect-field/zipball/1855f77ceb106e700224c7e4f0e2e3e79e44d9f4",
-                "reference": "1855f77ceb106e700224c7e4f0e2e3e79e44d9f4",
-                "shasum": ""
-            },
-            "require": {
-                "laravel/nova": "^4.27",
-                "nova-kit/nova-packages-tool": "^1.12",
-                "outl1ne/nova-translations-loader": "^5.0",
-                "php": ">=8.0"
-            },
-            "require-dev": {
-                "nova-kit/nova-devtool": "^1.2.1"
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "providers": [
-                        "Outl1ne\\MultiselectField\\FieldServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Outl1ne\\MultiselectField\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Tarvo Reinpalu",
-                    "email": "tarvoreinpalu@gmail.com",
-                    "role": "Developer"
-                },
-                {
-                    "name": "Optimist Digital",
-                    "email": "info@optimistdigital.com",
-                    "role": "Maintainer"
-                }
-            ],
-            "description": "A multiple select field for Laravel Nova.",
-            "keywords": [
-                "laravel",
-                "multiselect",
-                "nova",
-                "select"
-            ],
-            "support": {
-                "issues": "https://github.com/outl1ne/nova-multiselect-field/issues",
-                "source": "https://github.com/outl1ne/nova-multiselect-field/tree/4.5.6"
-            },
-            "funding": [
-                {
-                    "url": "https://github.com/outl1ne",
-                    "type": "github"
-                }
-            ],
-            "time": "2024-02-29T14:28:32+00:00"
-        },
-        {
-            "name": "outl1ne/nova-translations-loader",
-            "version": "5.0.2",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/outl1ne/nova-translations-loader.git",
-                "reference": "baa886cb7082eb0fc399c64a54b996ca8df28f8d"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/outl1ne/nova-translations-loader/zipball/baa886cb7082eb0fc399c64a54b996ca8df28f8d",
-                "reference": "baa886cb7082eb0fc399c64a54b996ca8df28f8d",
-                "shasum": ""
-            },
-            "require": {
-                "laravel/nova": "^4.0",
-                "php": ">=8.0"
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "providers": [],
-                    "aliases": []
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Outl1ne\\NovaTranslationsLoader\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "description": "This Laravel Nova package helps developers load translations into their packages.",
-            "keywords": [
-                "laravel",
-                "nova",
-                "optimistdigital",
-                "outl1ne",
-                "translations"
-            ],
-            "support": {
-                "issues": "https://github.com/outl1ne/nova-translations-loader/issues",
-                "source": "https://github.com/outl1ne/nova-translations-loader/tree/5.0.2"
-            },
-            "time": "2024-03-13T08:57:31+00:00"
-        },
-        {
             "name": "pestphp/pest",
             "version": "3.x-dev",
             "source": {
                 "type": "git",
                 "url": "https://github.com/pestphp/pest.git",
-                "reference": "1e0bb88b734b3b5999a38fa479683c5dc3ee6f2f"
+                "reference": "0a7bff0d246b10040e12e4152215e12a599e742a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/pestphp/pest/zipball/1e0bb88b734b3b5999a38fa479683c5dc3ee6f2f",
-                "reference": "1e0bb88b734b3b5999a38fa479683c5dc3ee6f2f",
+                "url": "https://api.github.com/repos/pestphp/pest/zipball/0a7bff0d246b10040e12e4152215e12a599e742a",
+                "reference": "0a7bff0d246b10040e12e4152215e12a599e742a",
                 "shasum": ""
             },
             "require": {
-                "brianium/paratest": "^7.5.5",
+                "brianium/paratest": "^7.5.6",
                 "nunomaduro/collision": "^8.4.0",
                 "nunomaduro/termwind": "^2.1.0",
                 "pestphp/pest-plugin": "^3.0.0",
                 "pestphp/pest-plugin-arch": "^3.0.0",
                 "pestphp/pest-plugin-mutate": "^3.0.5",
                 "php": "^8.2.0",
-                "phpunit/phpunit": "^11.3.6"
+                "phpunit/phpunit": "^11.4.0"
             },
             "conflict": {
-                "phpunit/phpunit": ">11.3.6",
+                "phpunit/phpunit": ">11.4.0",
                 "sebastian/exporter": "<6.0.0",
                 "webmozart/assert": "<1.11.0"
             },
             "require-dev": {
                 "pestphp/pest-dev-tools": "^3.0.0",
-                "pestphp/pest-plugin-type-coverage": "^3.0.1",
+                "pestphp/pest-plugin-type-coverage": "^3.1.0",
                 "symfony/process": "^7.1.5"
             },
             "default-branch": true,
@@ -3882,7 +3774,7 @@
             ],
             "support": {
                 "issues": "https://github.com/pestphp/pest/issues",
-                "source": "https://github.com/pestphp/pest/tree/v3.2.5"
+                "source": "https://github.com/pestphp/pest/tree/v3.3.0"
             },
             "funding": [
                 {
@@ -3894,7 +3786,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2024-10-01T10:55:18+00:00"
+            "time": "2024-10-06T18:25:27+00:00"
         },
         {
             "name": "pestphp/pest-plugin",
@@ -4922,16 +4814,16 @@
         },
         {
             "name": "phpunit/phpunit",
-            "version": "11.3.6",
+            "version": "11.4.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/phpunit.git",
-                "reference": "d62c45a19c665bb872c2a47023a0baf41a98bb2b"
+                "reference": "89fe0c530133c08f7fff89d3d727154e4e504925"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/d62c45a19c665bb872c2a47023a0baf41a98bb2b",
-                "reference": "d62c45a19c665bb872c2a47023a0baf41a98bb2b",
+                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/89fe0c530133c08f7fff89d3d727154e4e504925",
+                "reference": "89fe0c530133c08f7fff89d3d727154e4e504925",
                 "shasum": ""
             },
             "require": {
@@ -4970,7 +4862,7 @@
             "type": "library",
             "extra": {
                 "branch-alias": {
-                    "dev-main": "11.3-dev"
+                    "dev-main": "11.4-dev"
                 }
             },
             "autoload": {
@@ -5002,7 +4894,7 @@
             "support": {
                 "issues": "https://github.com/sebastianbergmann/phpunit/issues",
                 "security": "https://github.com/sebastianbergmann/phpunit/security/policy",
-                "source": "https://github.com/sebastianbergmann/phpunit/tree/11.3.6"
+                "source": "https://github.com/sebastianbergmann/phpunit/tree/11.4.0"
             },
             "funding": [
                 {
@@ -5018,7 +4910,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2024-09-19T10:54:28+00:00"
+            "time": "2024-10-05T08:39:03+00:00"
         },
         {
             "name": "psr/cache",
@@ -7054,16 +6946,16 @@
         },
         {
             "name": "staudenmeir/eloquent-json-relations",
-            "version": "v1.13",
+            "version": "v1.13.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/staudenmeir/eloquent-json-relations.git",
-                "reference": "ecdcd2a1cb7691e89b2f3cb8bf2d5dbd009c63e1"
+                "reference": "65533e304061ee649c0bcfd0e0da9376712e8b0e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/staudenmeir/eloquent-json-relations/zipball/ecdcd2a1cb7691e89b2f3cb8bf2d5dbd009c63e1",
-                "reference": "ecdcd2a1cb7691e89b2f3cb8bf2d5dbd009c63e1",
+                "url": "https://api.github.com/repos/staudenmeir/eloquent-json-relations/zipball/65533e304061ee649c0bcfd0e0da9376712e8b0e",
+                "reference": "65533e304061ee649c0bcfd0e0da9376712e8b0e",
                 "shasum": ""
             },
             "require": {
@@ -7073,8 +6965,8 @@
             },
             "require-dev": {
                 "barryvdh/laravel-ide-helper": "^3.0",
+                "larastan/larastan": "^2.9",
                 "orchestra/testbench": "^9.0",
-                "phpstan/phpstan": "^1.10",
                 "phpunit/phpunit": "^11.0",
                 "staudenmeir/eloquent-has-many-deep": "^1.20"
             },
@@ -7104,7 +6996,7 @@
             "description": "Laravel Eloquent relationships with JSON keys",
             "support": {
                 "issues": "https://github.com/staudenmeir/eloquent-json-relations/issues",
-                "source": "https://github.com/staudenmeir/eloquent-json-relations/tree/v1.13"
+                "source": "https://github.com/staudenmeir/eloquent-json-relations/tree/v1.13.1"
             },
             "funding": [
                 {
@@ -7112,7 +7004,7 @@
                     "type": "custom"
                 }
             ],
-            "time": "2024-07-21T12:43:15+00:00"
+            "time": "2024-10-06T19:12:12+00:00"
         },
         {
             "name": "symfony/clock",
@@ -9671,6 +9563,42 @@
             "time": "2024-07-20T21:52:34+00:00"
         },
         {
+            "name": "vm/api-token-modal",
+            "version": "dev-merge",
+            "dist": {
+                "type": "path",
+                "url": "./nova-components/ApiTokenModal",
+                "reference": "8f3af6f04b3ee130f66fbc94559a781069e1580b"
+            },
+            "require": {
+                "php": "^7.3|^8.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Vm\\ApiTokenModal\\AssetServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Vm\\ApiTokenModal\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "A Laravel Nova asset.",
+            "keywords": [
+                "laravel",
+                "nova"
+            ],
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
             "name": "voku/portable-ascii",
             "version": "2.0.1",
             "source": {
@@ -10205,7 +10133,8 @@
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": {
-        "pestphp/pest": 20
+        "pestphp/pest": 20,
+        "vm/api-token-modal": 20
     },
     "prefer-stable": true,
     "prefer-lowest": false,

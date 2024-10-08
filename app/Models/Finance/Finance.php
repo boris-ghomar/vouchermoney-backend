@@ -28,6 +28,8 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
  * @property-read  Transaction          $transaction
  * @property-read  ArchivedTransaction  $archived_transaction
  * @property-read  AbstractTransaction  $associated_transaction
+ *
+ * @method static int count()
  */
 class Finance extends AbstractFinance
 {

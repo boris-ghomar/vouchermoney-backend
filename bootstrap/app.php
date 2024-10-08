@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
 //        $schedule->command("transaction:archive")->everySecond();
     })
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->redirectGuestsTo(fn() => route("nova.login"));
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

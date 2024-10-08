@@ -2,6 +2,7 @@
 
 namespace App\Models\Customer;
 
+use App\Models\CustomerApiToken;
 use App\Models\Role;
 use App\Models\User;
 use Carbon\Carbon;
@@ -94,5 +95,10 @@ class Customer extends Model
     {
         return LogOptions::defaults()
             ->logOnly(['name', 'balance', "available_balance", "type", "created_at", "updated_at", "deleted_at"]);
+    }
+
+    public function apiTokens(): HasMany
+    {
+        return $this->hasMany(CustomerApiToken::class);
     }
 }

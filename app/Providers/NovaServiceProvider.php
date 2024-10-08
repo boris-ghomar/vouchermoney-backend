@@ -2,16 +2,11 @@
 
 namespace App\Providers;
 
-use App\Models\Finance\Finance as FinanceModel;
 use App\Models\Permission;
 use App\Models\User;
 use App\Nova\ActivityLog;
-use App\Nova\Customer;
 use App\Nova\CustomerApiToken;
 use App\Nova\Dashboards\Home;
-use App\Nova\Finance;
-use App\Nova\PersonalAccessToken;
-use App\Nova\Transaction;
 use App\Nova\Menu\MenuItem;
 use App\Nova\Menu\MenuSection;
 use App\Nova\Resources\Finance\ArchivedFinance;
@@ -24,10 +19,11 @@ use App\Nova\Resources\Voucher\ActiveVoucher;
 use App\Nova\Resources\Voucher\ArchivedVoucher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
-use Laravel\Nova\Exceptions\NovaException;
 use Laravel\Nova\Menu\Menu;
 use Laravel\Nova\Nova;
 use Laravel\Nova\NovaApplicationServiceProvider;
+use App\Nova\Customer;
+use App\Models\Finance\Finance as FinanceModel;
 
 class NovaServiceProvider extends NovaApplicationServiceProvider
 {
@@ -53,7 +49,7 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
             if ($user->is_customer_admin)
                 $menu->prepend(MenuItem::make("Update customer", "/resources/customers/$user->customer_id/edit"));
 
-            $menu->prepend(MenuItem::make(__("menu.profile"), "/resources/" . ($user->is_admin ? "admins" : "accounts") . "/{$user->id}"));
+            $menu->prepend(MenuItem::make(__("menu.profile"), "/resources/" . ($user->is_admin ? "admins" : "accounts") . "/$user->id"));
 
             return $menu;
         });
@@ -68,13 +64,10 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
 
             if (!$user) return $menu;
 
-            return array_merge($menu, $this->{($user->is_admin ? "admin" : "customer") . "Menu"}($user));
+            return array_merge($menu, $user->is_admin ? $this->adminMenu($user) : $this->customerMenu($user));
         });
     }
 
-    /**
-     * @throws NovaException
-     */
     private function adminMenu(User $user): array
     {
         $menu = [MenuSection::resource(Admin::class)->icon('users')];
@@ -151,12 +144,10 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
             ])->icon(Finance::ICON)->collapsedByDefault();
         }
 
+        if ($user->is_customer_admin)
+            $menu[] = MenuSection::resource(CustomerApiToken::class)->icon('key');
+
         return $menu;
-//            MenuSection::resource(ActivityLog::class)->icon('lightning-bolt')
-//                ->canSee(fn (Request $request) => $request->user()?->is_admin && $request->user()?->can("activity:view")),
-//            MenuSection::resource(CustomerApiToken::class)->icon('key')
-//                ->canSee(fn(Request $request) => $request->user()->is_customer)
-//        ]);
     }
 
     /**

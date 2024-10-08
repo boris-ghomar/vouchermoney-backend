@@ -5,9 +5,11 @@ namespace App\Nova\Actions;
 use App\Models\Customer;
 use App\Models\CustomerApiToken;
 use App\Models\Permission;
+use App\Models\User;
 use App\Nova\Fields\DateTime;
 use App\Nova\Fields\Text;
 use Illuminate\Bus\Queueable;
+use Illuminate\Http\Request;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Crypt;
@@ -35,6 +37,21 @@ class CreateCustomerApiToken extends Action
         return "Generate token";
     }
 
+    public function authorizedToSee(Request $request): bool
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        if (! $user) return false;
+
+        return $user->is_customer_admin;
+    }
+
+    public function authorizedToRun(Request $request, $model): bool
+    {
+        return $this->authorizedToSee($request);
+    }
+
     /**
      * Perform the action on the given models.
      *
@@ -48,6 +65,7 @@ class CreateCustomerApiToken extends Action
         $token = Str::random(64);
 
         $hashedToken = hash('sha256', $token);
+
         $expiresAt = match ($fields->expires_at) {
             'custom' => $fields->get('select_expires_at'),
             'no_expiration' => null,
@@ -60,12 +78,10 @@ class CreateCustomerApiToken extends Action
             'token' => $hashedToken,
             'expires_at' => $expiresAt,
         ]);
-        $selectedPermissions = collect($fields->permissions)->filter(function ($value) {
-            return $value === true;
-        })->keys()->toArray();
-        if ($selectedPermissions) {
-            $customerApiToken->permissions()->attach($selectedPermissions,['model_type'=>CustomerApiToken::class]);
-        }
+
+        $selectedPermissions = collect($fields->permissions)->filter(fn ($value) => $value === true)->keys()->toArray();
+
+        if ($selectedPermissions) $customerApiToken->permissions()->attach($selectedPermissions, ['model_type' => CustomerApiToken::class]);
 
        return ActionResponse::modal('api-token-modal', [
            "message" => "Please copy token for future use, as you won't be able to view it.",
@@ -83,9 +99,11 @@ class CreateCustomerApiToken extends Action
     {
         return [
             Text::make('Name', 'name')->rules('required'),
+
             BooleanGroup::make('Permissions')
                 ->options(Permission::all()->pluck('name', 'id'))
                 ->rules('required'),
+
             Select::make('Expires At','expires_at')->options([
                 '7' => '7 Days',
                 '30' => '30 Days',

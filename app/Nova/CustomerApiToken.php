@@ -2,14 +2,13 @@
 
 namespace App\Nova;
 
-use App\Nova\Actions\AttachPermissionToApiToken;
 use App\Nova\Actions\CreateCustomerApiToken;
-use App\Nova\Fields\BelongsToMany;
 use App\Nova\Fields\DateTime;
+use App\Nova\Fields\FieldHelper;
 use App\Nova\Fields\Text;
 use Illuminate\Http\Request;
-use Laravel\Nova\Fields\ID;
-use Laravel\Nova\Fields\MorphToMany;
+use App\Nova\Fields\ID;
+use App\Nova\Fields\MorphToMany;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use App\Models\CustomerApiToken as Model;
 
@@ -45,6 +44,8 @@ class CustomerApiToken extends Resource
         'name', 'id'
     ];
 
+    public static $globallySearchable = false;
+
     /**
      * Get the fields displayed by the resource.
      *
@@ -53,51 +54,22 @@ class CustomerApiToken extends Resource
      */
     public function fields(NovaRequest $request): array
     {
-        return [
+        return FieldHelper::make([
             ID::make()->sortable(),
+
             Text::make('Name', 'name')->sortable(),
+
             MorphToMany::make(__("fields.permissions"), "permissions", Permission::class)
                 ->collapsable()->collapsedByDefault(),
+
             DateTime::make('Expires At', 'expires_at')
-                ->rules('nullable', 'date')
-                ->showOnDetail(),
+                ->rules('nullable', 'date'),
+
             DateTime::make('Last Used At', 'last_used_at')
-                ->sortable()
-                ->showOnDetail(),
-        ];
-    }
+                ->sortable(),
 
-    /**
-     * Get the cards available for the request.
-     *
-     * @param NovaRequest $request
-     * @return array
-     */
-    public function cards(NovaRequest $request): array
-    {
-        return [];
-    }
-
-    /**
-     * Get the filters available for the resource.
-     *
-     * @param NovaRequest $request
-     * @return array
-     */
-    public function filters(NovaRequest $request): array
-    {
-        return [];
-    }
-
-    /**
-     * Get the lenses available for the resource.
-     *
-     * @param NovaRequest $request
-     * @return array
-     */
-    public function lenses(NovaRequest $request): array
-    {
-        return [];
+            DateTime::timestamps()
+        ]);
     }
 
     /**
