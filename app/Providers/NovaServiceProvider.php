@@ -5,19 +5,19 @@ namespace App\Providers;
 use App\Models\Finance\Finance as FinanceModel;
 use App\Models\Permission;
 use App\Models\User;
-use App\Nova\ActiveVoucher;
 use App\Nova\ActivityLog;
-use App\Nova\ArchivedTransaction;
-use App\Nova\ArchivedVoucher;
 use App\Nova\Customer;
 use App\Nova\Dashboards\Home;
 use App\Nova\Menu\MenuItem;
 use App\Nova\Menu\MenuSection;
 use App\Nova\Resources\Finance\ArchivedFinance;
 use App\Nova\Resources\Finance\Finance;
+use App\Nova\Resources\Transaction\ArchivedTransaction;
+use App\Nova\Resources\Transaction\Transaction;
 use App\Nova\Resources\User\Account;
 use App\Nova\Resources\User\Admin;
-use App\Nova\Transaction;
+use App\Nova\Resources\Voucher\ActiveVoucher;
+use App\Nova\Resources\Voucher\ArchivedVoucher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Laravel\Nova\Exceptions\NovaException;
@@ -46,8 +46,8 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
 
             if (!$user) return $menu;
 
-            if ($user->is_customer_admin || $user->can(Permission::CUSTOMER_VIEW))
-                $menu->prepend(MenuItem::make(__("menu.customer"), "/resources/customers/{$user->customer_id}"));
+            if ($user->is_customer_admin)
+                $menu->prepend(MenuItem::make("Update customer", "/resources/customers/$user->customer_id/edit"));
 
             $menu->prepend(MenuItem::make(__("menu.profile"), "/resources/" . ($user->is_admin ? "admins" : "accounts") . "/{$user->id}"));
 

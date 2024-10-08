@@ -2,7 +2,6 @@
 
 namespace App\Nova\Menu;
 
-use App\Models\Permission;
 use App\Models\User;
 use Illuminate\Http\Request;
 

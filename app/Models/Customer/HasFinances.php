@@ -19,9 +19,9 @@ trait HasFinances
         return $this->hasMany(Finance::class);
     }
 
-    public function archivedFinances(): HasMany
+    public function archived_finances(): HasMany
     {
-        return $this->hasMany(ArchivedFinance::class);
+        return $this->hasMany(ArchivedFinance::class, "customer_data->id");
     }
 
     public function requestWithdraw(User $requester, float $amount, string $comment): Finance

@@ -30,7 +30,7 @@ class Permission extends Resource
      */
     public static $search = [];
 
-    public static $searchable = false;
+    public static $globallySearchable = false;
 
     public function title(): string
     {

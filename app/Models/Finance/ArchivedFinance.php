@@ -3,8 +3,11 @@
 namespace App\Models\Finance;
 
 use App\Models\Customer\Customer;
+use App\Models\Transaction\ArchivedTransaction;
+use App\Models\Transaction\Transaction;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Support\Carbon;
 use Spatie\Activitylog\LogOptions;
 
@@ -162,5 +165,15 @@ class ArchivedFinance extends AbstractFinance
                 'created_at',
                 'updated_at'
             ]);
+    }
+
+    public function transaction(): MorphOne
+    {
+        return $this->morphOne(Transaction::class, "model");
+    }
+
+    public function archived_transaction(): MorphOne
+    {
+        return $this->morphOne(ArchivedTransaction::class, "model");
     }
 }

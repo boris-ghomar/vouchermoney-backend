@@ -57,11 +57,9 @@ class Finance extends Resource
 
     public static function indexQuery(NovaRequest $request, $query): Builder
     {
-        /** @var User $user */
-        $user = $request->user();
+        static::hideWhenNotAuthorized($request, $query, Permission::FINANCES_VIEW, Permission::CUSTOMER_FINANCE);
 
-        if ($user?->is_customer)
-            $query->where("customer_id", $user->customer_id);
+        static::forCustomer($request, $query);
 
         return $query;
     }

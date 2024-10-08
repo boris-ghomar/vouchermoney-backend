@@ -37,14 +37,17 @@ class ResolveFinance extends Action
         return $this;
     }
 
+    public function authorizedToRun(Request $request, $model): bool
+    {
+        return $this->authorizedToSee($request);
+    }
+
     public function authorizedToSee(Request $request): bool
     {
         /** @var User $user */
         $user = $request->user();
 
-        if (! $user || $user->is_customer) return false;
-
-        return $user->is_super || $user->can(Permission::FINANCES_MANAGEMENT);
+        return $user && $user->canAdmin(Permission::FINANCES_MANAGEMENT);
     }
 
     /**
@@ -68,9 +71,6 @@ class ResolveFinance extends Action
     {
         /** @var User $user */
         $user = auth()->user();
-
-        if (!($user->is_super || ($user->is_admin && $user->can(Permission::FINANCES_MANAGEMENT))))
-            return ActionResponse::danger("Not authorized to make that action");
 
         try {
             foreach ($models as $model) $model->{$this->type}($user, $fields->comment ?: "");

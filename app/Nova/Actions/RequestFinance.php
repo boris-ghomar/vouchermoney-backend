@@ -8,6 +8,7 @@ use App\Models\Finance\AbstractFinance;
 use App\Models\Permission;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
+use Illuminate\Http\Request;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Collection;
 use Laravel\Nova\Actions\Action;
@@ -42,6 +43,19 @@ class RequestFinance extends Action
         return $this;
     }
 
+    public function authorizedToRun(Request $request, $model): bool
+    {
+        return $this->authorizedToSee($request);
+    }
+
+    public function authorizedToSee(Request $request): bool
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        return $user && ($user->canAdmin(Permission::FINANCES_MANAGEMENT) || $user->canCustomer(Permission::CUSTOMER_FINANCE));
+    }
+
     /**
      * Override the name method to dynamically set the button name.
      *
@@ -64,11 +78,6 @@ class RequestFinance extends Action
         /** @var User $user */
         $user = auth()->user();
 
-        if (
-            !$user || ($user->is_customer && !$user->is_customer_admin && !$user->can(Permission::CUSTOMER_FINANCE)) ||
-            (!$user->is_super && $user->is_admin && !$user->can(Permission::FINANCES_MANAGEMENT))
-        ) return ActionResponse::danger("Not authorized for that action");
-
         $customer_id = $fields->customer_id ?? null;
         $comment = $fields->comment ?: "";
         $amount = $fields->amount;
@@ -78,6 +87,14 @@ class RequestFinance extends Action
         try {
             $customer->{"request" . ucfirst($this->type)}($user, $amount, $comment);
         } catch (InsufficientBalance $exception) {
+            activity(static::class)
+                ->causedBy($user)
+                ->withProperties([
+                    "user" => $user,
+                    "fields" => $fields,
+                    "exception" => $exception->getMessage()
+                ])
+                ->log("Failed to make finance request");
             return ActionResponse::danger($exception->getMessage());
         }
 

@@ -11,9 +11,14 @@ use App\Nova\Fields\HasMany;
 use App\Nova\Fields\ID;
 use App\Nova\Fields\Select;
 use App\Nova\Fields\Text;
-use App\Nova\Metrics\AccountBalance;
 use App\Nova\Metrics\CustomerAvailableBalance;
+use App\Nova\Resources\Finance\ArchivedFinance;
+use App\Nova\Resources\Finance\Finance;
+use App\Nova\Resources\Transaction\ArchivedTransaction;
+use App\Nova\Resources\Transaction\Transaction;
 use App\Nova\Resources\User\Account;
+use App\Nova\Resources\Voucher\ActiveVoucher;
+use App\Nova\Resources\Voucher\ArchivedVoucher;
 use Illuminate\Http\Request;
 use Laravel\Nova\Exceptions\HelperNotSupported;
 use Laravel\Nova\Http\Requests\NovaRequest;
@@ -57,7 +62,7 @@ class Customer extends Resource
                 ->onlyForAdmins(),
 
             Text::make(__("fields.name"), "name")
-                ->sortable()->onlyForAdmins()->exceptOnForms(),
+                ->sortable()->exceptOnForms(),
 
             Text::make(__("fields.name"), "name")->onlyOnForms()
                 ->hideWhenCreating()->rules("string", "max:180")->onlyForCustomersAdmin(),
@@ -67,9 +72,6 @@ class Customer extends Resource
 
             Currency::make(__("fields.balance"), "balance")
                 ->onlyForAdmins()->sortable()->filterable()->exceptOnForms(),
-
-            Currency::make(__("fields.balance"), "balance")
-                ->onlyForCustomers()->exceptOnForms(),
 
             Select::make(__("fields.type"), "type")->onlyOnForms()
                 ->options([
@@ -83,7 +85,25 @@ class Customer extends Resource
             ])->filterable()->onlyForAdmins(),
 
             HasMany::make(__("fields.users"), "users", Account::class)
-                ->collapsable()->collapsedByDefault()->onlyForAdmins([PermissionModel::CUSTOMERS_VIEW])
+                ->collapsable()->collapsedByDefault()->onlyForAdmins([PermissionModel::CUSTOMERS_VIEW]),
+
+            HasMany::make("Vouchers", "vouchers", ActiveVoucher::class)
+                ->onlyForAdmins()->collapsedByDefault(),
+
+            HasMany::make("Archived vouchers", "archived_vouchers", ArchivedVoucher::class)
+                ->onlyForAdmins()->collapsedByDefault(),
+
+            HasMany::make("Transactions", "transactions", Transaction::class)
+                ->onlyForAdmins()->collapsedByDefault(),
+
+            HasMany::make("Archived transactions", "archived_transactions", ArchivedTransaction::class)
+                ->onlyForAdmins()->collapsedByDefault(),
+
+            HasMany::make("Finances", "finances", Finance::class)
+                ->onlyForAdmins()->collapsedByDefault(),
+
+            HasMany::make("Archived finances", "archived_finances", ArchivedFinance::class)
+                ->onlyForAdmins()->collapsedByDefault(),
         ];
     }
 
@@ -108,8 +128,6 @@ class Customer extends Resource
     {
         return [
             CustomerAvailableBalance::make()->onlyOnDetail()
-                ->canSee(fn (Request $request) => $request->user()?->is_super || $request->user()?->can(PermissionModel::CUSTOMERS_VIEW)),
-            AccountBalance::make()->onlyOnDetail()
                 ->canSee(fn (Request $request) => $request->user()?->is_super || $request->user()?->can(PermissionModel::CUSTOMERS_VIEW)),
         ];
     }

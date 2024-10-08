@@ -1,25 +1,37 @@
 <?php
 
-namespace App\Nova;
+namespace App\Nova\Resources\Voucher;
 
+use App\Models\Permission;
+use App\Models\User;
+use App\Models\Voucher\Voucher as Model;
 use App\Nova\Actions\ActionHelper;
 use App\Nova\Actions\FreezeVoucher;
 use App\Nova\Actions\GenerateVoucher;
 use App\Nova\Actions\RedeemVoucher;
-use App\Nova\Fields\DateTime;
-use App\Nova\Filters\AmountFilter;
-use Illuminate\Http\Request;
-use Laravel\Nova\Exceptions\HelperNotSupported;
+use App\Nova\Customer;
 use App\Nova\Fields\Badge;
 use App\Nova\Fields\BelongsTo;
 use App\Nova\Fields\Currency;
+use App\Nova\Fields\DateTime;
+use App\Nova\Fields\ID;
+use App\Nova\Fields\MorphTo;
 use App\Nova\Fields\Text;
-use Laravel\Nova\Http\Requests\NovaRequest;
-use App\Models\Voucher\Voucher as Model;
+use App\Nova\Filters\AmountFilter;
+use App\Nova\Resource;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Request;
+use Laravel\Nova\Exceptions\HelperNotSupported;
+use Laravel\Nova\Http\Requests\NovaRequest;
+use App\Models\User as UserModel;
 
+/**
+ * @mixin Model
+ */
 class ActiveVoucher extends Resource
 {
+    const ICON = "cash";
+
     /**
      * The model the resource corresponds to.
      *
@@ -39,26 +51,19 @@ class ActiveVoucher extends Resource
      *
      * @var array
      */
-    public static $search = [
-        'code',
-    ];
+    public static $search = ['id', 'code'];
 
     public static function indexQuery(NovaRequest $request, $query): Builder
     {
-        /** @var \App\Models\User $user */
-        $user = $request->user();
-
-        if (!$user?->canSeeVouchersList()) return $query->whereRaw('1 = 0');
-
         $query->when(empty($request->get('orderBy')), function(Builder $q) {
             $q->getQuery()->orders = [];
 
             return $q->orderByDesc("created_at");
         });
 
-        if ($user?->is_customer) {
-            $query->where("customer_id", $user->customer_id);
-        }
+        static::hideWhenNotAuthorized($request, $query, Permission::VOUCHERS_VIEW, Permission::CUSTOMER_VOUCHER_VIEW);
+
+        static::forCustomer($request, $query);
 
         return $query;
     }
@@ -73,13 +78,23 @@ class ActiveVoucher extends Resource
     public function fields(NovaRequest $request): array
     {
         return [
+            ID::make(__("fields.id"), "id")->onlyForAdmins(),
+
             Text::make(__("fields.code"), "code")->copyable()->filterable(),
 
             BelongsTo::make(__("fields.customer"), "customer", Customer::class)
-                ->canSee(fn(Request $request) => $request->user()?->is_admin),
+                ->onlyForAdmins([Permission::CUSTOMERS_VIEW]),
 
-            Currency::make(__("fields.amount"), "amount")
-                ->sortable()->filterable(),
+            Text::make(__("fields.creator"), function () {
+                if (empty($this->creator)) return null;
+
+                return "<a href='/resources/accounts/{$this->creator->id}'>{$this->creator->name}</a>";
+            })->asHtml(),
+
+            MorphTo::make(__("fields.creator"), "creator")
+                ->onlyForAdmins([Permission::CUSTOMERS_VIEW]),
+
+            Currency::make(__("fields.amount"), "amount")->sortable(),
 
             Badge::make(__("fields.status"), "active")
                 ->map(["info", "success"])->labels([
@@ -139,16 +154,11 @@ class ActiveVoucher extends Resource
     public function actions(NovaRequest $request): array
     {
         return [
-            RedeemVoucher::make()
-                ->canSee(fn(Request $request) => $request->user()?->is_customer_admin || $request->user()->can(\App\Models\Permission::CUSTOMER_VOUCHER_REDEEM)),
+            RedeemVoucher::make(),
 
-            GenerateVoucher::make()
-                ->canSee(fn(Request $request) => $request->user()?->is_customer_admin || $request->user()->can(\App\Models\Permission::CUSTOMER_VOUCHER_GENERATE))
-                ->confirmButtonText(__("actions.generate"))
-                ->cancelButtonText(__("actions.cancel")),
+            GenerateVoucher::make(),
 
             FreezeVoucher::make($this)
-                ->canSee(fn(Request $request) => $request->user()?->is_customer_admin || $request->user()->can(\App\Models\Permission::CUSTOMER_VOUCHER_FREEZE))
         ];
     }
 

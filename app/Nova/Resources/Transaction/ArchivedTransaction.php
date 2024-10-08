@@ -1,12 +1,10 @@
 <?php
 
-namespace App\Nova;
+namespace App\Nova\Resources\Transaction;
 
-use App\Nova\Actions\ActionHelper;
-use App\Nova\Fields\DateTime;
-use App\Nova\Filters\AmountFilter;
-use Laravel\Nova\Http\Requests\NovaRequest;
 use App\Models\Transaction\ArchivedTransaction as Model;
+use App\Nova\Fields\DateTime;
+use Laravel\Nova\Http\Requests\NovaRequest;
 
 class ArchivedTransaction extends Transaction
 {
@@ -27,13 +25,6 @@ class ArchivedTransaction extends Transaction
     {
         return array_merge(parent::fields($request), [
             DateTime::make(__("fields.archived_at"), "archived_at")
-        ]);
-    }
-
-    public function filters(NovaRequest $request): array
-    {
-        return ActionHelper::make([
-            AmountFilter::make()
         ]);
     }
 

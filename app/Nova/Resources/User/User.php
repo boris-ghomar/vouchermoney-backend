@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rules\Password as PasswordRule;
 use Laravel\Nova\Http\Requests\NovaRequest;
+use Illuminate\Validation\Validator;
 
 /**
  * @mixin Model
@@ -105,27 +106,6 @@ class User extends Resource
         return $query->whereIn('name', $user->getPermissionNames());
     }
 
-    // FIXME:
-//    public function authorizedToAttachAny(NovaRequest $request, $model): bool
-//    {
-//        $user = $request->user();
-//
-//        if (
-//            ($user && $this->id !== $user->id) &&
-//            (
-//                ($user->is_admin && $this->is_admin && $user->can("user:attach-permission")) ||
-//                ($user->is_customer && $this->customer_id === $user->customer_id && $user->can("customer:user:attach-permission"))
-//            )
-//        ) return true;
-//
-//        return false;
-//    }
-
-//    public function authorizedToDetach(NovaRequest $request, $model, $relationship): bool
-//    {
-//        return $this->authorizedToAttachAny($request, $model);
-//    }
-
     public function authorizedToReplicate(Request $request): bool
     {
         return false;
@@ -158,5 +138,19 @@ class User extends Resource
                     return $user->is_super || $user->is_customer_admin;
                 })
         ];
+    }
+
+    /**
+     * Handle any post-validation processing.
+     *
+     * @param  NovaRequest  $request
+     * @param  Validator  $validator
+     * @return void
+     */
+    protected static function afterValidation(NovaRequest $request, $validator): void
+    {
+        if (strtolower($request->input("name")) === "administrator") {
+            $validator->errors()->add('name', 'That name is reserved by system');
+        }
     }
 }

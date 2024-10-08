@@ -2,14 +2,12 @@
 
 namespace App\Nova\Actions;
 
-use App\Exceptions\AttemptToRedeemFrozenVoucher;
 use App\Models\Permission;
 use App\Models\User;
 use App\Models\Voucher\Voucher;
-use App\Models\Voucher\VoucherCode;
 use App\Nova\Fields\Text;
-use App\Services\PermissionService;
 use Illuminate\Bus\Queueable;
+use Illuminate\Http\Request;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Collection;
 use Laravel\Nova\Actions\Action;
@@ -25,10 +23,24 @@ class RedeemVoucher extends Action
 
     public $standalone = true;
     public $confirmText = "";
+    public $onlyOnIndex = true;
 
     public function name(): string
     {
         return __("actions.redeem");
+    }
+
+    public function authorizedToRun(Request $request, $model): bool
+    {
+        return $this->authorizedToSee($request);
+    }
+
+    public function authorizedToSee(Request $request): bool
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        return $user && $user->canCustomer(Permission::CUSTOMER_VOUCHER_REDEEM);
     }
 
     /**
@@ -43,28 +55,39 @@ class RedeemVoucher extends Action
         /** @var User $user */
         $user = auth()->user();
 
-        if (!$user || !PermissionService::authorizedToRedeemVoucher($user))
-            return ActionResponse::danger(__("exceptions.not_authorized_to_perform_action"));
-
         $code = $fields->code;
         $note = $fields->note ?: "";
 
-        /** @var Voucher $voucher */
-        $voucher = Voucher::find($code);
+        $voucher = Voucher::findByCode($code);
 
-        if (!$voucher) return ActionResponse::danger("Voucher not found");
+        if (! $voucher) {
+            activity(static::class)
+                ->causedBy($user)
+                ->withProperties([
+                    "user" => $user,
+                    "fields" => $fields
+                ])->log("Attempt to redeem voucher that not exists");
+            return ActionResponse::danger("Voucher not found");
+        }
 
-        if (!$voucher->active) return ActionResponse::danger("Voucher frozen");
+        if (! $voucher->active) {
+            activity(static::class)
+                ->causedBy($user)
+                ->withProperties([
+                    "user" => $user,
+                    "fields" => $fields,
+                    "voucher" => $voucher
+                ])->log("Attempt to redeem voucher that frozen");
+
+            return ActionResponse::danger("Voucher frozen");
+        }
 
         try {
-            $voucher->redeem($voucher->customer_id === $user->customer_id ? null : $user->customer_id);
-        } catch (AttemptToRedeemFrozenVoucher $e) {
-            return ActionResponse::danger($e->getMessage());
+            $voucher->redeem($note, $voucher->customer_id === $user->customer_id ? null : $user->customer_id);
         } catch (Exception $exception) {
             activity(static::class)
                 ->withProperties([
                     "exception" => $exception->getMessage(),
-                    "voucher_code" => $voucher_code,
                     "voucher" => $voucher,
                     "user" => $user
                 ])->causedBy($user)->log("Failed to redeem voucher");
@@ -85,10 +108,10 @@ class RedeemVoucher extends Action
     {
         return [
             Text::make(__("fields.code"), "code")
-                ->rules("required", "size:" . VoucherCode::getVoucherCodeLength()),
+                ->rules("required"),
 
             Text::make(__("fields.note"), "note")
-                ->rules("nullable", "string")
+                ->rules("nullable", "string", "max:200")
         ];
     }
 

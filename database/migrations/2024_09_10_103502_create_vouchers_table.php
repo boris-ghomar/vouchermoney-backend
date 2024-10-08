@@ -23,6 +23,7 @@ return new class extends Migration
             $table->decimal('amount')->unsigned();
             $table->boolean("active")->default(true);
             $table->foreignUlid("customer_id")->constrained()->cascadeOnDelete();
+            $table->nullableUlidMorphs("creator");
             $table->timestamps();
         });
 
@@ -34,13 +35,10 @@ return new class extends Migration
             $table->enum("state", [ArchivedVoucher::STATE_EXPIRED, ArchivedVoucher::STATE_REDEEMED])
                 ->default(ArchivedVoucher::STATE_REDEEMED);
 
-            // Who create voucher
-            $table->foreignUlid("customer_id")->nullable()->constrained()->nullOnDelete();
             $table->json("customer_data");
-
-            // Who redeem voucher. If null - creator customer redeemed voucher
-            $table->foreignUlid("recipient_id")->nullable()->constrained("customers")->nullOnDelete();
+            $table->json("creator_data")->nullable();
             $table->json("recipient_data")->nullable();
+
             $table->string("recipient_note")->nullable();
 
             $table->timestamp("resolved_at")->useCurrent();
@@ -62,7 +60,6 @@ return new class extends Migration
             $table->json("properties")->nullable();
 
             // Who make action
-            $table->foreignUlid("user_id")->nullable()->constrained()->nullOnDelete();
             $table->json("user_data")->nullable();
 
             $table->timestamp("time")->useCurrent();

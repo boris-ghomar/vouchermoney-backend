@@ -3,12 +3,16 @@
 namespace App\Models\Finance;
 
 use App\Models\Customer\Customer;
+use App\Models\Transaction\AbstractTransaction;
+use App\Models\Transaction\ArchivedTransaction;
+use App\Models\Transaction\Transaction;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Activitylog\LogOptions;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 /**
  * @property string       $id
@@ -19,8 +23,11 @@ use Spatie\Activitylog\LogOptions;
  * @property Carbon       $created_at
  * @property Carbon       $updated_at
  *
- * @property-read  Customer   $customer
- * @property-read  User|null  $requester
+ * @property-read  Customer             $customer
+ * @property-read  User|null            $requester
+ * @property-read  Transaction          $transaction
+ * @property-read  ArchivedTransaction  $archived_transaction
+ * @property-read  AbstractTransaction  $associated_transaction
  */
 class Finance extends AbstractFinance
 {
@@ -40,16 +47,31 @@ class Finance extends AbstractFinance
         return $this->belongsTo(Customer::class);
     }
 
+    public function transaction(): MorphOne
+    {
+        return $this->morphOne(Transaction::class, "model");
+    }
+
+    public function archived_transaction(): MorphOne
+    {
+        return $this->morphOne(ArchivedTransaction::class, "model");
+    }
+
     public function requester(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function getAssociatedTransaction(): AbstractTransaction
+    {
+        return $this->transaction ?: $this->archived_transaction;
     }
 
     public function cancel(): void
     {
         DB::transaction(function () {
             if ($this->is_withdraw)
-                $this->customer->deposit($this->amount, "Withdraw finance request cancelled", $this);
+                $this->customer->deposit($this->amount, "Withdraw finance request cancelled");
 
             $this->delete();
         });
@@ -77,6 +99,8 @@ class Finance extends AbstractFinance
                 $description = ($status ? "Deposit" : "Withdraw") .  " finance request " . ($status ? "approved" : "rejected");
                 $this->customer->deposit($this->amount, $description, $archived);
             }
+
+            $this->associated_transaction?->model()->associate($archived);
 
             $this->customer->sendFinanceResolvedNotification($archived);
 

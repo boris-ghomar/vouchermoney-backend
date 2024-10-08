@@ -4,13 +4,15 @@ namespace App\Models\Customer;
 
 use App\Exceptions\InsufficientBalance;
 use App\Exceptions\TransactionWithZeroAmount;
+use App\Models\Transaction\ArchivedTransaction;
 use App\Models\Transaction\Transaction;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * @property-read  Collection<Transaction>  $transactions
+ * @property-read  Collection<Transaction>          $transactions
+ * @property-read  Collection<ArchivedTransaction>  $archived_transactions
  */
 trait HasTransactions
 {
@@ -19,6 +21,11 @@ trait HasTransactions
     public function transactions(): HasMany
     {
         return $this->hasMany(Transaction::class);
+    }
+
+    public function archived_transactions(): HasMany
+    {
+        return $this->hasMany(ArchivedTransaction::class);
     }
 
     /**

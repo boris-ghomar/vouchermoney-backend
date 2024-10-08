@@ -5,7 +5,8 @@ namespace App\Models\Voucher;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 /**
  * @property  int          $id
@@ -20,6 +21,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class VoucherActivity extends Model
 {
+    use LogsActivity;
+
     protected $table = "voucher_activity";
     public $timestamps = false;
 
@@ -43,17 +46,12 @@ class VoucherActivity extends Model
         "time" => "datetime"
     ];
 
-    public function getUser(): User|null
+    public function getUserAttribute(): User|null
     {
         if (empty($this->user_data["id"]))
             return null;
 
         return User::find($this->user_data["id"]);
-    }
-
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
     }
 
     public static function makeCreated(string $code, array $properties = []): static
@@ -95,13 +93,16 @@ class VoucherActivity extends Model
         /** @var User $user */
         $user = request()->user();
 
-        if (! empty($user)) {
-            $activity->user_id = $user->id;
-            $activity->user_data = $user;
-        }
+        if (! empty($user)) $activity->user_data = $user;
 
         $activity->save();
 
         return $activity;
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['code', 'state', 'properties', 'user_data', 'time']);
     }
 }

@@ -7,7 +7,7 @@ use Outl1ne\NovaInputFilter\InputFilter;
 
 class AmountFilter extends InputFilter
 {
-    protected string $filterType;
+    protected string $type;
     protected string $column = "amount";
     public $inputType = "number";
 
@@ -18,21 +18,26 @@ class AmountFilter extends InputFilter
         return $this;
     }
 
-    /**
-     * @param string $filterType
-     * @return $this
-     */
-    public function withFilterType(string $filterType): self
+    public function min(): static
     {
-        $this->filterType = $filterType;
+        $this->type = "min";
+
         return $this;
     }
+
+    public function max(): static
+    {
+        $this->type = "max";
+
+        return $this;
+    }
+
     /**
      * @return string
      */
     public function key(): string
     {
-        return $this->filterType === 'min' ? 'min_amount_filter' : 'max_amount_filter';
+        return $this->type === 'min' ? 'min_amount_filter' : 'max_amount_filter';
     }
 
     /**
@@ -41,7 +46,7 @@ class AmountFilter extends InputFilter
 
     public function name(): string
     {
-        return $this->filterType === 'min' ? 'Minimum Amount' : 'Maximum Amount';
+        return ucfirst($this->type) . " " . ucfirst($this->column);
     }
 
     /**
@@ -52,14 +57,13 @@ class AmountFilter extends InputFilter
      */
     public function apply(NovaRequest $request, $query, $search): void
     {
-        $query->whereRaw("ABS(" . $this->column . ") " . ($this->filterType === 'max' ? "<" : ">") . "= ?", [$search]);
+        $query->whereRaw("ABS(" . $this->column . ") " . ($this->type === 'max' ? "<" : ">") . "= ?", [$search]);
     }
 
     public static function make(...$arguments): array
     {
-        return [
-            parent::make()->withFilterType('min'),
-            parent::make()->withFilterType('max'),
-        ];
+        $min = parent::make()->min();
+        $max = parent::make()->max();
+        return [$min, $max];
     }
 }

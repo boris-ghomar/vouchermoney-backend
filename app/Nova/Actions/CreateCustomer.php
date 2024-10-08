@@ -3,14 +3,16 @@
 namespace App\Nova\Actions;
 
 use App\Models\Customer\Customer;
+use App\Models\User;
 use Illuminate\Bus\Queueable;
+use Illuminate\Http\Request;
 use Illuminate\Queue\InteractsWithQueue;
 use Laravel\Nova\Actions\Action;
 use Laravel\Nova\Actions\ActionResponse;
 use Laravel\Nova\Fields\ActionFields;
-use Laravel\Nova\Fields\Password;
-use Laravel\Nova\Fields\Select;
-use Laravel\Nova\Fields\Text;
+use App\Nova\Fields\Password;
+use App\Nova\Fields\Select;
+use App\Nova\Fields\Text;
 use Exception;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Lednerb\ActionButtonSelector\ShowAsButton;
@@ -33,6 +35,19 @@ class CreateCustomer extends Action
 
     public $confirmButtonText = "Add";
 
+    public function authorizedToSee(Request $request): bool
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        return $user && $user->is_super;
+    }
+
+    public function authorizedToRun(Request $request, $model): bool
+    {
+        return $this->authorizedToSee($request);
+    }
+
     /**
      * Perform the action on the given models.
      *
@@ -45,7 +60,14 @@ class CreateCustomer extends Action
             /** @var Customer $customer */
             $customer = Customer::{"make" . ucfirst($fields->type)}($fields->name, $fields->email, $fields->password);
         } catch (Exception $exception) {
-            return ActionResponse::danger($exception->getMessage());
+            activity(static::class)
+                ->withProperties([
+                    "user" => auth()->user(),
+                    "fields" => $fields,
+                    "exception" => $exception->getMessage()
+                ])
+                ->log("Failed to create customer");
+            return ActionResponse::danger("Failed to create customer");
         }
 
         return ActionResponse::visit("/resources/customers/" . $customer->id);

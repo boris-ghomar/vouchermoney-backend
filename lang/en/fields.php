@@ -23,7 +23,9 @@ return [
     "recipient" => "Recipient",
     "comment" => "Comment",
     "request_comment" => "Request comment",
+    "requester_comment" => "Requester comment",
     "resolve_comment" => "Resolve comment",
+    "resolver_comment" => "Resolver comment",
     "requested_by" => "Requested by",
     "requester" => "Requester",
     "archived_at" => "Archived at",
@@ -63,6 +65,7 @@ return [
 
     "from_state" => "From state",
     "to_state" => "To state",
+    "creator" => "Creator",
 
     "admins" => "Admins",
     "note" => "Note"

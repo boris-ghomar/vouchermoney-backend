@@ -107,12 +107,6 @@ class User extends Authenticatable
         return $this->name . " [" . $this->customer->name . "]";
     }
 
-    // FIXME:
-    public function canSeeVouchersList(): bool
-    {
-        return $this->is_customer_admin || $this->canAny([Permission::CUSTOMER_VOUCHER_VIEW, Permission::VOUCHERS_VIEW]) || $this->is_super;
-    }
-
     public function isOwnerOf(User $user): bool
     {
         return $this->id !== $user->id && $this->is_customer_admin && $this->customer_id === $user->customer_id;
@@ -136,5 +130,15 @@ class User extends Authenticatable
                 "roles",
                 "permissions"
             ]);
+    }
+
+    public function canAdmin(string $ability): bool
+    {
+        return $this->is_super || ($this->is_admin && $this->can($ability));
+    }
+
+    public function canCustomer(string $ability): bool
+    {
+        return $this->is_customer_admin || ($this->is_customer && $this->can($ability));
     }
 }

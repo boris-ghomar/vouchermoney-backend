@@ -38,6 +38,8 @@ class ActivityLog extends Resource
      */
     public static $search = ["log_name"];
 
+    public static $globallySearchable = false;
+
     /**
      * Get the fields displayed by the resource.
      *

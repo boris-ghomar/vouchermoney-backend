@@ -2,9 +2,7 @@
 
 namespace App\Models\Transaction;
 
-use App\Models\Customer;
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property  Carbon       $archived_at
@@ -39,8 +37,7 @@ class ArchivedTransaction extends AbstractTransaction
         $archivedTransaction->amount = $transaction->amount;
         $archivedTransaction->description = $transaction->description;
 
-        if (! empty($transaction->model_id)) $archivedTransaction->model_id = $transaction->model_id;
-        if (! empty($transaction->model_type)) $archivedTransaction->model_type = $transaction->model_type;
+        if (! empty($transaction->model)) $archivedTransaction->model()->associate($transaction->model);
 
         $archivedTransaction->created_at = $transaction->created_at;
         $archivedTransaction->updated_at = $transaction->updated_at;

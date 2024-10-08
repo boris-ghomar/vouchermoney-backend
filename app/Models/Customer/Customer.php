@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
+use Staudenmeir\EloquentJsonRelations\HasJsonRelationships;
 
 /**
  * @property  string       $id
@@ -29,7 +30,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  */
 class Customer extends Model
 {
-    use SoftDeletes, HasUlids, HasFinances, HasTransactions, HasNotifications, LogsActivity;
+    use SoftDeletes, HasUlids, HasFinances, HasTransactions, HasNotifications, LogsActivity, HasVouchers, HasJsonRelationships;
 
     const TYPE_RESELLER = "reseller";
     const TYPE_MERCHANT = "merchant";

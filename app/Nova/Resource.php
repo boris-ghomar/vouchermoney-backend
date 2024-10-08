@@ -2,6 +2,8 @@
 
 namespace App\Nova;
 
+use App\Models\Permission;
+use App\Models\User;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Laravel\Nova\Resource as NovaResource;
 use Illuminate\Database\Eloquent\Builder;
@@ -88,5 +90,31 @@ abstract class Resource extends NovaResource
     public function actions(NovaRequest $request): array
     {
         return [];
+    }
+
+    public static function forCustomer(NovaRequest $request, Builder $query, string $column = "customer_id"): void
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        if ($user && $user->is_customer)
+            $query->where($column, $user->customer_id);
+    }
+
+    public static function hideQuery(Builder $query): void
+    {
+        $query->whereRaw("1 = 0");
+    }
+
+    public static function hideWhenNotAuthorized(NovaRequest $request, Builder $query, string $admin, string $customer): void
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        if (
+            ! $user ||
+            ($user->is_admin && ! $user->canAdmin($admin)) ||
+            ($user->is_customer && ! $user->canCustomer($customer))
+        ) static::hideQuery($query);
     }
 }
