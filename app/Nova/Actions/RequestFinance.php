@@ -2,15 +2,17 @@
 
 namespace App\Nova\Actions;
 
-use App\Exceptions\InsufficientBalance;
-use App\Models\Customer\Customer;
+use App\Models\Customer;
 use App\Models\Finance\AbstractFinance;
 use App\Models\Permission;
 use App\Models\User;
+use App\Services\Activity\Contracts\ActivityServiceContract;
+use App\Services\Customer\Contracts\CustomerServiceContract;
+use App\Services\Finance\Contracts\FinanceServiceContract;
+use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Http\Request;
 use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Support\Collection;
 use Laravel\Nova\Actions\Action;
 use Laravel\Nova\Actions\ActionResponse;
 use Laravel\Nova\Fields\ActionFields;
@@ -53,7 +55,7 @@ class RequestFinance extends Action
         /** @var User $user */
         $user = $request->user();
 
-        return $user && ($user->canAdmin(Permission::FINANCES_MANAGEMENT) || $user->canCustomer(Permission::CUSTOMER_FINANCE));
+        return $user && $user->canAny([Permission::FINANCES_MANAGEMENT, Permission::CUSTOMER_FINANCE]);
     }
 
     /**
@@ -70,31 +72,28 @@ class RequestFinance extends Action
      * Perform the action on the given models.
      *
      * @param  ActionFields  $fields
-     * @param  Collection  $models
      * @return ActionResponse
      */
-    public function handle(ActionFields $fields, Collection $models): ActionResponse
+    public function handle(ActionFields $fields): ActionResponse
     {
         /** @var User $user */
         $user = auth()->user();
 
-        $customer_id = $fields->customer_id ?? null;
-        $comment = $fields->comment ?: "";
-        $amount = $fields->amount;
+        /** @var FinanceServiceContract $financeService */
+        $financeService = app(FinanceServiceContract::class);
+        /** @var ActivityServiceContract $activityService */
+        $activityService = app(ActivityServiceContract::class);
 
-        $customer = !empty($customer_id) ? Customer::find($customer_id) : $user->customer;
+        $customer_id = $fields->get("customer_id");
+        $comment = $fields->get("comment");
+        $amount = $fields->get("amount");
+
+        $customer = ! empty($customer_id) ? Customer::find($customer_id) : $user->customer;
 
         try {
-            $customer->{"request" . ucfirst($this->type)}($user, $amount, $comment);
-        } catch (InsufficientBalance $exception) {
-            activity(static::class)
-                ->causedBy($user)
-                ->withProperties([
-                    "user" => $user,
-                    "fields" => $fields,
-                    "exception" => $exception->getMessage()
-                ])
-                ->log("Failed to make finance request");
+            $financeService->{"request" . ucfirst($this->type)}($customer, $amount, $comment);
+        } catch (Exception $exception) {
+            $activityService->novaException($exception, ["fields" => $fields]);
             return ActionResponse::danger($exception->getMessage());
         }
 
@@ -112,14 +111,24 @@ class RequestFinance extends Action
         /** @var User $user */
         $user = $request->user();
 
-        $fields = [
-            Currency::make(__("fields.amount"), "amount")->rules('required', "min:1", "max:10000"),
-            Text::make(__("fields.comment"), 'comment')->rules('nullable', 'string'),
-        ];
+        $fields = [];
 
-        if ($user?->is_admin)
-            array_unshift($fields, Select::make(__("fields.customer"), 'customer_id')
-                ->rules('required')->options(Customer::pluck("name", "id"))->searchable());
+        if ($user && $user->is_admin) {
+            /** @var CustomerServiceContract $customerService */
+            $customerService = app(CustomerServiceContract::class);
+
+            $select = Select::make(__("fields.customer"), 'customer_id')
+                ->rules('required')->options($customerService->allCustomersPlucked())->searchable();
+
+            if ($request->viaResource === "customers")
+                $select->default(fn() => $request->viaResourceId)->readonly();
+
+            $fields[] = $select;
+        }
+
+        $fields[] = Currency::make(__("fields.amount"), "amount")->rules('required', "min:1", "max:10000");
+
+        $fields[] = Text::make(__("fields.comment"), 'comment')->rules('nullable', 'string');
 
         return $fields;
     }

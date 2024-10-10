@@ -4,6 +4,8 @@ namespace App\Nova\Actions;
 
 use App\Models\Permission;
 use App\Models\User;
+use App\Services\Activity\Contracts\ActivityServiceContract;
+use App\Services\Customer\Contracts\CustomerServiceContract;
 use Illuminate\Bus\Queueable;
 use Illuminate\Http\Request;
 use Illuminate\Queue\InteractsWithQueue;
@@ -35,7 +37,7 @@ class GenerateVoucher extends Action
         /** @var User $user */
         $user = $request->user();
 
-        return $user && $user->canCustomer(Permission::CUSTOMER_VOUCHER_GENERATE);
+        return $user && $user->can(Permission::CUSTOMER_VOUCHER_GENERATE);
     }
 
     public function authorizedToRun(Request $request, $model): bool
@@ -43,50 +45,24 @@ class GenerateVoucher extends Action
         return $this->authorizedToSee($request);
     }
 
-    /**
-     * Perform the action on the given models.
-     *
-     * @param  ActionFields  $fields
-     * @param  Collection  $models
-     * @return ActionResponse
-     */
     public function handle(ActionFields $fields, Collection $models): ActionResponse
     {
         /** @var User $user */
         $user = auth()->user();
 
-        $count = +$fields->count ?: 1;
-        $amount = (float) $fields->amount;
+        $count = (int) $fields->get("count");
+        $amount = (float) $fields->get("amount");
 
-        if (!$user->customer->hasEnoughBalance($count * $amount)) {
-
-            activity(static::class)
-                ->causedBy($user)
-                ->withProperties([
-                    "user" => $user,
-                    "fields" => $fields,
-                    "count" => $count,
-                    "amount" => $amount,
-                    "balance" => $user->customer->available_balance
-                ])->log("Attempt to generate voucher without enough balance");
-
-            return ActionResponse::danger("Insufficient balance for that action");
-        }
+        /** @var CustomerServiceContract $customerService */
+        $customerService = app(CustomerServiceContract::class);
+        /** @var ActivityServiceContract $activityService */
+        $activityService = app(ActivityServiceContract::class);
 
         try {
-            $vouchers = [];
-            for ($i = 0; $i < $count; $i++) $vouchers[] = $user->customer->generateVoucher($amount);
+            $customerService->generateVoucher($user->customer, $amount, $count);
         } catch (Exception $exception) {
-            activity(static::class)
-                ->causedBy($user)
-                ->performedOn($user->customer)
-                ->withProperties([
-                    "exception" => $exception->getMessage(),
-                    "user" => $user,
-                    "customer" => $user->customer,
-                    "vouchers" => $vouchers,
-                ])->log("Failed to generate vouchers");
-            return ActionResponse::danger("Something went wrong");
+            $activityService->novaException($exception, ["fields" => $fields]);
+            return ActionResponse::danger($exception->getMessage());
         }
 
         return ActionResponse::message("Generated!");

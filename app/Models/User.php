@@ -2,85 +2,35 @@
 
 namespace App\Models;
 
-use App\Models\Customer\Customer;
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Concerns\HasUlids;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Spatie\Activitylog\LogOptions;
-use Spatie\Activitylog\Traits\LogsActivity;
-use Spatie\Permission\Traits\HasRoles;
 
 /**
- * @property  string       $id
- * @property  string       $name
  * @property  string       $email
  * @property  Carbon|null  $email_verified_at
- * @property  string|null  $customer_id
  * @property  string       $password
  * @property  string|null  $remember_token
- * @property  Carbon|null  $deleted_at
- * @property  Carbon|null  $created_at
- * @property  Carbon|null  $updated_at
  *
- * @property-read  Customer|null           $customer
- * @property-read  Collection<Permission>  $permissions
- * @property-read  Collection<Role>        $roles
+ * @property-read  bool  $is_admin
+ * @property-read  bool  $is_customer
+ * @property-read  bool  $is_super
+ * @property-read  bool  $is_customer_admin
  *
- * @property-read  bool           $is_admin
- * @property-read  bool           $is_customer
- * @property-read  bool           $is_super
- * @property-read  bool           $is_customer_admin
- * @property-read  string         $full_name
+ * @method  Builder|static  onlyAdmins()
+ * @method  Builder|static  onlyCustomers()
+ * @method  static  Builder|static  onlyAdmins()
+ * @method  static  Builder|static  onlyCustomers()
  */
-class User extends Authenticatable
+class User extends AbstractUser
 {
-    use Notifiable, HasApiTokens, HasRoles, SoftDeletes, HasUlids, LogsActivity;
+    use Notifiable, HasApiTokens;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
-    protected $fillable = [
-        'name',
-        'email',
-        'email_verified_at',
-        'password',
-        'customer_id',
-    ];
-
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
-
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
-    }
-
-    public function customer(): BelongsTo
-    {
-        return $this->belongsTo(Customer::class);
-    }
+    protected array $additional_fillable = ['email', 'email_verified_at', 'password'];
+    protected array $additional_log_columns = ["email", "email_verified_at", "roles", "permissions"];
+    protected $hidden = ['password', 'remember_token'];
+    protected $casts = ['email_verified_at' => 'datetime', 'password' => 'hashed'];
 
     public function getIsSuperAttribute(): bool
     {
@@ -102,43 +52,23 @@ class User extends Authenticatable
         return $this->customer_id !== null;
     }
 
-    public function getFullNameAttribute(): string
-    {
-        return $this->name . " [" . $this->customer->name . "]";
-    }
-
     public function isOwnerOf(User $user): bool
     {
         return $this->id !== $user->id && $this->is_customer_admin && $this->customer_id === $user->customer_id;
     }
 
-    public function getActivitylogOptions(): LogOptions
+    public function scopeOnlyAdmins(Builder $query): void
     {
-        return LogOptions::defaults()
-            ->logOnly([
-                'name',
-                "email",
-                "email_verified_at",
-                "customer_id",
-                "created_at",
-                "updated_at",
-                "deleted_at",
-                "is_admin",
-                "is_super",
-                "is_customer_admin",
-                "is_customer",
-                "roles",
-                "permissions"
-            ]);
+        $query->whereNull("customer_id");
     }
 
-    public function canAdmin(string $ability): bool
+    public function scopeOnlyCustomers(Builder $query): void
     {
-        return $this->is_super || ($this->is_admin && $this->can($ability));
+        $query->whereNotNull("customer_id");
     }
 
-    public function canCustomer(string $ability): bool
+    public static function administrator(): User
     {
-        return $this->is_customer_admin || ($this->is_customer && $this->can($ability));
+        return static::role(Role::SUPER_ADMIN)->first();
     }
 }

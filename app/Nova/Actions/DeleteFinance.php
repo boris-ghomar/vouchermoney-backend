@@ -5,6 +5,8 @@ namespace App\Nova\Actions;
 use App\Models\Finance\Finance;
 use App\Models\Permission;
 use App\Models\User;
+use App\Services\Activity\Contracts\ActivityServiceContract;
+use App\Services\Customer\Contracts\CustomerServiceContract;
 use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Http\Request;
@@ -12,8 +14,6 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Collection;
 use Laravel\Nova\Actions\ActionResponse;
 use Laravel\Nova\Actions\DestructiveAction;
-use Laravel\Nova\Fields\ActionFields;
-use Laravel\Nova\Http\Requests\NovaRequest;
 use Lednerb\ActionButtonSelector\ShowAsButton;
 
 class DeleteFinance extends DestructiveAction
@@ -37,46 +37,30 @@ class DeleteFinance extends DestructiveAction
         /** @var User $user */
         $user = $request->user();
 
-        return $user && $user->canCustomer(Permission::CUSTOMER_FINANCE);
+        return $user && $user->can(Permission::CUSTOMER_FINANCE);
     }
 
     /**
      * Perform the action on the given models.
      *
-     * @param  ActionFields  $fields
      * @param  Collection<Finance>  $models
      * @return ActionResponse
      */
-    public function handle(ActionFields $fields, Collection $models): ActionResponse
+    public function handle(Collection $models): ActionResponse
     {
-        $user = auth()->user();
+        /** @var CustomerServiceContract $customerService */
+        $customerService = app(CustomerServiceContract::class);
+        /** @var ActivityServiceContract $activityService */
+        $activityService = app(ActivityServiceContract::class);
 
         try {
-            foreach ($models as $model) $model->cancel();
+            $customerService->cancelRequests($models);
         } catch (Exception $exception) {
-            activity(static::class)
-                ->causedBy($user)
-                ->withProperties([
-                    "user" => $user,
-                    "finances" => $models,
-                    "exception" => $exception->getMessage()
-                ])
-                ->log("Finance request deleting failed");
-            return ActionResponse::danger("Something went wrong");
+            $activityService->novaException($exception, ["finances" => $models]);
+            return ActionResponse::danger($exception->getMessage());
         }
 
-        return ActionResponse::message("Financial requests cancelled");
-    }
-
-    /**
-     * Get the fields available on the action.
-     *
-     * @param  NovaRequest  $request
-     * @return array
-     */
-    public function fields(NovaRequest $request): array
-    {
-        return [];
+        return ActionResponse::message("Financial requests canceled");
     }
 
     public static function make(...$arguments): static

@@ -24,6 +24,8 @@ class ActivityLog extends Resource
      */
     public static string $model = Model::class;
 
+    public static $polling = true;
+
     /**
      * The single value that should be used to represent the resource when being displayed.
      *

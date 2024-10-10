@@ -27,9 +27,4 @@ class ArchivedTransaction extends Transaction
             DateTime::make(__("fields.archived_at"), "archived_at")
         ]);
     }
-
-    public static function label(): string
-    {
-        return auth()->user()?->is_customer ? "Transaction History" : "Archived Transactions";
-    }
 }

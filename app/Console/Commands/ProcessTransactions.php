@@ -2,8 +2,9 @@
 
 namespace App\Console\Commands;
 
-use App\Exceptions\AttemptToArchiveTransactionWithoutCustomer;
 use App\Models\Transaction\Transaction;
+use App\Services\Activity\Contracts\ActivityServiceContract;
+use App\Services\Transaction\Contracts\TransactionServiceContract;
 use Illuminate\Console\Command;
 use Exception;
 
@@ -23,24 +24,26 @@ class ProcessTransactions extends Command
      */
     protected $description = 'Command description';
 
+    public function __construct(
+        protected TransactionServiceContract $transactionService,
+        protected ActivityServiceContract $activityService,
+    ) {
+        parent::__construct();
+    }
+
     /**
      * Execute the console command.
-     * @throws AttemptToArchiveTransactionWithoutCustomer
+     * @throws Exception
      */
     public function handle(): void
     {
         try {
             Transaction::query()->chunk(100, function ($transactions) {
                 /** @var Transaction $transaction */
-                foreach ($transactions as $transaction) $transaction->archive();
+                foreach ($transactions as $transaction) $this->transactionService->archive($transaction);
             });
         } catch (Exception $exception) {
-            activity(static::class)
-                ->withProperties([
-                    "status" => "failed",
-                    "exception" => $exception->getMessage(),
-                ])->log("Failed to process transactions [schedule]");
-
+            $this->activityService->commandException($exception);
             throw $exception;
         }
     }

@@ -10,6 +10,9 @@ use Illuminate\Database\Eloquent\Builder;
 
 abstract class Resource extends NovaResource
 {
+    protected static string $default_order_column;
+    protected static string $default_order_dir;
+
     /**
      * Build an "index" query for the given resource.
      *
@@ -19,6 +22,14 @@ abstract class Resource extends NovaResource
      */
     public static function indexQuery(NovaRequest $request, $query): Builder
     {
+        if (! empty(static::$default_order_column)) {
+            $query->when(empty($request->get('orderBy')), function(Builder $q) {
+                $q->getQuery()->orders = [];
+
+                return $q->orderBy(static::$default_order_column, static::$default_order_dir ?? "desc");
+            });
+        }
+
         return $query;
     }
 
@@ -106,15 +117,13 @@ abstract class Resource extends NovaResource
         $query->whereRaw("1 = 0");
     }
 
-    public static function hideWhenNotAuthorized(NovaRequest $request, Builder $query, string $admin, string $customer): void
+    public static function hideWhenNotAuthorized(NovaRequest $request, Builder $query, iterable|string $abilities): void
     {
         /** @var User $user */
         $user = $request->user();
 
-        if (
-            ! $user ||
-            ($user->is_admin && ! $user->canAdmin($admin)) ||
-            ($user->is_customer && ! $user->canCustomer($customer))
-        ) static::hideQuery($query);
+        if ($user && $user->canAny($abilities)) return;
+
+        static::hideQuery($query);
     }
 }

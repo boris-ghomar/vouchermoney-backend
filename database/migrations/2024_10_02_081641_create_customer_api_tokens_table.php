@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('name');
             $table->timestamp('last_used_at')->nullable();
             $table->timestamp('expires_at')->nullable();
+            $table->softDeletes();
             $table->timestamps();
         });
     }

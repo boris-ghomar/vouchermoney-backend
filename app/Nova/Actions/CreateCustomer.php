@@ -2,37 +2,32 @@
 
 namespace App\Nova\Actions;
 
-use App\Models\Customer\Customer;
+use App\Models\Customer;
 use App\Models\User;
-use Illuminate\Bus\Queueable;
-use Illuminate\Http\Request;
-use Illuminate\Queue\InteractsWithQueue;
-use Laravel\Nova\Actions\Action;
-use Laravel\Nova\Actions\ActionResponse;
-use Laravel\Nova\Fields\ActionFields;
 use App\Nova\Fields\Password;
 use App\Nova\Fields\Select;
 use App\Nova\Fields\Text;
+use App\Services\Activity\Contracts\ActivityServiceContract;
+use App\Services\Customer\Contracts\CustomerServiceContract;
 use Exception;
+use Illuminate\Bus\Queueable;
+use Illuminate\Http\Request;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Validation\Rules\Password as PasswordRule;
+use Laravel\Nova\Actions\Action;
+use Laravel\Nova\Actions\ActionResponse;
+use Laravel\Nova\Fields\ActionFields;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Lednerb\ActionButtonSelector\ShowAsButton;
-use Illuminate\Validation\Rules\Password as PasswordRule;
 
 class CreateCustomer extends Action
 {
     use InteractsWithQueue, Queueable, ShowAsButton;
 
-    public function name(): string
-    {
-        return "Add";
-    }
-
+    public $name = "Add";
     public $standalone = true;
-
     public $confirmText = "";
-
     public $onlyOnIndex = true;
-
     public $confirmButtonText = "Add";
 
     public function authorizedToSee(Request $request): bool
@@ -56,18 +51,22 @@ class CreateCustomer extends Action
      */
     public function handle(ActionFields $fields): ActionResponse
     {
+        /** @var CustomerServiceContract $customerService */
+        $customerService = app(CustomerServiceContract::class);
+        /** @var ActivityServiceContract $activityService */
+        $activityService = app(ActivityServiceContract::class);
+
+        $type = $fields->get("type");
+        $name = $fields->get("name");
+        $email = $fields->get("email");
+        $password = $fields->get("password");
+
         try {
             /** @var Customer $customer */
-            $customer = Customer::{"make" . ucfirst($fields->type)}($fields->name, $fields->email, $fields->password);
+            $customer = $customerService->{"make" . ucfirst($type)}($name, $email, $password);
         } catch (Exception $exception) {
-            activity(static::class)
-                ->withProperties([
-                    "user" => auth()->user(),
-                    "fields" => $fields,
-                    "exception" => $exception->getMessage()
-                ])
-                ->log("Failed to create customer");
-            return ActionResponse::danger("Failed to create customer");
+            $activityService->novaException($exception, ["fields" => $fields]);
+            return ActionResponse::danger($exception->getMessage());
         }
 
         return ActionResponse::visit("/resources/customers/" . $customer->id);

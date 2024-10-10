@@ -116,6 +116,7 @@ class Permission extends SpatiePermission
         self::CUSTOMER_VOUCHER_FREEZE,
         self::CUSTOMER_TRANSACTIONS_VIEW
     ];
+
     /**
      * Api token can have these permissions.
      * @var array|string[]
@@ -126,6 +127,7 @@ class Permission extends SpatiePermission
         self::CUSTOMER_VOUCHER_REDEEM,
         self::CUSTOMER_VOUCHER_FREEZE,
     ];
+
     /**
      * All admins can have these permissions.
      */
@@ -137,53 +139,18 @@ class Permission extends SpatiePermission
         self::FINANCES_MANAGEMENT,
         self::ACTIVITY_VIEW
     ];
+  
     public static function getApiTokenPermissions(): array {
-        $permissionsWithDescriptions = [];
+        $permissions = static::query()->whereIn("name", static::$apiPermissions)->pluck('name', 'id')
 
-        foreach (self::$apiTokenPermissions as $permissionName) {
-            $permission = Permission::where('name', $permissionName)->first();
-
-            if ($permission) {
-                $permissionsWithDescriptions[$permissionName] = [
-                    'id' => $permission->id,
-                    'label' => __("permissions.{$permissionName}.label"),
-                    'short_description' => __("permissions.{$permissionName}.description.short"),
-                ];
-            }
+        foreach ($permissions as $key => $permission) {
+            $permissions[$key] = [
+                'id' => $permission->id,
+                'name' => $permission->name_label . $permission->description,
+            ];
         }
-        return $permissionsWithDescriptions;
-    }
-
-    public static function getAvailableAdminPermissionsForUser(User $user): array
-    {
-        if ($user->is_customer) return [];
-
-        if ($user->is_super) return self::$adminPermissions;
-
-        $result = [];
-
-        foreach ($user->getPermissionNames() as $userPermissionName) {
-            if (in_array($userPermissionName, static::$adminPermissions))
-                $result[] = $userPermissionName;
-        }
-
-        return $result;
-    }
-
-    public static function getAvailableCustomerPermissionsForUser(User $user): array
-    {
-        if ($user->is_admin) return [];
-
-        if ($user->is_customer_admin) return self::$customerPermissions;
-
-        $result = [];
-
-        foreach ($user->getPermissionNames() as $userPermissionName) {
-            if (in_array($userPermissionName, static::$customerPermissions))
-                $result[] = $userPermissionName;
-        }
-
-        return $result;
+      
+        return $permissions;
     }
 
     public function getDescriptionAttribute(): string

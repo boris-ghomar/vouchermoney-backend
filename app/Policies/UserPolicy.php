@@ -12,7 +12,7 @@ class UserPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->is_admin || ($user->is_customer_admin || $user->can(Permission::CUSTOMER_USER_VIEW));
+        return $user->is_admin || ($user->can(Permission::CUSTOMER_USER_VIEW));
     }
 
     /**
@@ -21,14 +21,10 @@ class UserPolicy
     public function view(User $user, User $model): bool
     {
         if (
-            $user->is_super ||
+            $user->can(Permission::CUSTOMERS_VIEW) ||
             $user->id === $model->id ||
             ($user->is_admin && $model->is_admin) ||
-            ($user->is_admin && $user->can(Permission::CUSTOMERS_VIEW)) ||
-            (
-                $user->isOwnerOf($model) ||
-                ($user->customer_id === $model->customer_id && $user->can(Permission::CUSTOMER_USER_VIEW))
-            )
+            ($user->customer_id === $model->customer_id && $user->can(Permission::CUSTOMER_USER_VIEW))
         ) return true;
 
         return false;
@@ -69,9 +65,9 @@ class UserPolicy
     /**
      * Determine whether the user can permanently delete the model.
      */
-    public function forceDelete(User $user, User $model): bool
+    public function forceDelete(): bool
     {
-        return $this->delete($user, $model);
+        return false;
     }
 
     /**

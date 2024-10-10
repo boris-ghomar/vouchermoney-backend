@@ -5,49 +5,41 @@ namespace App\Nova;
 use App\Models\Permission as PermissionModel;
 use App\Nova\Actions\CreateCustomerApiToken;
 use App\Nova\Fields\BelongsToMany;
+use App\Models\User;
+use App\Nova\Actions\CreateCustomerApiToken;
+use App\Nova\Fields\BelongsTo;
 use App\Nova\Fields\DateTime;
 use App\Nova\Fields\FieldHelper;
 use App\Nova\Fields\Text;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use App\Nova\Fields\ID;
 use App\Nova\Fields\MorphToMany;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use App\Models\CustomerApiToken as Model;
-use function Webmozart\Assert\Tests\StaticAnalysis\false;
+use App\Models\Permission as PermissionModel;
 
 class CustomerApiToken extends Resource
 {
-    /**
-     * The model the resource corresponds to.
-     *
-     * @var class-string<Model>
-     */
     public static string $model = Model::class;
-
-    public static function label(): string
-    {
-        return 'Api Tokens';
-    }
-
-    /**
-     * The single value that should be used to represent the resource when being displayed.
-     *
-     * @var string
-     */
-
     public static $title = 'name';
-
-    /**
-     * The columns that should be searched.
-     *
-     * @var array
-     */
-
-    public static $search = [
-        'name', 'id'
-    ];
-
+    public static $search = ['name', 'id'];
     public static $globallySearchable = false;
+
+    public static function indexQuery(NovaRequest $request, $query): Builder
+    {
+        parent::indexQuery($request, $query);
+
+        /** @var User $user */
+        $user = $request->user();
+
+        if (! ($user->can(PermissionModel::CUSTOMERS_VIEW) || $user->is_customer_admin))
+            static::hideQuery($query);
+
+        static::forCustomer($request, $query);
+
+        return $query;
+    }
 
     /**
      * Get the fields displayed by the resource.
@@ -62,16 +54,16 @@ class CustomerApiToken extends Resource
 
             Text::make('Name', 'name')->sortable(),
 
+            BelongsTo::make("Customer", "customer")
+                ->onlyForAdmins([PermissionModel::CUSTOMERS_VIEW]),
+
             MorphToMany::make(__("fields.permissions"), "permissions", Permission::class)
                 ->collapsable()
                 ->collapsedByDefault(),
 
-            DateTime::make('Expires At', 'expires_at')
-                ->rules('nullable', 'date')
-                ->sortable(),
+            DateTime::make('Expires At', 'expires_at')->sortable(),
 
-            DateTime::make('Last Used At', 'last_used_at')
-                ->sortable(),
+            DateTime::make('Last Used At', 'last_used_at')->sortable(),
 
             DateTime::timestamps()
         ]);
@@ -146,5 +138,15 @@ class CustomerApiToken extends Resource
     public function authorizedToDetach(NovaRequest $request, $model, $relationship): bool
     {
         return false;
+    }
+
+    public static function label(): string
+    {
+        return 'Api Tokens';
+    }
+
+    public function getKey(): string
+    {
+        return "api-tokens";
     }
 }
