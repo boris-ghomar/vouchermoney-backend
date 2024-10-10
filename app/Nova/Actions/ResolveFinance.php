@@ -5,6 +5,8 @@ namespace App\Nova\Actions;
 use App\Models\Finance\Finance;
 use App\Models\Permission;
 use App\Models\User;
+use App\Services\Activity\Contracts\ActivityServiceContract;
+use App\Services\Finance\Contracts\FinanceServiceContract;
 use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Http\Request;
@@ -24,16 +26,24 @@ class ResolveFinance extends Action
     protected string $type;
     public $confirmText = "";
     public $showInline = true;
+    public $sole = true;
 
     public function approve(): static
     {
-        $this->type = "approve";
-        return $this;
+        return $this->setType("approve");
     }
 
     public function reject(): static
     {
-        $this->type = "reject";
+        return $this->setType("reject");
+    }
+
+    private function setType(string $type): static
+    {
+        $this->type = $type;
+        $this->confirmButtonText = __("actions." . $type);
+        $this->cancelButtonText = __("actions.cancel");
+
         return $this;
     }
 
@@ -47,7 +57,7 @@ class ResolveFinance extends Action
         /** @var User $user */
         $user = $request->user();
 
-        return $user && $user->canAdmin(Permission::FINANCES_MANAGEMENT);
+        return $user && $user->can(Permission::FINANCES_MANAGEMENT);
     }
 
     /**
@@ -69,24 +79,19 @@ class ResolveFinance extends Action
      */
     public function handle(ActionFields $fields, Collection $models): ActionResponse
     {
-        /** @var User $user */
-        $user = auth()->user();
+        /** @var FinanceServiceContract $financeService */
+        $financeService = app(FinanceServiceContract::class);
+        /** @var ActivityServiceContract $activityService */
+        $activityService = app(ActivityServiceContract::class);
 
         try {
-            foreach ($models as $model) $model->{$this->type}($user, $fields->comment ?: "");
+            foreach ($models as $model) $financeService->{$this->type}($model, $fields->get("comment"));
         } catch (Exception $exception) {
-            activity(static::class)
-                ->withProperties([
-                    "user" => $user,
-                    "finances" => $models,
-                    "fields" => $fields,
-                    "exception" => $exception->getMessage()
-                ])->log("Exception when attempting to resolve finance");
-
+            $activityService->novaException($exception, ["finances" => $models, "fields" => $fields]);
             return ActionResponse::danger("Something went wrong");
         }
 
-        return ActionResponse::message("Successfully " . ucfirst($this->type) . ($this->type === "approve" ? "" : "e") . "d");
+        return ActionResponse::message("Successfully " . ucfirst($this->type) . ($this->type === "approve" ? "" : "e") . "d!");
     }
 
     /**
@@ -105,8 +110,8 @@ class ResolveFinance extends Action
 
     public static function make(...$arguments): array
     {
-        $approve = parent::make()->approve()->confirmButtonText(__("actions.approve"))->cancelButtonText(__("actions.cancel"));
-        $reject = parent::make()->reject()->confirmButtonText(__("actions.reject"))->cancelButtonText(__("actions.cancel"));
+        $approve = parent::make()->approve();
+        $reject = parent::make()->reject();
         return [$approve, $reject];
     }
 }

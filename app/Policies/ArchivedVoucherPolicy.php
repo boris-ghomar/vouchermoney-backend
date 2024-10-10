@@ -5,7 +5,6 @@ namespace App\Policies;
 use App\Models\Permission;
 use App\Models\User;
 use App\Models\Voucher\ArchivedVoucher;
-use App\Models\Voucher\Voucher;
 
 class ArchivedVoucherPolicy
 {
@@ -14,11 +13,7 @@ class ArchivedVoucherPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->is_super || $user->is_customer_admin ||
-            $user->canAny([
-                Permission::VOUCHERS_VIEW,
-                Permission::CUSTOMER_VOUCHER_VIEW,
-            ]);
+        return $user->canAny([Permission::VOUCHERS_VIEW, Permission::CUSTOMER_VOUCHER_VIEW]);
     }
 
     /**
@@ -26,14 +21,10 @@ class ArchivedVoucherPolicy
      */
     public function view(User $user, ArchivedVoucher $voucher): bool
     {
-        if ($user->is_super || $user->can(Permission::VOUCHERS_VIEW) ||
+        if ($user->can(Permission::VOUCHERS_VIEW) ||
             (
                 $user->customer_id === $voucher->customer->id &&
-                (
-                    $user->is_customer_admin || $user->canAny([
-                        Permission::CUSTOMER_VOUCHER_VIEW,
-                    ])
-                )
+                $user->can([Permission::CUSTOMER_VOUCHER_VIEW])
             )
         ) return true;
 

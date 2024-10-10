@@ -2,15 +2,20 @@
 
 namespace App\Services\Customer\Contracts;
 
+use App\Exceptions\AttemptToRedeemFrozenVoucher;
 use App\Exceptions\InsufficientBalance;
 use App\Exceptions\TransactionWithZeroAmount;
 use App\Exceptions\WithdrawalLimitExceeded;
-use App\Models\Customer\Customer;
+use App\Models\Customer;
 use App\Models\Finance\Finance;
 use App\Models\Transaction\Transaction;
+use App\Models\Voucher\ArchivedVoucher;
+use App\Models\Voucher\Voucher;
 use Exception;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Collection;
 
 interface CustomerServiceContract
 {
@@ -121,47 +126,65 @@ interface CustomerServiceContract
     public function makeReseller(string $name, string $email, string $password): Customer;
 
     /**
-     * Request a withdrawal from the specified customer's balance.
+     * Get customer plucked key => value as "id" => "name"
      *
-     * This method creates a new withdrawal request for the given customer and returns a Finance instance.
-     * The request will be processed based on the customer's available balance and
-     * the application's business rules.
-     *
-     * @param Customer $customer The customer initiating the withdrawal request.
-     * @param float $amount The amount to withdraw.
-     * @param string $comment A comment or reason for the withdrawal request.
-     *
-     * @return Finance The Finance instance representing the withdrawal request.
+     * @return array Customers plucked
      */
-    public function requestWithdraw(Customer $customer, float $amount, string $comment): Finance;
+    public function allCustomersPlucked(): array;
 
     /**
-     * Request a deposit to the specified customer's balance.
+     * Generates one or multiple vouchers for the specified customer.
+     * This method creates a new voucher or multiple vouchers with the given amount
+     * and associates them with the provided customer. It returns a single voucher if
+     * only one is created, or a collection of vouchers if multiple are generated.
      *
-     * This method creates a new deposit request for the given customer and returns a Finance instance.
-     * The deposit will be processed according to the application's business rules.
+     * The process typically includes:
+     * - Validating the customer's eligibility for generating a voucher.
+     * - Creating one or more voucher records with the specified amount.
+     * - Associating the vouchers with the customer.
+     * - Returning the generated voucher(s) as a single instance or a collection.
      *
-     * @param Customer $customer The customer initiating the deposit request.
-     * @param float $amount The amount to deposit.
-     * @param string $comment A comment or reason for the deposit request.
-     *
-     * @return Finance The Finance instance representing the deposit request.
+     * @param Customer $customer The customer for whom the voucher is being generated.
+     * @param float $amount The amount assigned to each voucher.
+     * @param int $count The number of vouchers to be generated (default is 1).
+     * @return Voucher|Collection A single voucher if one is generated, or a collection of vouchers if multiple are generated.
      */
-    public function requestDeposit(Customer $customer, float $amount, string $comment): Finance;
+    public function generateVoucher(Customer $customer, float $amount, int $count = 1): Voucher|Collection;
 
     /**
-     * Cancel and delete the specified finance request for the given customer.
+     * Redeems the specified voucher for the given customer, performing all necessary business logic.
+     * This method handles the complete process of voucher redemption, including:
+     * - Validating the customer's eligibility to redeem the voucher.
+     * - Updating the voucher's status to indicate that it has been redeemed.
+     * - Adjusting the balance of the customer's account based on the voucher's value.
+     * - Creating and returning an archived version of the voucher to record the redemption.
+     * - Recording any provided notes related to the redemption process.
      *
-     * This method removes the provided Finance request instance from the system,
-     * even if it is currently being processed. It ensures that the request
-     * associated with the specified customer is properly canceled, and no further
-     * action will be taken on it.
+     * @param Customer $customer The customer redeeming the voucher.
+     * @param Voucher $voucher The voucher to be redeemed.
+     * @param string $note Optional note for the redemption process (default is an empty string).
+     * @return ArchivedVoucher The archived version of the voucher after it has been redeemed.
      *
-     * @param Finance $finance The finance request to be canceled and deleted.
-     *
-     * @return void
+     * @throws AttemptToRedeemFrozenVoucher If the voucher is frozen and cannot be redeemed.
      */
-    public function cancelRequest(Finance $finance): void;
+    public function redeemVoucher(Customer $customer, Voucher $voucher, string $note = ""): ArchivedVoucher;
+
+    /**
+     * Expires the specified voucher, performing all necessary business logic.
+     * This method marks the voucher as expired and creates an archived version
+     * to record the expiration. It ensures that the voucher is no longer usable
+     * by updating its status and preserving a record of the expiration.
+     *
+     * The process typically includes:
+     * - Validating the current status of the voucher to ensure it can be expired.
+     * - Updating the voucher's status to indicate expiration.
+     * - Creating and returning an `ArchivedVoucher` instance to keep a record
+     *   of the expired voucher.
+     *
+     * @param Voucher $voucher The voucher to be expired.
+     * @return ArchivedVoucher The archived version of the voucher after it has been expired.
+     */
+    public function expireVoucher(Voucher $voucher): ArchivedVoucher;
 
     /**
      * Delete the specified customer.

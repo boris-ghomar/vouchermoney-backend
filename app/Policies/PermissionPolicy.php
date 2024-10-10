@@ -2,7 +2,6 @@
 
 namespace App\Policies;
 
-use App\Models\Permission;
 use App\Models\User;
 
 class PermissionPolicy
@@ -18,9 +17,9 @@ class PermissionPolicy
     /**
      * Determine whether the user can view the model.
      */
-    public function view(User $user, Permission $permission): bool
+    public function view(User $user): bool
     {
-        return $user->is_super || $user->is_customer_admin || $user->can($permission);
+        return $this->viewAny($user);
     }
 
     /**

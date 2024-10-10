@@ -124,7 +124,7 @@ class User extends Resource
 
                     if (!$user) return false;
 
-                    return $user->is_super || ($user->is_customer_admin && $user->id !== $this->id && $user->customer_id === $this->customer_id);
+                    return ($user->is_super && $this->id !== $user->id) || ($user->is_customer_admin && $user->id !== $this->id && $user->customer_id === $this->customer_id);
                 }),
 
             Text::make(__("fields.name"), "name")->onlyOnForms()

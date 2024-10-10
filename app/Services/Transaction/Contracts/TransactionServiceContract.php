@@ -2,7 +2,8 @@
 
 namespace App\Services\Transaction\Contracts;
 
-use App\Models\Customer\Customer;
+use App\Models\Customer;
+use App\Models\Transaction\ArchivedTransaction;
 use App\Models\Transaction\Transaction;
 use Illuminate\Database\Eloquent\Model;
 
@@ -42,4 +43,21 @@ interface TransactionServiceContract
      * @return Transaction The created transaction record representing the deposit.
      */
     public function deposit(Customer $customer, float $amount, string $description = "", Model $associated = null): Transaction;
+
+    /**
+     * Archive the given transaction.
+     * This method copies the provided transaction into an archived version,
+     * adjusting the relevant details to fit the archived state, and returns
+     * the newly created ArchivedTransaction instance.
+     *
+     * The process typically involves:
+     * - Duplicating the transaction data into the archived transactions table.
+     * - Adjusting the customer's balance according to the transaction type.
+     * - Preserving any necessary metadata or relationships.
+     * - Deleting the original transaction from the active transactions table.
+     *
+     * @param Transaction $transaction The active transaction to be archived.
+     * @return ArchivedTransaction The archived version of the transaction.
+     */
+    public function archive(Transaction $transaction): ArchivedTransaction;
 }

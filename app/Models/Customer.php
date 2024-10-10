@@ -1,13 +1,11 @@
 <?php
 
-namespace App\Models\Customer;
+namespace App\Models;
 
-use App\Models\CustomerApiToken;
 use App\Models\Finance\ArchivedFinance;
 use App\Models\Finance\Finance;
 use App\Models\Transaction\ArchivedTransaction;
 use App\Models\Transaction\Transaction;
-use App\Models\User;
 use App\Models\Voucher\ArchivedVoucher;
 use App\Models\Voucher\Voucher;
 use App\Services\Customer\Contracts\CustomerServiceContract;
@@ -16,11 +14,10 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
-use Staudenmeir\EloquentJsonRelations\HasJsonRelationships;
 
 /**
  * @property  string       $id
@@ -41,10 +38,13 @@ use Staudenmeir\EloquentJsonRelations\HasJsonRelationships;
  * @property-read  Collection<ArchivedFinance>      $archived_finances
  * @property-read  Collection<Voucher>              $vouchers
  * @property-read  Collection<ArchivedVoucher>      $archived_vouchers
+ *
+ * @method  static  static      find(string $id)
+ * @method  static  Collection  pluck(string $value, string $key)
  */
 class Customer extends Model
 {
-    use SoftDeletes, HasUlids, LogsActivity, HasJsonRelationships;
+    use SoftDeletes, HasUlids, LogsActivity;
 
     const TYPE_RESELLER = "reseller";
     const TYPE_MERCHANT = "merchant";
@@ -52,15 +52,6 @@ class Customer extends Model
     protected $fillable = ['name', 'balance', 'type'];
 
     protected $casts = ["balance" => "decimal:2"];
-
-    protected static function boot(): void
-    {
-        parent::boot();
-
-        parent::deleted(function (Customer $model) {
-            $model->users()->delete();
-        });
-    }
 
     public function users(): HasMany
     {
@@ -87,14 +78,6 @@ class Customer extends Model
         return $this->hasMany(ArchivedTransaction::class);
     }
 
-    public function getAvailableBalanceAttribute(): float
-    {
-        /** @var CustomerServiceContract $service */
-        $service = app(CustomerServiceContract::class);
-
-        return $service->computeBalance($this);
-    }
-
     public function finances(): HasMany
     {
         return $this->hasMany(Finance::class);
@@ -102,7 +85,7 @@ class Customer extends Model
 
     public function archivedFinances(): HasMany
     {
-        return $this->hasMany(ArchivedFinance::class, "customer_data->id");
+        return $this->hasMany(ArchivedFinance::class);
     }
 
     public function vouchers(): HasMany
@@ -112,12 +95,19 @@ class Customer extends Model
 
     public function archivedVouchers(): HasMany
     {
-        return $this->hasMany(ArchivedVoucher::class, "customer_data->id");
+        return $this->hasMany(ArchivedVoucher::class);
+    }
+
+    public function getAvailableBalanceAttribute(): float
+    {
+        /** @var CustomerServiceContract $service */
+        $service = app(CustomerServiceContract::class);
+
+        return $service->computeBalance($this);
     }
 
     public function getActivitylogOptions(): LogOptions
     {
-        return LogOptions::defaults()
-            ->logOnly(['name', 'balance', "type", "created_at", "updated_at", "deleted_at"]);
+        return LogOptions::defaults()->logOnly(['name', 'balance', "type", "created_at", "updated_at", "deleted_at", "available_balance"]);
     }
 }

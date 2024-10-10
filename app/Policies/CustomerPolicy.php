@@ -2,7 +2,7 @@
 
 namespace App\Policies;
 
-use App\Models\Customer\Customer;
+use App\Models\Customer;
 use App\Models\Permission;
 use App\Models\User;
 
@@ -13,7 +13,7 @@ class CustomerPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->is_super || $user->can(Permission::CUSTOMERS_VIEW);
+        return $user->can(Permission::CUSTOMERS_VIEW);
     }
 
     /**
@@ -22,11 +22,9 @@ class CustomerPolicy
     public function view(User $user, Customer $customer): bool
     {
         if (
-            $user->is_super ||
-            $user->can(Permission::CUSTOMERS_VIEW) ||
-            (
+            $user->can(Permission::CUSTOMERS_VIEW) || (
                 $user->customer_id === $customer->id &&
-                ($user->is_customer_admin || $user->can(Permission::CUSTOMER_VIEW))
+                $user->can(Permission::CUSTOMER_VIEW)
             )
         ) return true;
 
@@ -54,17 +52,17 @@ class CustomerPolicy
     /**
      * Determine whether the user can delete the model.
      */
-    public function delete(User $user): bool
+    public function delete(): bool
     {
-        return $user->is_super;
+        return false;
     }
 
     /**
      * Determine whether the user can restore the model.
      */
-    public function restore(User $user): bool
+    public function restore(): bool
     {
-        return $this->delete($user);
+        return $this->delete();
     }
 
     /**
@@ -78,8 +76,8 @@ class CustomerPolicy
     /**
      * Determine whether the user can permanently delete the model.
      */
-    public function forceDelete(User $user): bool
+    public function forceDelete(): bool
     {
-        return $this->delete($user);
+        return $this->delete();
     }
 }

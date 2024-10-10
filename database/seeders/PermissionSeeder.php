@@ -52,7 +52,7 @@ class PermissionSeeder extends Seeder
             $role->name = $name;
             $role->save();
 
-            $role->permissions()->sync($permissions);
+            $role->syncPermissions($permissions);
         }
 
         $user->assignRole(Role::SUPER_ADMIN);

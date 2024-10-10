@@ -2,17 +2,20 @@
 
 namespace App\Services\Customer;
 
+use App\Exceptions\AttemptToRedeemFrozenVoucher;
 use App\Exceptions\InsufficientBalance;
 use App\Exceptions\TransactionWithZeroAmount;
 use App\Exceptions\WithdrawalLimitExceeded;
-use App\Models\Customer\Customer;
-use App\Models\Finance\Finance;
+use App\Models\Customer;
 use App\Models\Transaction\Transaction;
+use App\Models\Voucher\ArchivedVoucher;
+use App\Models\Voucher\Voucher;
 use App\Services\Customer\Contracts\CustomerServiceContract;
-use App\Services\Finance\Contracts\FinanceServiceContract;
 use App\Services\Notification\Contracts\NotificationServiceContract;
 use App\Services\Transaction\Contracts\TransactionServiceContract;
 use App\Services\User\Contracts\UserServiceContract;
+use App\Services\Voucher\Contracts\VoucherServiceContract;
+use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
@@ -21,8 +24,8 @@ class CustomerService implements CustomerServiceContract
     public function __construct(
         protected TransactionServiceContract $transactionService,
         protected UserServiceContract $userService,
-        protected FinanceServiceContract $financeService,
-        protected NotificationServiceContract $notificationService
+        protected NotificationServiceContract $notificationService,
+        protected VoucherServiceContract $voucherService
     ) {}
 
     public function computeBalance(Customer $customer): float
@@ -97,45 +100,71 @@ class CustomerService implements CustomerServiceContract
         });
     }
 
-    public function requestWithdraw(Customer $customer, float $amount, string $comment): Finance
+    public function generateVoucher(Customer $customer, float $amount, int $count = 1): Voucher|Collection
     {
-        return DB::transaction(function () use ($customer, $amount, $comment) {
-            // Create Finance request model.
-            $finance = $this->financeService->makeWithdraw($customer, $amount, $comment);
+        return DB::transaction(function () use ($customer, $amount, $count) {
+            $this->canWithdrawOrFail($customer, abs($amount) * $count);
 
-            // Create withdrawal Transaction for Customer.
-            $this->withdraw($customer, $amount, "Make withdrawal finance request", $finance);
+            $vouchersCollection = collect();
 
-            // Send notification about finance requesting.
-            $this->notificationService->financeHasBeenRequested($finance);
+            for($i = 0; $i < $count; $i++) {
+                $voucher = $this->voucherService->generate($customer, $amount);
 
-            return $finance;
+                $vouchersCollection->push($voucher);
+
+                $this->withdraw($customer, $amount, "Generate voucher", $voucher);
+            }
+
+            if ($vouchersCollection->count() === 1) {
+                $vouchersCollection = $vouchersCollection->first();
+            }
+
+            $this->notificationService->voucherHasBeenGenerated($vouchersCollection);
+
+            return $vouchersCollection;
         });
     }
 
-    public function requestDeposit(Customer $customer, float $amount, string $comment): Finance
+    public function redeemVoucher(Customer $customer, Voucher $voucher, string $note = ""): ArchivedVoucher
     {
-        return DB::transaction(function () use ($customer, $amount, $comment) {
-            // Create Finance request model.
-            $finance = $this->financeService->makeDeposit($customer, $amount, $comment);
+        if ($voucher->is_frozen)
+            throw new AttemptToRedeemFrozenVoucher();
 
-            // Send notification about finance requesting.
-            $this->notificationService->financeHasBeenRequested($finance);
+        return DB::transaction(function () use ($customer, $voucher, $note) {
+            $archived = $this->voucherService->redeem($voucher, $customer, $note);
 
-            return $finance;
+            $voucher->transaction->transactionable()->associate($archived);
+
+            $this->deposit($customer, $voucher->amount, "Redeem voucher [$archived->code]", $archived);
+
+            $this->notificationService->voucherHasBeenRedeemed($archived);
+
+            $this->voucherService->delete($voucher);
+
+            return $archived;
         });
     }
 
-    public function cancelRequest(Finance $finance): void
+    public function expireVoucher(Voucher $voucher): ArchivedVoucher
     {
-        DB::transaction(function () use ($finance) {
-            if ($finance->is_withdraw)
-                $this->deposit($finance->customer, $finance->amount, "Withdraw finance request cancelled");
+        return DB::transaction(function () use ($voucher) {
+            $archived = $this->voucherService->expire($voucher);
 
-            $this->financeService->delete($finance);
+            $voucher->transaction->transactionable()->associate($archived);
 
-            $this->notificationService->financeHasBeenCanceled($finance);
+            $this->deposit($voucher->customer, $voucher->amount, "Voucher [$archived->code] has been expired", $archived);
+
+            $this->notificationService->voucherHasBeenExpired($archived);
+
+            $this->voucherService->delete($voucher);
+
+            return $archived;
         });
+    }
+
+    public function allCustomersPlucked(): array
+    {
+        return Customer::pluck("name", "id")->toArray();
     }
 
     // TODO:

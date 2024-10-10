@@ -2,7 +2,7 @@
 
 namespace App\Services\User;
 
-use App\Models\Customer\Customer;
+use App\Models\Customer;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\User\Contracts\UserServiceContract;

@@ -31,11 +31,7 @@ class CreateCustomerApiToken extends Action
 
     public $standalone = true;
     public $onlyOnIndex = true;
-
-    public function name(): string
-    {
-        return "Generate token";
-    }
+    public $name = "Generate token";
 
     public function authorizedToSee(Request $request): bool
     {
@@ -61,27 +57,35 @@ class CreateCustomerApiToken extends Action
      */
     public function handle(ActionFields $fields, Collection $models): ActionResponse
     {
-        $customer = auth()->user()->customer;
+        /** @var User $user */
+        $user = auth()->user();
+
+        $customer = $user->customer;
+
         $token = Str::random(64);
 
         $hashedToken = hash('sha256', $token);
 
-        $expiresAt = match ($fields->expires_at) {
+        $expires_at = $fields->get("expires_at");
+
+        $expires_at = match ($expires_at) {
             'custom' => $fields->get('select_expires_at'),
             'no_expiration' => null,
-            default => now()->addDays(+$fields->expires_at),
+            default => now()->addDays(+$expires_at),
         };
 
-        $customerApiToken = CustomerApiToken::create([
-            'customer_id' =>$customer->id,
-            'name' => $fields->name,
-            'token' => $hashedToken,
-            'expires_at' => $expiresAt,
-        ]);
+        $customerApiToken = new CustomerApiToken();
+        $customerApiToken->customer()->associate($customer);
+        $customerApiToken->name = $fields->get("name");
+        $customerApiToken->token = $hashedToken;
 
-        $selectedPermissions = collect($fields->permissions)->filter(fn ($value) => $value === true)->keys()->toArray();
+        if (! empty($expires_at)) $customerApiToken->expires_at = $expires_at;
 
-        if ($selectedPermissions) $customerApiToken->permissions()->attach($selectedPermissions, ['model_type' => CustomerApiToken::class]);
+        $customerApiToken->save();
+
+        $selectedPermissions = collect($fields->get("permissions"))->filter(fn ($value) => $value === true)->keys()->toArray();
+
+        if ($selectedPermissions) $customerApiToken->syncPermissions($selectedPermissions);
 
        return ActionResponse::modal('api-token-modal', [
            "message" => "Please copy token for future use, as you won't be able to view it.",
@@ -98,10 +102,10 @@ class CreateCustomerApiToken extends Action
     public function fields(NovaRequest $request): array
     {
         return [
-            Text::make('Name', 'name')->rules('required'),
+            Text::make('Name', 'name')->rules('required', "string"),
 
             BooleanGroup::make('Permissions')
-                ->options(Permission::all()->pluck('name', 'id'))
+                ->options(Permission::query()->whereIn("name", Permission::$apiPermissions)->pluck('name', 'id'))
                 ->rules('required'),
 
             Select::make('Expires At','expires_at')->options([
@@ -112,6 +116,7 @@ class CreateCustomerApiToken extends Action
                 'custom' => 'Custom Date',
                 'no_expiration' => 'No Expiration',
             ])->rules('required')->displayUsingLabels(),
+
             DependencyContainer::make([
                 Date::make('Select Expiration Date', 'select_expires_at')
                     ->rules('nullable', 'date')

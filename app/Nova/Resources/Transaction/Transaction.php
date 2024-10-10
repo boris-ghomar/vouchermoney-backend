@@ -3,8 +3,6 @@
 namespace App\Nova\Resources\Transaction;
 
 use App\Models\Permission;
-use App\Models\Transaction\Transaction as Model;
-use App\Models\User;
 use App\Nova\Actions\ActionHelper;
 use App\Nova\Fields\Badge;
 use App\Nova\Fields\BelongsTo;
@@ -18,16 +16,10 @@ use App\Nova\Resource;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Laravel\Nova\Http\Requests\NovaRequest;
+use App\Models\Transaction\AbstractTransaction;
 
-class Transaction extends Resource
+abstract class Transaction extends Resource
 {
-    /**
-     * The model the resource corresponds to.
-     *
-     * @var class-string<Model>
-     */
-    public static string $model = Model::class;
-
     /**
      * The single value that should be used to represent the resource when being displayed.
      *
@@ -44,7 +36,9 @@ class Transaction extends Resource
 
     public static function indexQuery(NovaRequest $request, $query): Builder
     {
-        static::hideWhenNotAuthorized($request, $query, Permission::TRANSACTIONS_VIEW, Permission::CUSTOMER_TRANSACTIONS_VIEW);
+        parent::indexQuery($request, $query);
+
+        static::hideWhenNotAuthorized($request, $query, [Permission::TRANSACTIONS_VIEW, Permission::CUSTOMER_TRANSACTIONS_VIEW]);
 
         static::forCustomer($request, $query);
 
@@ -65,20 +59,14 @@ class Transaction extends Resource
             BelongsTo::make(__("fields.customer"), "customer")
                 ->onlyForAdmins(),
 
-            Badge::make(__("fields.type"), "type")->map([
-                    "withdraw" => "danger",
-                    "deposit" => "success"
-                ])->labels([
-                    "withdraw" => __("fields.withdraw"),
-                    "deposit" => __("fields.deposit")
-                ]),
+            Badge::make(__("fields.type"), "type")->depositOrWithdraw(),
 
             Currency::make(__("fields.amount"), "amount")
                 ->displayAsPositive()->sortable()->filterable(),
 
             Text::make(__("fields.description"), "description"),
 
-            MorphTo::make("Attachment", "model"),
+            MorphTo::make("Attachment", "transactionable"),
 
             DateTime::createdAt()->filterable()->sortable(),
             DateTime::updatedAt(),

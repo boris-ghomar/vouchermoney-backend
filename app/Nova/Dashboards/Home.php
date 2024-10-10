@@ -27,12 +27,7 @@ class Home extends Dashboard
     public function cards(): array
     {
         return [
-            (new CustomerAvailableBalance())->canSee(function (Request $request) {
-                /** @var User $user */
-                $user = $request->user();
-
-                return $user && ($user->is_customer_admin || $user->can(Permission::CUSTOMER_VIEW));
-            }),
+            (new CustomerAvailableBalance())->canSee(fn (Request $request) => $request->user()?->can(Permission::CUSTOMER_VIEW)),
         ];
     }
 

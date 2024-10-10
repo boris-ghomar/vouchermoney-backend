@@ -117,6 +117,13 @@ class Permission extends SpatiePermission
         self::CUSTOMER_TRANSACTIONS_VIEW
     ];
 
+    public static array $apiPermissions = [
+        self::CUSTOMER_VOUCHER_VIEW,
+        self::CUSTOMER_VOUCHER_GENERATE,
+        self::CUSTOMER_VOUCHER_REDEEM,
+        self::CUSTOMER_VOUCHER_FREEZE,
+    ];
+
     /**
      * All admins can have these permissions.
      */

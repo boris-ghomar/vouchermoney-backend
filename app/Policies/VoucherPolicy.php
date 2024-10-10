@@ -13,12 +13,11 @@ class VoucherPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->is_super || $user->is_customer_admin ||
-            $user->canAny([
-                Permission::VOUCHERS_VIEW,
-                Permission::CUSTOMER_VOUCHER_VIEW,
-                Permission::CUSTOMER_VOUCHER_FREEZE
-            ]);
+        return $user->canAny([
+            Permission::VOUCHERS_VIEW,
+            Permission::CUSTOMER_VOUCHER_VIEW,
+            Permission::CUSTOMER_VOUCHER_FREEZE
+        ]);
     }
 
     /**
@@ -27,14 +26,10 @@ class VoucherPolicy
     public function view(User $user, Voucher $voucher): bool
     {
         if (
-            $user->is_super ||
             $user->can(Permission::VOUCHERS_VIEW) ||
             (
                 $user->customer_id === $voucher->customer_id &&
-                ($user->is_customer_admin || $user->canAny([
-                        Permission::CUSTOMER_VOUCHER_VIEW,
-                        Permission::CUSTOMER_VOUCHER_FREEZE
-                    ]))
+                $user->canAny([Permission::CUSTOMER_VOUCHER_VIEW, Permission::CUSTOMER_VOUCHER_FREEZE])
             )
         ) return true;
 
@@ -46,10 +41,7 @@ class VoucherPolicy
      */
     public function create(User $user): bool
     {
-        if ($user->is_admin) return false;
-
-        if ($user->is_customer_admin || $user->can(Permission::CUSTOMER_VOUCHER_GENERATE))
-            return true;
+        if ($user->can(Permission::CUSTOMER_VOUCHER_GENERATE)) return true;
 
         return false;
     }
@@ -62,7 +54,7 @@ class VoucherPolicy
         if ($user->is_admin) return false;
 
         if (
-            ($user->can(Permission::CUSTOMER_VOUCHER_FREEZE) || $user->is_customer_admin) &&
+            $user->can(Permission::CUSTOMER_VOUCHER_FREEZE) &&
             $user->customer_id === $voucher->customer_id
         ) return true;
 

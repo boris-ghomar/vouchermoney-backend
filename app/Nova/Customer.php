@@ -2,7 +2,7 @@
 
 namespace App\Nova;
 
-use App\Models\Customer\Customer as Model;
+use App\Models\Customer as Model;
 use App\Models\Permission as PermissionModel;
 use App\Nova\Actions\CreateCustomer;
 use App\Nova\Fields\Badge;
@@ -12,8 +12,10 @@ use App\Nova\Fields\ID;
 use App\Nova\Fields\Select;
 use App\Nova\Fields\Text;
 use App\Nova\Metrics\CustomerAvailableBalance;
+use App\Nova\Resources\Finance\ActiveFinance;
 use App\Nova\Resources\Finance\ArchivedFinance;
 use App\Nova\Resources\Finance\Finance;
+use App\Nova\Resources\Transaction\ActiveTransactions;
 use App\Nova\Resources\Transaction\ArchivedTransaction;
 use App\Nova\Resources\Transaction\Transaction;
 use App\Nova\Resources\User\Account;
@@ -84,26 +86,26 @@ class Customer extends Resource
                 Model::TYPE_MERCHANT => "success"
             ])->filterable()->onlyForAdmins(),
 
-            HasMany::make(__("fields.users"), "users", Account::class)
+            HasMany::make(__("fields.users"), "users", Account::class)->onlyOnDetail()
                 ->collapsable()->collapsedByDefault()->onlyForAdmins([PermissionModel::CUSTOMERS_VIEW]),
 
             HasMany::make("Vouchers", "vouchers", ActiveVoucher::class)
-                ->onlyForAdmins()->collapsedByDefault(),
+                ->onlyForAdmins([PermissionModel::VOUCHERS_VIEW])->collapsedByDefault()->onlyOnDetail(),
 
-            HasMany::make("Archived vouchers", "archived_vouchers", ArchivedVoucher::class)
-                ->onlyForAdmins()->collapsedByDefault(),
+            HasMany::make("Archived vouchers", "archivedVouchers", ArchivedVoucher::class)
+                ->onlyForAdmins([PermissionModel::VOUCHERS_VIEW])->collapsedByDefault()->onlyOnDetail(),
 
-            HasMany::make("Transactions", "transactions", Transaction::class)
-                ->onlyForAdmins()->collapsedByDefault(),
+            HasMany::make("Transactions", "transactions", ActiveTransactions::class)
+                ->onlyForAdmins([PermissionModel::TRANSACTIONS_VIEW])->collapsedByDefault()->onlyOnDetail(),
 
-            HasMany::make("Archived transactions", "archived_transactions", ArchivedTransaction::class)
-                ->onlyForAdmins()->collapsedByDefault(),
+            HasMany::make("Archived transactions", "archivedTransactions", ArchivedTransaction::class)
+                ->onlyForAdmins([PermissionModel::TRANSACTIONS_VIEW])->collapsedByDefault()->onlyOnDetail(),
 
-            HasMany::make("Finances", "finances", Finance::class)
-                ->onlyForAdmins()->collapsedByDefault(),
+            HasMany::make("Finances", "finances", ActiveFinance::class)
+                ->onlyForAdmins([PermissionModel::FINANCES_MANAGEMENT, PermissionModel::FINANCES_VIEW])->collapsedByDefault()->onlyOnDetail(),
 
-            HasMany::make("Archived finances", "archived_finances", ArchivedFinance::class)
-                ->onlyForAdmins()->collapsedByDefault(),
+            HasMany::make("Archived finances", "archivedFinances", ArchivedFinance::class)
+                ->onlyForAdmins([PermissionModel::FINANCES_VIEW])->collapsedByDefault()->onlyOnDetail(),
         ];
     }
 
@@ -128,7 +130,7 @@ class Customer extends Resource
     {
         return [
             CustomerAvailableBalance::make()->onlyOnDetail()
-                ->canSee(fn (Request $request) => $request->user()?->is_super || $request->user()?->can(PermissionModel::CUSTOMERS_VIEW)),
+                ->canSee(fn (Request $request) => $request->user()?->can(PermissionModel::CUSTOMERS_VIEW)),
         ];
     }
 
@@ -142,8 +144,6 @@ class Customer extends Resource
     {
         return [
             CreateCustomer::make()
-                ->canSee(fn(Request $request) => $request->user()?->is_super)
-                ->canRun(fn(Request $request) => $request->user()?->is_super),
         ];
     }
 }

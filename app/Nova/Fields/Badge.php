@@ -17,4 +17,20 @@ class Badge extends NovaBadge
 
         return $this;
     }
+
+    public function depositOrWithdraw(): static
+    {
+        $this->map([
+            "withdraw" => "danger",
+            "deposit" => "success"
+        ])->icons([
+            "danger" => "minus-circle",
+            "success" => "plus-circle",
+        ])->labels([
+            "withdraw" => __("fields.withdraw"),
+            "deposit" => __("fields.deposit")
+        ]);
+
+        return $this;
+    }
 }

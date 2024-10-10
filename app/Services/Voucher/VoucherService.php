@@ -2,46 +2,92 @@
 
 namespace App\Services\Voucher;
 
-use App\Models\Customer\Customer;
+use App\Models\Customer;
+use App\Models\User;
+use App\Models\Voucher\ArchivedVoucher;
 use App\Models\Voucher\Voucher;
-use App\Models\Voucher\VoucherActivity;
 use App\Services\Voucher\Contracts\VoucherCodeServiceContract;
 use App\Services\Voucher\Contracts\VoucherServiceContract;
-use Illuminate\Support\Facades\DB;
 
 class VoucherService implements VoucherServiceContract
 {
-    public function __construct(protected VoucherCodeServiceContract $voucherCodeService) {}
+    public function __construct(
+        protected VoucherCodeServiceContract $voucherCodeService,
+    ) {}
 
-    public function generate(Customer $customer, float $amount, int $count = 1): Voucher
-    {
-        return DB::transaction(function () use ($customer, $amount, $count) {
-            // Create Voucher
-            $voucher = $this->make($customer, $amount, auth()->user());
-
-            // Discount amount from customer's balance via transaction
-            $customer->withdraw($amount, "Generate voucher [$voucher->code]", $voucher);
-
-            // Send notification to customer, that voucher's generated
-            $customer->sendVoucherGeneratedNotification($voucher);
-
-            VoucherActivity::makeCreated($voucher->code);
-
-            return $voucher;
-        });
-    }
-
-    protected function make(Customer $customer, float $amount, $creator = null): Voucher
+    public function generate(Customer $customer, float $amount): Voucher
     {
         $voucher = new Voucher();
         $voucher->code = $this->voucherCodeService->generate();
         $voucher->amount = abs($amount);
         $voucher->customer()->associate($customer);
-
-        if (! empty($creator)) $voucher->creator()->associate($creator);
-
+        $voucher->creator()->associate(auth()->user());
         $voucher->save();
 
         return $voucher;
+    }
+
+    public function freeze(Voucher $voucher): Voucher
+    {
+        $voucher->active = Voucher::STATE_FROZEN;
+        $voucher->save();
+
+        return $voucher;
+    }
+
+    public function activate(Voucher $voucher): Voucher
+    {
+        $voucher->active = Voucher::STATE_ACTIVE;
+        $voucher->save();
+
+        return $voucher;
+    }
+
+    public function redeem(Voucher $voucher, Customer $recipient = null, string $note = ""): ArchivedVoucher
+    {
+        return $this->archive($voucher, ArchivedVoucher::STATE_REDEEMED, $recipient, $note);
+    }
+
+    public function expire(Voucher $voucher): ArchivedVoucher
+    {
+        return $this->archive($voucher, ArchivedVoucher::STATE_EXPIRED);
+    }
+
+    private function archive(Voucher $voucher, string $state, Customer $recipient = null, string $note = ""): ArchivedVoucher
+    {
+        $archived = new ArchivedVoucher();
+        $archived->id = $voucher->id;
+        $archived->code = $voucher->code;
+        $archived->amount = $voucher->amount;
+        $archived->state = $state;
+        $archived->customer_id = $voucher->customer_id;
+        $archived->creator_id = $voucher->creator_id;
+        $archived->creator_type = $voucher->creator_type;
+
+        if (! empty($note)) {
+            $archived->note = $note;
+        }
+
+        if (! empty($recipient) && $recipient->id !== $voucher->customer_id) {
+            $archived->recipient()->associate($recipient);
+        }
+
+        if ($state === ArchivedVoucher::STATE_EXPIRED) {
+            $resolver = User::administrator();
+        } else {
+            $resolver = auth()->user();
+        }
+
+        $archived->resolver()->associate($resolver);
+        $archived->created_at = $voucher->created_at;
+        $archived->updated_at = $voucher->updated_at;
+        $archived->save();
+
+        return $archived;
+    }
+
+    public function delete(Voucher $voucher): void
+    {
+        $voucher->delete();
     }
 }

@@ -2,54 +2,29 @@
 
 namespace App\Models;
 
-use Illuminate\Auth\Authenticatable;
-use Illuminate\Database\Eloquent\Concerns\HasUlids;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
-use Spatie\Permission\Traits\HasRoles;
+
 /**
- * @property string $customer_id,
- * @property string $token,
- * @property string $name
- * @property Carbon $expires_at
- * @property Carbon $last_used_at
- * @property Customer $customer
+ * @property  string       $token
+ * @property  Carbon|null  $expires_at
+ * @property  Carbon|null  $last_used_at
  *
- * @method static|Builder findByToken(string $token)
+ * @property-read  bool  $is_expired
  */
-class CustomerApiToken extends Model
+class CustomerApiToken extends AbstractUser
 {
-    use Authenticatable;
+    protected array $additional_fillable = ['token', 'expires_at', 'last_updated_at'];
+    protected array $additional_log_columns = ["expires_at", "last_used_at"];
+    protected $casts = ['expires_at' => 'datetime', 'last_used_at' => 'datetime'];
+    protected $hidden = ["token"];
 
-    use HasUlids, HasRoles;
-
-    protected $fillable = [
-        'customer_id',
-        'token',
-        'name',
-        'expires_at',
-        'last_updated_at'
-    ];
-
-    protected $casts = [
-        'expires_at' => 'datetime',
-        'last_used_at' => 'datetime',
-    ];
-
-    public function customer(): BelongsTo
+    public function getIsExpiredAttribute(): bool
     {
-        return $this->belongsTo(Customer::class);
+        return $this->expires_at && $this->expires_at < now();
     }
 
-    public function isExpired(): bool
+    public static function findByToken(string $token)
     {
-        return $this->is_expires && $this->is_expires < now();
-    }
-
-    public function scopeFindByToken(Builder $query, string $token)
-    {
-        return $query->where("token", $token)->first();
+        return static::query()->where("token", $token)->first();
     }
 }

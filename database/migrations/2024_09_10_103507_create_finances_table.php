@@ -13,21 +13,21 @@ return new class extends Migration
     {
         Schema::create('finances', function (Blueprint $table) {
             $table->ulid("id")->primary();
-            $table->foreignUlid('customer_id')->constrained()->cascadeOnDelete();
-            $table->foreignUlid('requester_id')->nullable()->constrained("users")->nullOnDelete();
             $table->decimal('amount');
-            $table->text('comment')->nullable();
+            $table->foreignUlid('customer_id')->constrained()->cascadeOnDelete();
+            $table->foreignUlid('requester_id')->constrained("users")->cascadeOnDelete();
+            $table->text('requester_comment')->nullable();
             $table->timestamps();
         });
 
         Schema::create('archived_finances', function (Blueprint $table) {
             $table->ulid("id")->primary();
             $table->decimal('amount');
-            $table->boolean('status'); // 1 - approved, 0 - rejected
+            $table->boolean('status')->comment("1 - approved, 0 - rejected");
 
-            $table->json("customer_data");
-            $table->json("requester_data");
-            $table->json("resolver_data");
+            $table->foreignUlid('customer_id')->constrained()->cascadeOnDelete();
+            $table->foreignUlid('requester_id')->constrained("users")->cascadeOnDelete();
+            $table->foreignUlid("resolver_id")->constrained("users")->cascadeOnDelete();
 
             $table->text('requester_comment')->nullable();
             $table->text('resolver_comment')->nullable();
