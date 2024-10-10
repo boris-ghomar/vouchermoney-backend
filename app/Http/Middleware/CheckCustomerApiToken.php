@@ -3,11 +3,18 @@
 namespace App\Http\Middleware;
 
 use Closure;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class CheckCustomerApiToken
 {
-    public function handle($request,Closure $next)
+    /**
+     * @param Request $request
+     * @param Closure $next
+     * @return JsonResponse|mixed
+     */
+    public function handle(Request $request,Closure $next)
     {
         $user = Auth::guard('customer-api')->user();
 
@@ -15,8 +22,9 @@ class CheckCustomerApiToken
             "status" => "failed",
             'message' => 'Unauthorized'
         ], 401);
-        $request->attributes->set('authenticatedUser', $user);
 
+        $request->setUserResolver(fn() => $user);
+        auth()->setUser($user);
         return $next($request);
     }
 }

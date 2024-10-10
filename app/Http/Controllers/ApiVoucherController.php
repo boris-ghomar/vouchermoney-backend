@@ -6,32 +6,34 @@ use App\Exceptions\AttemptToRedeemFrozenVoucher;
 use App\Http\Requests\Vouchers\CreateVoucherRequest;
 use App\Http\Requests\Vouchers\FreezeVoucherRequest;
 use App\Http\Requests\Vouchers\RedeemVoucherRequest;
-use App\Models\Customer;
+use App\Http\Resources\ArchivedVoucherResource;
+use App\Http\Resources\VoucherResource;
+use App\Models\Customer\Customer;
+use App\Models\CustomerApiToken;
 use App\Models\Voucher\Voucher;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+
 class ApiVoucherController extends Controller
 {
-    /**
-     * @param Request $request
-     * @return mixed
-     */
-    private function getAuthenticatedUser(Request $request)
+    protected CustomerApiToken $user;
+
+    public function __construct(Request $request)
     {
-        return $request->get('authenticatedUser');
+        $this->user = $request->user();
     }
 
     /**
-     * @param Request $request
      * @return JsonResponse
      */
-    public function index(Request $request): JsonResponse
+    public function index(): JsonResponse
     {
-        $user = $this->getAuthenticatedUser($request);
-        $vouchers = $user->customer->vouchers()->onlyActive()->get();
+        /** @var CustomerApiToken $user */
+        $vouchers = $this->user->customer->vouchers()->get();
         return response()->json([
             "status" => 201,
-            "vouchers" =>[$vouchers]
+            "vouchers" => VoucherResource::collection($vouchers)
         ]);
     }
 
@@ -41,9 +43,8 @@ class ApiVoucherController extends Controller
      */
     public function create(CreateVoucherRequest $request): JsonResponse
     {
-        $user = $this->getAuthenticatedUser($request);
         for ($i = 0; $i < $request->count; $i++) {
-            $user->customer->generateVoucher($request->amount);
+            $this->user->customer->generateVoucher($request->amount);
         }
         return response()->json([
             'status' => 201,
@@ -57,7 +58,8 @@ class ApiVoucherController extends Controller
      */
     public function freeze(FreezeVoucherRequest $request): JsonResponse
     {
-        return $this->voucherState($request->code, Voucher::FREEZE_VOUCHER);
+        dd(4);
+        return $this->changeVoucherState($request->code, Voucher::STATE_FROZEN);
     }
 
     /**
@@ -66,31 +68,31 @@ class ApiVoucherController extends Controller
      */
     public function unfreeze(FreezeVoucherRequest $request): JsonResponse
     {
-        return $this->voucherState($request->code, Voucher::ACTIVATE_VOUCHER);
+        return $this->changeVoucherState($request->code, Voucher::STATE_ACTIVE);
     }
 
     /**
      * @param string $code
-     * @param string $action
+     * @param bool $state
      * @return JsonResponse
      */
-    private function voucherState(string $code, string $action): JsonResponse
+    private function changeVoucherState(string $code, bool $state): JsonResponse
     {
-        $user = $this->getAuthenticatedUser(request());
-        $voucher = Voucher::findOrFail($code);
+        /** @var Voucher $voucher */
+        $voucher = Voucher::findByCode($code);
 
-        if ($voucher->customer_id !== $user->customer_id) {
+        if (!$voucher || $voucher->customer_id !== $this->user->customer_id) {
             return response()->json([
                 'status' => 404,
                 'message' => 'Voucher not found or access denied.',
             ]);
         }
 
-        $voucher->{$action}();
+        $voucher->changeState($state);
 
         return response()->json([
             'status' => 200,
-            'message' => $action === 'freeze' ? 'Voucher frozen successfully.' : 'Voucher unfrozen successfully.',
+            'message' => $state ? 'Voucher unfrozen successfully.' : 'Voucher frozen successfully.',
         ]);
     }
 
@@ -100,30 +102,34 @@ class ApiVoucherController extends Controller
      */
     public function redeem(RedeemVoucherRequest $request): JsonResponse
     {
-        $user = $request->get('authenticatedUser');
-        $voucher = Voucher::findOrFail($request->code);
-        if (!$voucher || $voucher->customer_id !== $user->customer_id)
+        $voucher = Voucher::findByCode($request->code);
+
+        if (!$voucher || $voucher->customer_id !== $this->user->customer_id)
         {
             return response()->json([
                 'status' => 404,
                 'message' => 'Something went wrong'
             ]);
         }
-        try {
-            $recipient = $request->recipient_id ? Customer::find($request->recipient_id) : null;
 
-            $archivedVoucher = $voucher->redeem($recipient);
+        try {
+            $archivedVoucher = $voucher->redeem($request->note, $this->user->customer);
 
             return response()->json([
                 'status' => 200,
                 'message' => 'Voucher redeemed successfully.',
-                'archivedVoucher' => $archivedVoucher,
+                'archivedVoucher' => new ArchivedVoucherResource($archivedVoucher),
             ]);
         } catch (AttemptToRedeemFrozenVoucher $e) {
             return response()->json([
                 'status' => 403,
                 'message' => 'Cannot redeem a frozen voucher.',
             ], 403);
+        } catch (Exception $exception) {
+            return response()->json([
+                'status' => 403,
+                'message' => 'Something went wrong',
+            ]);
         }
     }
 }

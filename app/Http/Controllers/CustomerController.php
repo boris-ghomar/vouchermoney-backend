@@ -8,7 +8,7 @@ use App\Http\Requests\Customers\CustomerUpdateRequest;
 use App\Http\Requests\UserRequest;
 use App\Http\Resources\CustomerResource;
 use App\Http\Resources\UserResource;
-use App\Models\Customer;
+use App\Models\Customer\Customer;
 use App\Services\CustomerService;
 use App\Services\FileUploadService;
 use App\Types\CustomerTypes;
