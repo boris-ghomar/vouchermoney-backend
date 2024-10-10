@@ -59,6 +59,7 @@ class GenerateVoucher extends Action
         $amount = (float) $fields->amount;
 
         if (!$user->customer->hasEnoughBalance($count * $amount)) {
+
             activity(static::class)
                 ->causedBy($user)
                 ->withProperties([
@@ -74,7 +75,6 @@ class GenerateVoucher extends Action
 
         try {
             $vouchers = [];
-
             for ($i = 0; $i < $count; $i++) $vouchers[] = $user->customer->generateVoucher($amount);
         } catch (Exception $exception) {
             activity(static::class)

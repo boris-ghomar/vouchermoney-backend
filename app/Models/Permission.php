@@ -116,7 +116,16 @@ class Permission extends SpatiePermission
         self::CUSTOMER_VOUCHER_FREEZE,
         self::CUSTOMER_TRANSACTIONS_VIEW
     ];
-
+    /**
+     * Api token can have these permissions.
+     * @var array|string[]
+     */
+    public static array $apiTokenPermissions = [
+        self::CUSTOMER_VOUCHER_VIEW,
+        self::CUSTOMER_VOUCHER_GENERATE,
+        self::CUSTOMER_VOUCHER_REDEEM,
+        self::CUSTOMER_VOUCHER_FREEZE,
+    ];
     /**
      * All admins can have these permissions.
      */
@@ -128,6 +137,22 @@ class Permission extends SpatiePermission
         self::FINANCES_MANAGEMENT,
         self::ACTIVITY_VIEW
     ];
+    public static function getApiTokenPermissions(): array {
+        $permissionsWithDescriptions = [];
+
+        foreach (self::$apiTokenPermissions as $permissionName) {
+            $permission = Permission::where('name', $permissionName)->first();
+
+            if ($permission) {
+                $permissionsWithDescriptions[$permissionName] = [
+                    'id' => $permission->id,
+                    'label' => __("permissions.{$permissionName}.label"),
+                    'short_description' => __("permissions.{$permissionName}.description.short"),
+                ];
+            }
+        }
+        return $permissionsWithDescriptions;
+    }
 
     public static function getAvailableAdminPermissionsForUser(User $user): array
     {

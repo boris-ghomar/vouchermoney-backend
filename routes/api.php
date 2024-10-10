@@ -3,6 +3,7 @@
 use App\Http\Middleware\CheckCustomerApiToken;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ApiVoucherController;
+use App\Models\Permission;
 
 //Route::middleware("auth:sanctum")->group(function () {
 //    Route::get('/user', function (Request $request) {
@@ -17,9 +18,9 @@ use App\Http\Controllers\ApiVoucherController;
 //Route::post('login',[AuthController::class,'login'])->name('login');
 
 Route::middleware(CheckCustomerApiToken::class)->prefix('v1')->controller(ApiVoucherController::class)->group(function () {
-    Route::get('vouchers', 'index');
-    Route::post('vouchers', 'create');
-    Route::put('vouchers/redeem', 'redeem'); // request - code
-    Route::put('vouchers/freeze', 'freeze'); // request - code
-    Route::put('vouchers/unfreeze', 'unfreeze'); // request - code
+    Route::get('vouchers', 'index')->can(Permission::CUSTOMER_VOUCHER_VIEW);
+    Route::post('vouchers/generate', 'create')->can(Permission::CUSTOMER_VOUCHER_GENERATE);
+    Route::put('vouchers/redeem', 'redeem')->can(Permission::CUSTOMER_VOUCHER_REDEEM);
+    Route::put('vouchers/freeze', 'freeze')->can(Permission::CUSTOMER_VOUCHER_FREEZE);
+    Route::put('vouchers/unfreeze', 'unfreeze')->can(Permission::CUSTOMER_VOUCHER_FREEZE);
 });

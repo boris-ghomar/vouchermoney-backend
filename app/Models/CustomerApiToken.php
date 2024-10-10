@@ -2,13 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Customer\Customer;
 use Illuminate\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as AuthenticatableUser;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
 use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 /**
  * @property string $customer_id,
  * @property string $token,
@@ -19,7 +22,7 @@ use Spatie\Permission\Traits\HasRoles;
  *
  * @method static|Builder findByToken(string $token)
  */
-class CustomerApiToken extends Model
+class CustomerApiToken extends AuthenticatableUser implements AuthenticatableContract
 {
     use Authenticatable;
 
@@ -51,5 +54,9 @@ class CustomerApiToken extends Model
     public function scopeFindByToken(Builder $query, string $token)
     {
         return $query->where("token", $token)->first();
+    }
+    public function permissions(): BelongsToMany
+    {
+        return $this->morphToMany(Permission::class, 'model', 'model_has_permissions');
     }
 }

@@ -5,6 +5,10 @@ namespace App\Http\Requests\Vouchers;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
+/**
+ * @property  string       $code
+ * @property  string|null  $note
+ */
 class RedeemVoucherRequest extends FormRequest
 {
     /**
@@ -24,7 +28,7 @@ class RedeemVoucherRequest extends FormRequest
     {
         return [
             'code' => 'required|string',
-            'recipient_id' => 'nullable|string'
+            'note' => 'nullable|string|max:200',
         ];
     }
 }

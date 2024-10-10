@@ -61,8 +61,6 @@ class Voucher extends Model
 
     const STATE_ACTIVE = true;
     const STATE_FROZEN = false;
-    const FREEZE_VOUCHER = 'freeze';
-    const ACTIVATE_VOUCHER = 'activate';
 
     public function transaction(): MorphOne
     {
@@ -107,6 +105,13 @@ class Voucher extends Model
     public function getIsFrozenAttribute(): bool
     {
         return $this->active === static::STATE_FROZEN;
+    }
+
+    public function changeState(bool $state): static
+    {
+        if ($state) return $this->activate();
+
+        return $this->freeze();
     }
 
     public function freeze(): static
