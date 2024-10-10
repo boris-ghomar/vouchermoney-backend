@@ -84,7 +84,7 @@ class RequestFinance extends Action
         /** @var ActivityServiceContract $activityService */
         $activityService = app(ActivityServiceContract::class);
 
-        $customer_id = $fields->get("");
+        $customer_id = $fields->get("customer_id");
         $comment = $fields->get("comment");
         $amount = $fields->get("amount");
 
