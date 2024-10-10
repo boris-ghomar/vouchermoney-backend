@@ -2,6 +2,9 @@
 
 namespace App\Nova;
 
+use App\Models\Permission as PermissionModel;
+use App\Nova\Actions\CreateCustomerApiToken;
+use App\Nova\Fields\BelongsToMany;
 use App\Models\User;
 use App\Nova\Actions\CreateCustomerApiToken;
 use App\Nova\Fields\BelongsTo;
@@ -55,9 +58,10 @@ class CustomerApiToken extends Resource
                 ->onlyForAdmins([PermissionModel::CUSTOMERS_VIEW]),
 
             MorphToMany::make(__("fields.permissions"), "permissions", Permission::class)
-                ->collapsable()->collapsedByDefault(),
+                ->collapsable()
+                ->collapsedByDefault(),
 
-            DateTime::make('Expires At', 'expires_at'),
+            DateTime::make('Expires At', 'expires_at')->sortable(),
 
             DateTime::make('Last Used At', 'last_used_at')->sortable(),
 
@@ -78,21 +82,60 @@ class CustomerApiToken extends Resource
         ];
     }
 
+    /**
+     * @param Request $request
+     * @return bool
+     */
     public static function authorizedToCreate(Request $request): bool
     {
         return false;
     }
 
+    /**
+     * @param Request $request
+     * @return bool
+     */
     public function authorizedToUpdate(Request $request): bool
     {
         return false;
     }
 
+    /**
+     * @param Request $request
+     * @return bool
+     */
     public function authorizedToReplicate(Request $request): bool
     {
         return false;
     }
-    public function authorizedToAttach(NovaRequest $request, $model): false
+
+    /**
+     * @param NovaRequest $request
+     * @param $model
+     * @return bool
+     */
+    public function authorizedToAttach(NovaRequest $request, $model): bool
+    {
+        return false;
+    }
+
+    /**
+     * @param NovaRequest $request
+     * @param $model
+     * @return bool
+     */
+    public function authorizedToAttachAny(NovaRequest $request, $model): bool
+    {
+        return false;
+    }
+
+    /**
+     * @param NovaRequest $request
+     * @param $model
+     * @param $relationship
+     * @return bool
+     */
+    public function authorizedToDetach(NovaRequest $request, $model, $relationship): bool
     {
         return false;
     }

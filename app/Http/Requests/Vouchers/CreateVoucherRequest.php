@@ -23,8 +23,8 @@ class CreateVoucherRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'amount' => 'required|numeric|min:0',
-            'count' => 'required|integer|min:1'
+            'amount' => 'required|numeric|min:1|max:10000',
+            'count' => 'required|integer|min:1|max:50'
         ];
     }
 }

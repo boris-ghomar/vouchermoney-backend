@@ -2,25 +2,20 @@
 
 namespace App\Nova\Actions;
 
-use App\Models\Customer;
 use App\Models\CustomerApiToken;
 use App\Models\Permission;
 use App\Models\User;
-use App\Nova\Fields\DateTime;
 use App\Nova\Fields\Text;
 use Illuminate\Bus\Queueable;
 use Illuminate\Http\Request;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Crypt;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Laravel\Nova\Actions\Action;
 use Laravel\Nova\Actions\ActionResponse;
 use Laravel\Nova\Fields\ActionFields;
 use Laravel\Nova\Fields\BooleanGroup;
 use Laravel\Nova\Fields\Date;
-use Laravel\Nova\Fields\MultiSelect;
 use Outl1ne\DependencyContainer\DependencyContainer;
 use Laravel\Nova\Fields\Select;
 use Laravel\Nova\Http\Requests\NovaRequest;
@@ -103,11 +98,11 @@ class CreateCustomerApiToken extends Action
     {
         return [
             Text::make('Name', 'name')->rules('required', "string"),
-
+          
             BooleanGroup::make('Permissions')
-                ->options(Permission::query()->whereIn("name", Permission::$apiPermissions)->pluck('name', 'id'))
+                ->options(Permission::getApiTokenPermissions())
                 ->rules('required'),
-
+          
             Select::make('Expires At','expires_at')->options([
                 '7' => '7 Days',
                 '30' => '30 Days',

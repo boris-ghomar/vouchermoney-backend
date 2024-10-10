@@ -27,4 +27,8 @@ class CustomerApiToken extends AbstractUser
     {
         return static::query()->where("token", $token)->first();
     }
+    public function permissions(): BelongsToMany
+    {
+        return $this->morphToMany(Permission::class, 'model', 'model_has_permissions');
+    }
 }

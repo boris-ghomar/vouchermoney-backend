@@ -117,7 +117,11 @@ class Permission extends SpatiePermission
         self::CUSTOMER_TRANSACTIONS_VIEW
     ];
 
-    public static array $apiPermissions = [
+    /**
+     * Api token can have these permissions.
+     * @var array|string[]
+     */
+    public static array $apiTokenPermissions = [
         self::CUSTOMER_VOUCHER_VIEW,
         self::CUSTOMER_VOUCHER_GENERATE,
         self::CUSTOMER_VOUCHER_REDEEM,
@@ -135,6 +139,19 @@ class Permission extends SpatiePermission
         self::FINANCES_MANAGEMENT,
         self::ACTIVITY_VIEW
     ];
+  
+    public static function getApiTokenPermissions(): array {
+        $permissions = static::query()->whereIn("name", static::$apiPermissions)->pluck('name', 'id')
+
+        foreach ($permissions as $key => $permission) {
+            $permissions[$key] = [
+                'id' => $permission->id,
+                'name' => $permission->name_label . $permission->description,
+            ];
+        }
+      
+        return $permissions;
+    }
 
     public function getDescriptionAttribute(): string
     {
