@@ -52,7 +52,7 @@ class CustomerApiToken extends Resource
 
             Text::make('Name', 'name')->sortable(),
 
-            BelongsTo::make("Customer", "customer")
+            BelongsTo::make("Customer", "customer", Customer::class)
                 ->onlyForAdmins([PermissionModel::CUSTOMERS_VIEW]),
 
             MorphToMany::make(__("fields.permissions"), "permissions", Permission::class)
