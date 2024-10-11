@@ -54,24 +54,31 @@ class ApiVoucherController extends Controller
         $amount = $request->amount;
 
         try {
-            $this->customerService->generateVoucher($this->user->customer, $amount, $count);
+            $vouchers = $this->customerService->generateVoucher($this->user->customer, $amount, $count);
 
             $response = response()->json([
                 'status' => "success",
-                'message' => 'Vouchers created successfully.'
+                'message' => 'Vouchers created successfully.',
+                "vouchers" => $count > 1 ? VoucherResource::collection($vouchers) : [VoucherResource::make($vouchers)]
             ]);
         } catch (Exception $exception) {
             $this->activityService->apiException($exception);
 
             $response = response()->json([
-                'status' => "failed",
+                'status' => "error",
                 'message' => $exception->getMessage()
             ], 400);
         }
 
-        $this->activityService->apiActivity($request, $response, [
-            "count" => $count,
-            "amount" => $amount
+        $this->activityService->apiActivity("generate", [
+            "ip" => $request->ip(),
+            "body" => $request->all(),
+            "route" => $request->route(),
+            "headers" => $request->header()
+        ], [
+            "headers" => $response->headers,
+            "response" => $response->getData(),
+            "status" => $response->status(),
         ]);
 
         return $response;
@@ -88,7 +95,7 @@ class ApiVoucherController extends Controller
 
             if (empty($voucher) || $voucher->customer_id !== $this->user->customer_id) {
                 $response = response()->json([
-                    "status" => "failed",
+                    "status" => "error",
                     "message" => "Voucher not found"
                 ], 404);
             } else {
@@ -109,7 +116,7 @@ class ApiVoucherController extends Controller
             $this->activityService->apiException($exception);
 
             $response = response()->json([
-                "status" => "failed",
+                "status" => "error",
                 "message" => $exception->getMessage()
             ], 400);
         }
@@ -130,7 +137,7 @@ class ApiVoucherController extends Controller
 
             if (empty($voucher) || $voucher->customer_id !== $this->user->customer_id) {
                 $response = response()->json([
-                    "status" => "failed",
+                    "status" => "error",
                     "message" => "Voucher not found"
                 ], 404);
             } else {
@@ -151,7 +158,7 @@ class ApiVoucherController extends Controller
             $this->activityService->apiException($exception);
 
             $response = response()->json([
-                "status" => "failed",
+                "status" => "error",
                 "message" => $exception->getMessage()
             ], 400);
         }
@@ -172,7 +179,7 @@ class ApiVoucherController extends Controller
 
             if (empty($voucher) || $voucher->customer_id !== $this->user->customer_id) {
                 $response = response()->json([
-                    'status' => "failed",
+                    'status' => "error",
                     'message' => 'Voucher not found'
                 ], 404);
             } else {
@@ -187,13 +194,13 @@ class ApiVoucherController extends Controller
         } catch (AttemptToRedeemFrozenVoucher $exception) {
             $this->activityService->apiException($exception);
             $response = response()->json([
-                'status' => "failed",
+                'status' => "error",
                 'message' => 'Cannot redeem frozen voucher',
             ], 400);
         } catch (Exception $exception) {
             $this->activityService->apiException($exception);
             $response = response()->json([
-                'status' => "failed",
+                'status' => "error",
                 'message' => $exception->getMessage(),
             ], 400);
         }

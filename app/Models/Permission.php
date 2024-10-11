@@ -123,7 +123,6 @@ class Permission extends SpatiePermission
      * @var array|string[]
      */
     public static array $apiTokenPermissions = [
-        self::CUSTOMER_VOUCHER_VIEW,
         self::CUSTOMER_VOUCHER_GENERATE,
         self::CUSTOMER_VOUCHER_REDEEM,
         self::CUSTOMER_VOUCHER_FREEZE,
@@ -143,13 +142,10 @@ class Permission extends SpatiePermission
 
     public static function getApiTokenPermissions(): array
     {
-        $permissions = static::query()->whereIn("name", static::$apiTokenPermissions)->pluck('name', 'id');
+        $permissions = static::query()->where("guard_name", "token")->whereIn("name", static::$apiTokenPermissions)->pluck('name', 'id')->toArray();
 
         foreach ($permissions as $key => $permission) {
-            $permissions[$key] = [
-                'id' => $permission->id,
-                'name' => $permission->name_label . $permission->description,
-            ];
+            $permissions[$key] = __("permissions." . $permission . ".label") . " - " . __("permissions." . $permission . ".description.short");
         }
 
         return $permissions;

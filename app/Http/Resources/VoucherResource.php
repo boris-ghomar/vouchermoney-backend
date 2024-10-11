@@ -21,7 +21,7 @@ class VoucherResource extends JsonResource
         return [
             "code" => $this->code,
             "amount" => $this->amount,
-            "state" => $this->active ? 'Active' : 'Frozen',
+            "state" => $this->active ? 'active' : 'frozen',
         ];
     }
 }

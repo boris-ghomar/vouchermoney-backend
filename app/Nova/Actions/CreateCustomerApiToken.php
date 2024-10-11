@@ -2,15 +2,18 @@
 
 namespace App\Nova\Actions;
 
+use App\Exceptions\AttemptToCreateExpiredApiToken;
 use App\Models\CustomerApiToken;
 use App\Models\Permission;
 use App\Models\User;
 use App\Nova\Fields\Text;
+use App\Services\Activity\Contracts\ActivityServiceContract;
+use App\Services\Customer\Contracts\CustomerServiceContract;
 use Illuminate\Bus\Queueable;
 use Illuminate\Http\Request;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
+use Exception;
 use Laravel\Nova\Actions\Action;
 use Laravel\Nova\Actions\ActionResponse;
 use Laravel\Nova\Fields\ActionFields;
@@ -20,6 +23,7 @@ use Outl1ne\DependencyContainer\DependencyContainer;
 use Laravel\Nova\Fields\Select;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Lednerb\ActionButtonSelector\ShowAsButton;
+
 class CreateCustomerApiToken extends Action
 {
     use InteractsWithQueue, Queueable, ShowAsButton;
@@ -55,11 +59,20 @@ class CreateCustomerApiToken extends Action
         /** @var User $user */
         $user = auth()->user();
 
+        if (empty($user)) {
+            return ActionResponse::danger("Not authorized");
+        }
+
         $customer = $user->customer;
 
-        $token = Str::random(64);
+        if (empty($customer)) {
+            return ActionResponse::danger("Not authorized");
+        }
 
-        $hashedToken = hash('sha256', $token);
+        /** @var CustomerServiceContract $customerService */
+        $customerService = app(CustomerServiceContract::class);
+        /** @var ActivityServiceContract $activityService */
+        $activityService = app(ActivityServiceContract::class);
 
         $expires_at = $fields->get("expires_at");
 
@@ -69,18 +82,18 @@ class CreateCustomerApiToken extends Action
             default => now()->addDays(+$expires_at),
         };
 
-        $customerApiToken = new CustomerApiToken();
-        $customerApiToken->customer()->associate($customer);
-        $customerApiToken->name = $fields->get("name");
-        $customerApiToken->token = $hashedToken;
+        $name = $fields->get("name");
+        $permissions = collect($fields->get("permissions"))->filter(fn ($value) => $value === true)->keys()->toArray();
 
-        if (! empty($expires_at)) $customerApiToken->expires_at = $expires_at;
-
-        $customerApiToken->save();
-
-        $selectedPermissions = collect($fields->get("permissions"))->filter(fn ($value) => $value === true)->keys()->toArray();
-
-        if ($selectedPermissions) $customerApiToken->syncPermissions($selectedPermissions);
+        try {
+            $token = $customerService->createApiToken($customer, $name, $permissions, $expires_at);
+        } catch (AttemptToCreateExpiredApiToken $exception) {
+            $activityService->novaException($exception);
+            return ActionResponse::danger("Expiration time must be greater that current time");
+        } catch (Exception $exception) {
+            $activityService->novaException($exception);
+            return ActionResponse::danger($exception->getMessage());
+        }
 
        return ActionResponse::modal('api-token-modal', [
            "message" => "Please copy token for future use, as you won't be able to view it.",
@@ -98,12 +111,12 @@ class CreateCustomerApiToken extends Action
     {
         return [
             Text::make('Name', 'name')->rules('required', "string"),
-          
+
             BooleanGroup::make('Permissions')
                 ->options(Permission::getApiTokenPermissions())
                 ->rules('required'),
-          
-            Select::make('Expires At','expires_at')->options([
+
+            Select::make('Expiration','expires_at')->options([
                 '7' => '7 Days',
                 '30' => '30 Days',
                 '60' => '60 Days',
@@ -114,7 +127,7 @@ class CreateCustomerApiToken extends Action
 
             DependencyContainer::make([
                 Date::make('Select Expiration Date', 'select_expires_at')
-                    ->rules('nullable', 'date')
+                    ->rules('nullable', 'date', "after:today")
             ])->dependsOn('expires_at', 'custom'),
         ];
     }

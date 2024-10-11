@@ -25,7 +25,7 @@ class CustomerApiTokenActivity extends Model
 
     protected $table = "customer_api_token_activities";
     protected $fillable = ["token_id", "request", "response", "properties", "action"];
-    protected $casts = ["request" => "array", "response" => "array", "properties" => "array"];
+    protected $casts = ["request" => "json", "response" => "json", "properties" => "json"];
 
     public function token(): BelongsTo
     {

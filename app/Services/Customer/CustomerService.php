@@ -2,11 +2,13 @@
 
 namespace App\Services\Customer;
 
+use App\Exceptions\AttemptToCreateExpiredApiToken;
 use App\Exceptions\AttemptToRedeemFrozenVoucher;
 use App\Exceptions\InsufficientBalance;
 use App\Exceptions\TransactionWithZeroAmount;
 use App\Exceptions\WithdrawalLimitExceeded;
 use App\Models\Customer;
+use App\Models\CustomerApiToken;
 use App\Models\Transaction\Transaction;
 use App\Models\Voucher\ArchivedVoucher;
 use App\Models\Voucher\Voucher;
@@ -15,9 +17,11 @@ use App\Services\Notification\Contracts\NotificationServiceContract;
 use App\Services\Transaction\Contracts\TransactionServiceContract;
 use App\Services\User\Contracts\UserServiceContract;
 use App\Services\Voucher\Contracts\VoucherServiceContract;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class CustomerService implements CustomerServiceContract
 {
@@ -169,4 +173,28 @@ class CustomerService implements CustomerServiceContract
 
     // TODO:
     public function delete(Customer $customer): void {}
+
+    public function createApiToken(Customer $customer, string $name, array $permissions, Carbon $expires_at = null): string
+    {
+        $token_string = CustomerApiToken::createTokenString();
+
+        $token = new CustomerApiToken();
+        $token->customer()->associate($customer);
+        $token->token = CustomerApiToken::hash($token_string);
+        $token->name = $name;
+
+        if (! empty($expires_at)) {
+            if ($expires_at->lte(now())) {
+                throw new AttemptToCreateExpiredApiToken();
+            }
+
+            $token->expires_at = $expires_at;
+        }
+
+        $token->save();
+
+        $token->syncPermissions($permissions);
+
+        return $token_string;
+    }
 }

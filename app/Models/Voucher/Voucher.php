@@ -20,6 +20,8 @@ class Voucher extends AbstractVoucher
 {
     use HasUlids;
 
+    protected $table = "vouchers";
+
     const STATE_ACTIVE = true;
     const STATE_FROZEN = false;
 

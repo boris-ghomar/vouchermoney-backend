@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\Customer\Customer;
+use App\Models\CustomerApiToken;
 
 return [
 
@@ -42,9 +42,9 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
-        'customer-api' => [
-            'driver' => 'customer-api',
-            'provider' => 'customers',
+        'token' => [
+            'driver' => 'token',
+            'provider' => 'customer-api-token',
         ],
     ],
 
@@ -75,9 +75,9 @@ return [
         //     'driver' => 'database',
         //     'table' => 'users',
         // ],
-        'customers' => [
+        'customer-api-token' => [
             'driver' => 'eloquent',
-            'model' => Customer::class,
+            'model' => CustomerApiToken::class,
         ],
     ],
 

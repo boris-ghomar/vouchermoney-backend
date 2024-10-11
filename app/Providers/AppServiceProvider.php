@@ -63,7 +63,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(CustomerApiToken::class, CustomerApiTokenPolicy::class);
         Gate::policy(Activity::class, ActivityPolicy::class);
 
-        Auth::extend('customer-api', function ($app, $name, array $config) {
+        Auth::extend('token', function ($app, $name, array $config) {
             return new CustomerApiGuard($app['auth']->createUserProvider($config['provider']), $app['request']);
         });
     }

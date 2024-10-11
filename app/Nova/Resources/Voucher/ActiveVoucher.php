@@ -2,11 +2,16 @@
 
 namespace App\Nova\Resources\Voucher;
 
+use App\Models\CustomerApiToken as CustomerApiTokenModel;
+use App\Models\User as UserModel;
 use App\Models\Voucher\Voucher as Model;
 use App\Nova\Actions\FreezeVoucher;
 use App\Nova\Actions\GenerateVoucher;
 use App\Nova\Actions\RedeemVoucher;
+use App\Nova\CustomerApiToken;
 use App\Nova\Fields\Badge;
+use App\Nova\Fields\MorphTo;
+use App\Nova\Resources\User\Account;
 use Laravel\Nova\Http\Requests\NovaRequest;
 
 /**
@@ -25,7 +30,13 @@ class ActiveVoucher extends Voucher
                 ->map(["info", "success"])->labels([
                     __("fields.frozen"),
                     __("fields.active")
-                ])->filterable()->sortable()
+                ])->filterable()->sortable(),
+
+            MorphTo::make("Creator", "creator")->onlyForCustomersAdmin()
+                ->types([
+                    Account::class => UserModel::class,
+                    CustomerApiToken::class => CustomerApiTokenModel::class
+                ])
         ]);
     }
 

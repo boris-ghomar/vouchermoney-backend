@@ -20,6 +20,7 @@ class VoucherService implements VoucherServiceContract
         $voucher = new Voucher();
         $voucher->code = $this->voucherCodeService->generate();
         $voucher->amount = abs($amount);
+        $voucher->active = true;
         $voucher->customer()->associate($customer);
         $voucher->creator()->associate(auth()->user());
         $voucher->save();

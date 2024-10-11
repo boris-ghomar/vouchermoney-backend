@@ -35,6 +35,10 @@ class PermissionSeeder extends Seeder
             Permission::create(['name' => $permission]);
         }
 
+        foreach (Permission::$apiTokenPermissions as $permission) {
+            Permission::create(['name' => $permission, "guard_name" => "token"]);
+        }
+
         $user = new User();
         $user->name = "Administrator";
         $user->email = "admin@test.com";

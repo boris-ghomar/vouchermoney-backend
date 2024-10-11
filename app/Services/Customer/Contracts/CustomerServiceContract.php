@@ -2,6 +2,7 @@
 
 namespace App\Services\Customer\Contracts;
 
+use App\Exceptions\AttemptToCreateExpiredApiToken;
 use App\Exceptions\AttemptToRedeemFrozenVoucher;
 use App\Exceptions\InsufficientBalance;
 use App\Exceptions\TransactionWithZeroAmount;
@@ -11,6 +12,7 @@ use App\Models\Finance\Finance;
 use App\Models\Transaction\Transaction;
 use App\Models\Voucher\ArchivedVoucher;
 use App\Models\Voucher\Voucher;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
@@ -200,4 +202,15 @@ interface CustomerServiceContract
      * @throws Exception If there are issues during the deletion process.
      */
     public function delete(Customer $customer): void;
+
+    /**
+     * @param Customer $customer
+     * @param string $name
+     * @param array $permissions
+     * @param Carbon|null $expires_at
+     * @return string
+     *
+     * @throws AttemptToCreateExpiredApiToken
+     */
+    public function createApiToken(Customer $customer, string $name, array $permissions, Carbon $expires_at = null): string;
 }

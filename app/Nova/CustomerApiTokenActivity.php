@@ -3,9 +3,11 @@
 namespace App\Nova;
 
 use App\Models\User;
+use App\Nova\Fields\Badge;
 use App\Nova\Fields\BelongsTo;
 use App\Nova\Fields\Code;
 use App\Nova\Fields\DateTime;
+use App\Nova\Fields\FieldHelper;
 use App\Nova\Fields\ID;
 use App\Nova\Fields\Text;
 use Illuminate\Database\Eloquent\Builder;
@@ -13,6 +15,7 @@ use Illuminate\Http\Request;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use App\Models\CustomerApiTokenActivity as Model;
 use App\Models\Permission as PermissionModel;
+use Outl1ne\DependencyContainer\DependencyContainer;
 
 /**
  * @mixin Model
@@ -45,15 +48,29 @@ class CustomerApiTokenActivity extends Resource
      */
     public function fields(NovaRequest $request): array
     {
-        return [
+        return FieldHelper::make([
             ID::make()->sortable(),
             BelongsTo::make("Token", "token", CustomerApiToken::class),
-            Text::make("Action", "action"),
-            Code::make("Request", "request")->readonly(),
-            Code::make("Response", "response")->readonly(),
-            Code::make("Properties", "properties")->readonly(),
-            DateTime::timestamps()
-        ];
+            Badge::make("Action", "action")
+                ->map([
+                    "generate" => "info",
+                    "redeem" => "success",
+                    "freeze" => "danger",
+                    "activate" => "warning"
+                ]),
+            Code::make("Request", "request->body")->json()->onlyForCustomersAdmin(),
+            Code::make("Request", "request")->json()->onlyForAdmins(),
+            Code::make("Response", "response")->json()->onlyForAdmins(),
+            Code::make("Response", "response->response")->json()->onlyForCustomersAdmin(),
+
+            DependencyContainer::make([
+                Code::make("Properties", "properties")->json(),
+            ])->dependsOnNotEmpty("properties")->onlyOnDetail()->canSee(fn($request) => $request->user()?->is_admin),
+
+            DateTime::createdAt(),
+
+            DateTime::updatedAt()->onlyForAdmins()
+        ]);
     }
 
     public function authorizedToUpdate(Request $request): bool

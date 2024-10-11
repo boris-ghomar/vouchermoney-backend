@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 /**
  * @property  string       $token
@@ -38,8 +40,18 @@ class CustomerApiToken extends AbstractUser
         return $this->hasMany(CustomerApiTokenActivity::class, "token_id");
     }
 
-    public static function findByToken(string $token)
+    public static function findByToken(string $token): static|null
     {
-        return static::query()->where("token", $token)->first();
+        return static::query()->where("token", static::hash($token))->first();
+    }
+
+    public static function hash(string $token): string
+    {
+        return hash('sha256', $token);
+    }
+
+    public static function createTokenString(): string
+    {
+        return Str::random(64);
     }
 }

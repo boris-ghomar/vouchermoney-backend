@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Models\Customer;
 use App\Models\Permission;
 use App\Models\User;
 
@@ -59,7 +60,7 @@ class UserPolicy
      */
     public function restore(User $user, User $model): bool
     {
-        return $this->delete($user, $model);
+        return $user->id !== $model->id && ! $model->is_customer_admin && ! Customer::withTrashed()->find($model->customer_id)->trashed() && ($user->is_super || $user->isOwnerOf($model));
     }
 
     /**

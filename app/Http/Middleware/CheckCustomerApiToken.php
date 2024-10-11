@@ -14,17 +14,19 @@ class CheckCustomerApiToken
      * @param Closure $next
      * @return JsonResponse|mixed
      */
-    public function handle(Request $request,Closure $next)
+    public function handle(Request $request,Closure $next): mixed
     {
-        $user = Auth::guard('customer-api')->user();
+        $user = Auth::guard('token')->user();
 
-        if (!$user) return response()->json([
+        if (empty($user)) return response()->json([
             "status" => "failed",
             'message' => 'Unauthorized'
         ], 401);
 
         $request->setUserResolver(fn() => $user);
+
         auth()->setUser($user);
+
         return $next($request);
     }
 }

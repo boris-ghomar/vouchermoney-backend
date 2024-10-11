@@ -18,7 +18,10 @@ use App\Nova\Filters\AmountFilter;
 use App\Nova\Resource;
 use App\Nova\Resources\Finance\ActiveFinance;
 use App\Nova\Resources\Finance\ArchivedFinance;
+use App\Nova\Resources\Transaction\ActiveTransactions;
+use App\Nova\Resources\Transaction\ArchivedTransaction;
 use App\Nova\Resources\User\Account;
+use App\Nova\Resources\User\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -26,6 +29,7 @@ use Laravel\Nova\Exceptions\HelperNotSupported;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use App\Models\User as UserModel;
 use App\Models\CustomerApiToken as CustomerApiTokenModel;
+use Outl1ne\DependencyContainer\DependencyContainer;
 
 /**
  * @mixin Model
@@ -77,27 +81,14 @@ abstract class Voucher extends Resource
                     CustomerApiToken::class => CustomerApiTokenModel::class
                 ]),
 
-            Text::make("Transaction", function () {
-                $resource = $this->transaction instanceof \App\Models\Finance\ArchivedFinance ? ArchivedFinance::uriKey() : ActiveFinance::uriKey();
+            Text::link("Transaction", function () {
+                if (empty($this->transaction)) return null;
 
-                return "<a href='/resources/$resource/{$this->transaction->id}'>{$this->transaction->id}</a>";
-            })->asHtml()
+                $resource = $this->transaction instanceof \App\Models\Transaction\ArchivedTransaction ? ArchivedTransaction::uriKey() : ActiveTransactions::uriKey();
+
+                return "/resources/$resource/{$this->transaction->id}";
+            }, fn () => $this->transaction?->id),
         ];
-
-        if ($user && $user->can(Permission::CUSTOMER_VOUCHER_VIEW)) {
-            $fields[] = Text::make("Creator", function () use ($user) {
-                if ($this->creator->customer_id === $user->customer_id) {
-                    if ($this->creator instanceof CustomerApiTokenModel) $resource = "api-tokens";
-                    else $resource = "accounts";
-
-                    $name = Str::title(Str::singular($resource) . ": " . $this->creator->name);
-
-                    return "<a href='/resources/$resource/{$this->creator->id}'>$name</a>";
-                }
-
-                return null;
-            })->asHtml()->onlyForCustomers()->onlyOnDetail();
-        }
 
         $fields[] = DateTime::createdAt()->onlyForAdmins()->sortable()->filterable();
         $fields[] = DateTime::updatedAt()->onlyForAdmins();
