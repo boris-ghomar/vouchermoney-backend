@@ -14,7 +14,7 @@ use Illuminate\Support\Carbon;
  *
  * @property-read  bool  $is_expired
  *
- * @property-read  Collection<CustomerApiTokenActivity>  $activities
+ * @property-read  Collection<CustomerApiTokenActivity>  $tokenActivities
  */
 class CustomerApiToken extends AbstractUser
 {
@@ -33,7 +33,7 @@ class CustomerApiToken extends AbstractUser
         return $this->morphToMany(Permission::class, 'model', 'model_has_permissions');
     }
 
-    public function activities(): HasMany
+    public function tokenActivities(): HasMany
     {
         return $this->hasMany(CustomerApiTokenActivity::class, "token_id");
     }

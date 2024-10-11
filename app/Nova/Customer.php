@@ -88,7 +88,9 @@ class Customer extends Resource
                 Model::TYPE_MERCHANT => "success"
             ])->filterable()->onlyForAdmins(),
 
-            DateTime::timestamps(),
+            DateTime::createdAt()->onlyForCustomersAdmin()->exceptOnForms(),
+            DateTime::createdAt()->onlyForAdmins()->exceptOnForms(),
+            DateTime::updatedAt()->onlyForAdmins()->exceptOnForms(),
 
             HasMany::make(__("fields.users"), "users", Account::class)->onlyOnDetail()
                 ->collapsable()->collapsedByDefault()->onlyForAdmins([PermissionModel::CUSTOMERS_VIEW]),

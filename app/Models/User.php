@@ -14,10 +14,11 @@ use Laravel\Sanctum\HasApiTokens;
  * @property  string|null  $remember_token
  * @property  string       $timezone
  *
- * @property-read  bool  $is_admin
- * @property-read  bool  $is_customer
- * @property-read  bool  $is_super
- * @property-read  bool  $is_customer_admin
+ * @property-read  bool    $is_admin
+ * @property-read  bool    $is_customer
+ * @property-read  bool    $is_super
+ * @property-read  bool    $is_customer_admin
+ * @property-read  string  $full_name
  *
  * @method  Builder|static  onlyAdmins()
  * @method  Builder|static  onlyCustomers()
@@ -51,6 +52,11 @@ class User extends AbstractUser
     public function getIsCustomerAttribute(): bool
     {
         return $this->customer_id !== null;
+    }
+
+    public function getFullNameAttribute(): string
+    {
+        return $this->name . " [" . ($this->is_admin ? "admin" : ($this->is_customer_admin ? "customer-admin" : "customer-user")) . "]";
     }
 
     public function isOwnerOf(User $user): bool

@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Nova\Fields\BelongsTo;
 use App\Nova\Fields\DateTime;
 use App\Nova\Fields\FieldHelper;
+use App\Nova\Fields\HasMany;
 use App\Nova\Fields\Text;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -57,6 +58,8 @@ class CustomerApiToken extends Resource
             MorphToMany::make(__("fields.permissions"), "permissions", Permission::class)
                 ->collapsable()
                 ->collapsedByDefault(),
+
+            HasMany::make("Activities", "tokenActivities", CustomerApiTokenActivity::class),
 
             DateTime::make('Expires At', 'expires_at')->sortable(),
 

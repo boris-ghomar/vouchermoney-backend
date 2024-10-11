@@ -51,7 +51,9 @@ abstract class Finance extends Resource
     public function fields(NovaRequest $request): array
     {
         return [
-            ID::make(__("fields.id"), "id"),
+            ID::make(__("fields.id"), "id")->onlyOnDetail(),
+
+            Text::make(__("fields.id"), "id")->onlyOnIndex()->copyable(),
 
             BelongsTo::make(__("fields.customer"), 'customer', Customer::class)
                 ->onlyForAdmins([Permission::CUSTOMERS_VIEW]),

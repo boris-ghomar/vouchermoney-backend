@@ -31,7 +31,7 @@ class CustomerApiTokenActivity extends Resource
         /** @var User $user */
         $user = $request->user();
 
-        if (! ($user->is_customer_admin || $user->can(PermissionModel::CUSTOMERS_VIEW)))
+        if (! $user || ! ($user->is_customer_admin || $user->can(PermissionModel::CUSTOMERS_VIEW)))
             static::hideQuery($query);
 
         return $query;
@@ -90,6 +90,10 @@ class CustomerApiTokenActivity extends Resource
     {
         /** @var User $user */
         $user = $request->user();
+
+        if (! $user) {
+            return false;
+        }
 
         return $user->is_customer_admin || $user->can(PermissionModel::CUSTOMERS_VIEW);
     }

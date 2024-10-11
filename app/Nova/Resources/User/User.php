@@ -42,7 +42,10 @@ class User extends Resource
 
     public function title(): string
     {
-        return $this->name;
+        /** @var Model $user */
+        $user = auth()->user();
+
+        return ($user?->is_admin) ? $this->full_name : $this->name;
     }
 
     public static function indexQuery(NovaRequest $request, $query): Builder

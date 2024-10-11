@@ -15,6 +15,7 @@ use App\Nova\Filters\AmountFilter;
 use App\Nova\Resource;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Laravel\Nova\Exceptions\HelperNotSupported;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use App\Models\Transaction\AbstractTransaction;
 
@@ -48,13 +49,16 @@ abstract class Transaction extends Resource
     /**
      * Get the fields displayed by the resource.
      *
-     * @param  NovaRequest  $request
+     * @param NovaRequest $request
      * @return array
+     * @throws HelperNotSupported
      */
     public function fields(NovaRequest $request): array
     {
         return [
-            ID::make(__("fields.id"), "id")->sortable(),
+            ID::make(__("fields.id"), "id")->sortable()->onlyOnDetail(),
+
+            Text::make(__("fields.id"), "id")->onlyOnIndex()->copyable(),
 
             BelongsTo::make(__("fields.customer"), "customer")
                 ->onlyForAdmins(),
@@ -69,7 +73,7 @@ abstract class Transaction extends Resource
             MorphTo::make("Attachment", "transactionable"),
 
             DateTime::createdAt()->filterable()->sortable(),
-            DateTime::updatedAt(),
+            DateTime::updatedAt()->onlyForAdmins(),
         ];
     }
 
