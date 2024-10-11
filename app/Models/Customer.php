@@ -53,6 +53,15 @@ class Customer extends Model
 
     protected $casts = ["balance" => "decimal:2"];
 
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::deleting(function (Customer $customer) {
+            $customer->users()->delete();
+        });
+    }
+
     public function users(): HasMany
     {
         return $this->hasMany(User::class);

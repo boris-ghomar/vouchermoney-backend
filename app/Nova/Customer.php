@@ -53,6 +53,8 @@ class Customer extends Resource
      */
     public static $search = ['name'];
 
+
+
     /**
      * Get the fields displayed by the resource.
      *
