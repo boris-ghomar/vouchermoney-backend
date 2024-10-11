@@ -51,7 +51,7 @@ class UserPolicy
      */
     public function delete(User $user, User $model): bool
     {
-        return $user->id !== $model->id && ($user->is_super || $user->isOwnerOf($model));
+        return $user->id !== $model->id && ($user->is_super || $user->isOwnerOf($model)) && ! $model->is_customer_admin;
     }
 
     /**
