@@ -2,23 +2,15 @@
 
 namespace App\Http\Requests\Vouchers;
 
+use App\Http\Requests\ApiRequest;
 use Illuminate\Contracts\Validation\ValidationRule;
-use Illuminate\Foundation\Http\FormRequest;
 
 /**
  * @property  string       $code
  * @property  string|null  $note
  */
-class RedeemVoucherRequest extends FormRequest
+class RedeemVoucherRequest extends ApiRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
-    public function authorize(): bool
-    {
-        return true;
-    }
-
     /**
      * Get the validation rules that apply to the request.
      *

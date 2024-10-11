@@ -44,7 +44,7 @@ class VoucherService implements VoucherServiceContract
         return $voucher;
     }
 
-    public function redeem(Voucher $voucher, Customer $recipient = null, string $note = ""): ArchivedVoucher
+    public function redeem(Voucher $voucher, Customer $recipient = null, string|null $note = null): ArchivedVoucher
     {
         return $this->archive($voucher, ArchivedVoucher::STATE_REDEEMED, $recipient, $note);
     }
@@ -54,7 +54,7 @@ class VoucherService implements VoucherServiceContract
         return $this->archive($voucher, ArchivedVoucher::STATE_EXPIRED);
     }
 
-    private function archive(Voucher $voucher, string $state, Customer $recipient = null, string $note = ""): ArchivedVoucher
+    private function archive(Voucher $voucher, string $state, Customer $recipient = null, string|null $note = null): ArchivedVoucher
     {
         $archived = new ArchivedVoucher();
         $archived->id = $voucher->id;

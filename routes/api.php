@@ -20,7 +20,7 @@ use App\Models\Permission;
 Route::middleware(CheckCustomerApiToken::class)->prefix('v1')->controller(ApiVoucherController::class)->group(function () {
 //    Route::get('vouchers', 'index')->can(Permission::CUSTOMER_VOUCHER_VIEW);
     Route::post('vouchers/generate', 'create')->can(Permission::CUSTOMER_VOUCHER_GENERATE);
-    Route::put('vouchers/redeem', 'redeem')->can(Permission::CUSTOMER_VOUCHER_REDEEM);
+    Route::post('vouchers/redeem', 'redeem')->can(Permission::CUSTOMER_VOUCHER_REDEEM);
     Route::put('vouchers/freeze', 'freeze')->can(Permission::CUSTOMER_VOUCHER_FREEZE);
-    Route::put('vouchers/unfreeze', 'unfreeze')->can(Permission::CUSTOMER_VOUCHER_FREEZE);
+    Route::put('vouchers/activate', 'activate')->can(Permission::CUSTOMER_VOUCHER_FREEZE);
 });

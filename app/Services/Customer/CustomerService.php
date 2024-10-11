@@ -129,7 +129,7 @@ class CustomerService implements CustomerServiceContract
         });
     }
 
-    public function redeemVoucher(Customer $customer, Voucher $voucher, string $note = ""): ArchivedVoucher
+    public function redeemVoucher(Customer $customer, Voucher $voucher, string|null $note = null): ArchivedVoucher
     {
         if ($voucher->is_frozen)
             throw new AttemptToRedeemFrozenVoucher();

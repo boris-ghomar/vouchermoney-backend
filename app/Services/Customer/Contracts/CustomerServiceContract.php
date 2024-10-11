@@ -164,12 +164,12 @@ interface CustomerServiceContract
      *
      * @param Customer $customer The customer redeeming the voucher.
      * @param Voucher $voucher The voucher to be redeemed.
-     * @param string $note Optional note for the redemption process (default is an empty string).
+     * @param string|null $note Optional note for the redemption process (default is empty).
      * @return ArchivedVoucher The archived version of the voucher after it has been redeemed.
      *
      * @throws AttemptToRedeemFrozenVoucher If the voucher is frozen and cannot be redeemed.
      */
-    public function redeemVoucher(Customer $customer, Voucher $voucher, string $note = ""): ArchivedVoucher;
+    public function redeemVoucher(Customer $customer, Voucher $voucher, string|null $note = null): ArchivedVoucher;
 
     /**
      * Expires the specified voucher, performing all necessary business logic.

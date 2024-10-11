@@ -50,10 +50,10 @@ interface VoucherServiceContract
      *
      * @param Voucher $voucher The voucher that is being redeemed.
      * @param Customer|null $recipient The customer receiving the value of the voucher, or null if the creator should redeem their own voucher.
-     * @param string $note Optional note for the redemption process (default is an empty string).
+     * @param string|null $note Optional note for the redemption process (default is empty).
      * @return ArchivedVoucher The created archived voucher instance representing the redeemed voucher.
      */
-    public function redeem(Voucher $voucher, Customer $recipient = null, string $note = ""): ArchivedVoucher;
+    public function redeem(Voucher $voucher, Customer $recipient = null, string|null $note = null): ArchivedVoucher;
 
     /**
      * Creates an instance of an archived voucher for the specified voucher expiration.

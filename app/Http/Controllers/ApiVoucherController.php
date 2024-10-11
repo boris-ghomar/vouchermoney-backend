@@ -130,7 +130,7 @@ class ApiVoucherController extends Controller
      * @param FreezeVoucherRequest $request
      * @return JsonResponse
      */
-    public function unfreeze(FreezeVoucherRequest $request): JsonResponse
+    public function activate(FreezeVoucherRequest $request): JsonResponse
     {
         try {
             $voucher = Voucher::findByCode($request->code);
