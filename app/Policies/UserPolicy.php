@@ -35,7 +35,7 @@ class UserPolicy
      */
     public function create(User $user): bool
     {
-        return $user->is_super || $user->is_customer_admin;
+        return $user->is_super || ($user->is_customer_admin && is_null($user->deleted_at));
     }
 
     /**

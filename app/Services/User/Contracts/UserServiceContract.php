@@ -2,6 +2,7 @@
 
 namespace App\Services\User\Contracts;
 
+use App\Exceptions\AttemptToCreateUserForDeletedCustomer;
 use App\Models\Customer;
 use App\Models\User;
 
@@ -21,6 +22,8 @@ interface UserServiceContract
      * @param string $password The password for the user's account.
      *
      * @return User The newly created user instance associated with the customer.
+     *
+     * @throws AttemptToCreateUserForDeletedCustomer
      */
     public function createForCustomer(Customer $customer, string $name, string $email, string $password): User;
 }
