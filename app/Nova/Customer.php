@@ -125,6 +125,11 @@ class Customer extends Resource
         return false;
     }
 
+    public function authorizedToForceDelete(Request $request): bool
+    {
+        return false;
+    }
+
     /**
      * Get the cards available for the request.
      *

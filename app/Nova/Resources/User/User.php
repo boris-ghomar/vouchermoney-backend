@@ -159,4 +159,9 @@ class User extends Resource
             $validator->errors()->add('name', 'That name is reserved by system');
         }
     }
+
+    public function authorizedToForceDelete(Request $request): bool
+    {
+        return false;
+    }
 }
