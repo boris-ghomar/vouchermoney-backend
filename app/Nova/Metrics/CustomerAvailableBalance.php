@@ -36,6 +36,8 @@ class CustomerAvailableBalance extends Value
             $customer = $user->customer;
         }
 
+        if (empty($customer)) return $this->result(0);
+
         return $this->result($customer->available_balance)->currency()->allowZeroResult()->format("0,0.00");
     }
 
