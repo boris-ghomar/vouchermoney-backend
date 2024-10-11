@@ -91,7 +91,7 @@ class ResolveFinance extends Action
             return ActionResponse::danger("Something went wrong");
         }
 
-        return ActionResponse::message("Successfully " . ucfirst($this->type) . ($this->type === "approve" ? "" : "e") . "d!");
+        return ActionResponse::redirect("/resources/active-finances");
     }
 
     /**

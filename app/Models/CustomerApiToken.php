@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -10,6 +13,8 @@ use Illuminate\Support\Carbon;
  * @property  Carbon|null  $last_used_at
  *
  * @property-read  bool  $is_expired
+ *
+ * @property-read  Collection<CustomerApiTokenActivity>  $activities
  */
 class CustomerApiToken extends AbstractUser
 {
@@ -20,15 +25,21 @@ class CustomerApiToken extends AbstractUser
 
     public function getIsExpiredAttribute(): bool
     {
-        return $this->expires_at && $this->expires_at < now();
+        return $this->expires_at && $this->expires_at->lt(now());
+    }
+
+    public function permissions(): BelongsToMany
+    {
+        return $this->morphToMany(Permission::class, 'model', 'model_has_permissions');
+    }
+
+    public function activities(): HasMany
+    {
+        return $this->hasMany(CustomerApiTokenActivity::class, "token_id");
     }
 
     public static function findByToken(string $token)
     {
         return static::query()->where("token", $token)->first();
-    }
-    public function permissions(): BelongsToMany
-    {
-        return $this->morphToMany(Permission::class, 'model', 'model_has_permissions');
     }
 }

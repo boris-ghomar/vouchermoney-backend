@@ -13,6 +13,7 @@ use App\Nova\Resource;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rules\Password as PasswordRule;
+use Laravel\Nova\Fields\Timezone;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Illuminate\Validation\Validator;
 
@@ -71,6 +72,8 @@ class User extends Resource
 
             // "name" attribute
             $this->getNameFields(),
+
+            Timezone::make("Timezone", "timezone")->rules("required"),
 
             Text::make(__("fields.email"), "email")->sortable()
                 ->rules('required', 'email:dns', 'max:255')

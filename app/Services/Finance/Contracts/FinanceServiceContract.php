@@ -20,11 +20,11 @@ interface FinanceServiceContract
      *
      * @param Customer $customer The customer for whom the withdrawal request is being created.
      * @param float $amount The amount to be withdrawn.
-     * @param string $requester_comment A comment or reason associated with the withdrawal request.
+     * @param string|null $requester_comment A comment or reason associated with the withdrawal request.
      *
      * @return Finance The newly created Finance request instance representing the withdrawal.
      */
-    public function makeWithdraw(Customer $customer, float $amount, string $requester_comment): Finance;
+    public function makeWithdraw(Customer $customer, float $amount, string|null $requester_comment = null): Finance;
 
     /**
      * Create a new finance request for a deposit on behalf of the specified customer.
@@ -36,11 +36,11 @@ interface FinanceServiceContract
      *
      * @param Customer $customer The customer for whom the deposit request is being created.
      * @param float $amount The amount to be deposited.
-     * @param string $requester_comment A comment or reason associated with the deposit request.
+     * @param string|null $requester_comment A comment or reason associated with the deposit request.
      *
      * @return Finance The newly created Finance request instance representing the deposit.
      */
-    public function makeDeposit(Customer $customer, float $amount, string $requester_comment): Finance;
+    public function makeDeposit(Customer $customer, float $amount, string|null $requester_comment = null): Finance;
 
     /**
      * Delete the specified finance request.
@@ -61,11 +61,11 @@ interface FinanceServiceContract
      * status, adjusts the customer's balance accordingly, and performs any
      * necessary actions (e.g., logging, sending notifications).
      *
-     * @param Finance $finance The finance request to be approved.
-     * @param string $resolver_comment
+     * @param Finance $finance
+     * @param string|null $resolver_comment
      * @return ArchivedFinance
      */
-    public function approve(Finance $finance, string $resolver_comment = ""): ArchivedFinance;
+    public function approve(Finance $finance, string|null $resolver_comment = null): ArchivedFinance;
 
     /**
      * Request a withdrawal from the specified customer's balance.
@@ -76,11 +76,11 @@ interface FinanceServiceContract
      *
      * @param Customer $customer The customer initiating the withdrawal request.
      * @param float $amount The amount to withdraw.
-     * @param string $comment A comment or reason for the withdrawal request.
+     * @param string|null $requester_comment A comment or reason for the withdrawal request.
      *
      * @return Finance The Finance instance representing the withdrawal request.
      */
-    public function requestWithdraw(Customer $customer, float $amount, string $comment): Finance;
+    public function requestWithdraw(Customer $customer, float $amount, string|null $requester_comment = null): Finance;
 
     /**
      * Request a deposit to the specified customer's balance.
@@ -90,11 +90,11 @@ interface FinanceServiceContract
      *
      * @param Customer $customer The customer initiating the deposit request.
      * @param float $amount The amount to deposit.
-     * @param string $comment A comment or reason for the deposit request.
+     * @param string|null $requester_comment A comment or reason for the deposit request.
      *
      * @return Finance The Finance instance representing the deposit request.
      */
-    public function requestDeposit(Customer $customer, float $amount, string $comment): Finance;
+    public function requestDeposit(Customer $customer, float $amount, string|null $requester_comment = null): Finance;
 
     /**
      * Cancel and delete the specified finance request for the given customer.
@@ -117,8 +117,8 @@ interface FinanceServiceContract
      * additional actions such as logging or sending a notification to the customer.
      *
      * @param Finance $finance The finance request to be rejected.
-     * @param string $resolver_comment
+     * @param string|null $resolver_comment
      * @return ArchivedFinance
      */
-    public function reject(Finance $finance, string $resolver_comment = ""): ArchivedFinance;
+    public function reject(Finance $finance, string|null $resolver_comment = null): ArchivedFinance;
 }

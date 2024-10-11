@@ -2,6 +2,7 @@
 
 namespace App\Services\Activity;
 
+use App\Models\CustomerApiTokenActivity;
 use App\Services\Activity\Contracts\ActivityServiceContract;
 use Exception;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -12,6 +13,15 @@ class ActivityService implements ActivityServiceContract
     public function novaException(Exception $exception, array $properties = []): Activity|null
     {
         return $this->forNova(
+            "exception",
+            $exception->getMessage(),
+            array_merge(["exception" => $exception], $properties)
+        );
+    }
+
+    public function apiException(Exception $exception, array $properties = []): Activity|null
+    {
+        return $this->forApi(
             "exception",
             $exception->getMessage(),
             array_merge(["exception" => $exception], $properties)
@@ -29,6 +39,11 @@ class ActivityService implements ActivityServiceContract
     protected function forCommand(string $name, string $description, array $properties = []): Activity|null
     {
         return $this->make("command:$name", $description, $properties);
+    }
+
+    protected function forApi(string $name, string $description, array $properties = []): Activity|null
+    {
+        return $this->make("api:$name", $description, $properties);
     }
 
     public function activity(string $name, string $description, array $properties = []): Activity|null
@@ -53,5 +68,20 @@ class ActivityService implements ActivityServiceContract
     protected function getCauser(): ?Authenticatable
     {
         return auth()->user();
+    }
+
+    public function apiActivity(string $action, $request, $response, array $properties = []): CustomerApiTokenActivity
+    {
+        $activity = new CustomerApiTokenActivity();
+        $activity->action = $action;
+        $activity->token()->associate(auth()->user());
+        $activity->request = $request;
+        $activity->response = $response;
+
+        if (! empty($properties)) $activity->properties = $properties;
+
+        $activity->save();
+
+        return $activity;
     }
 }

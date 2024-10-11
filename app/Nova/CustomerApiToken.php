@@ -4,9 +4,7 @@ namespace App\Nova;
 
 use App\Models\Permission as PermissionModel;
 use App\Nova\Actions\CreateCustomerApiToken;
-use App\Nova\Fields\BelongsToMany;
 use App\Models\User;
-use App\Nova\Actions\CreateCustomerApiToken;
 use App\Nova\Fields\BelongsTo;
 use App\Nova\Fields\DateTime;
 use App\Nova\Fields\FieldHelper;
@@ -17,7 +15,6 @@ use App\Nova\Fields\ID;
 use App\Nova\Fields\MorphToMany;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use App\Models\CustomerApiToken as Model;
-use App\Models\Permission as PermissionModel;
 
 class CustomerApiToken extends Resource
 {

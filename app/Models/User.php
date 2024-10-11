@@ -12,6 +12,7 @@ use Laravel\Sanctum\HasApiTokens;
  * @property  Carbon|null  $email_verified_at
  * @property  string       $password
  * @property  string|null  $remember_token
+ * @property  string       $timezone
  *
  * @property-read  bool  $is_admin
  * @property-read  bool  $is_customer
@@ -27,8 +28,8 @@ class User extends AbstractUser
 {
     use Notifiable, HasApiTokens;
 
-    protected array $additional_fillable = ['email', 'email_verified_at', 'password'];
-    protected array $additional_log_columns = ["email", "email_verified_at", "roles", "permissions"];
+    protected array $additional_fillable = ['email', 'email_verified_at', 'password', "timezone"];
+    protected array $additional_log_columns = ["email", "email_verified_at", "roles", "permissions", "timezone"];
     protected $hidden = ['password', 'remember_token'];
     protected $casts = ['email_verified_at' => 'datetime', 'password' => 'hashed'];
 

@@ -19,17 +19,17 @@ class FinanceService implements FinanceServiceContract
         protected NotificationServiceContract $notificationService
     ) {}
 
-    public function makeWithdraw(Customer $customer, float $amount, string $requester_comment): Finance
+    public function makeWithdraw(Customer $customer, float $amount, string|null $requester_comment = null): Finance
     {
         return $this->make($customer, abs($amount) * -1, $requester_comment);
     }
 
-    public function makeDeposit(Customer $customer, float $amount, string $requester_comment): Finance
+    public function makeDeposit(Customer $customer, float $amount, string|null $requester_comment = null): Finance
     {
         return $this->make($customer, abs($amount), $requester_comment);
     }
 
-    protected function make(Customer $customer, float $amount, string $requester_comment = ""): Finance
+    protected function make(Customer $customer, float $amount, string|null $requester_comment = null): Finance
     {
         $finance = new Finance();
         $finance->customer()->associate($customer);
@@ -43,17 +43,17 @@ class FinanceService implements FinanceServiceContract
         return $finance;
     }
 
-    public function approve(Finance $finance, string $resolver_comment = ""): ArchivedFinance
+    public function approve(Finance $finance, string|null $resolver_comment = null): ArchivedFinance
     {
         return $this->archive($finance, ArchivedFinance::STATUS_APPROVED, $resolver_comment);
     }
 
-    public function reject(Finance $finance, string $resolver_comment = ""): ArchivedFinance
+    public function reject(Finance $finance, string|null $resolver_comment = null): ArchivedFinance
     {
         return $this->archive($finance, ArchivedFinance::STATUS_REJECTED, $resolver_comment);
     }
 
-    protected function archive(Finance $finance, bool $status, string $resolver_comment = ""): ArchivedFinance
+    protected function archive(Finance $finance, bool $status, string|null $resolver_comment = null): ArchivedFinance
     {
         return DB::transaction(function () use ($finance, $status, $resolver_comment) {
             $archived = $this->makeArchived($finance, $status, $resolver_comment);
@@ -73,11 +73,11 @@ class FinanceService implements FinanceServiceContract
         });
     }
 
-    public function requestWithdraw(Customer $customer, float $amount, string $comment): Finance
+    public function requestWithdraw(Customer $customer, float $amount, string|null $requester_comment = null): Finance
     {
-        return DB::transaction(function () use ($customer, $amount, $comment) {
+        return DB::transaction(function () use ($customer, $amount, $requester_comment) {
             // Create Finance request model.
-            $finance = $this->makeWithdraw($customer, $amount, $comment);
+            $finance = $this->makeWithdraw($customer, $amount, $requester_comment);
 
             // Create withdrawal Transaction for Customer.
             $this->customerService->withdraw($customer, $amount, "Make withdrawal finance request", $finance);
@@ -89,11 +89,11 @@ class FinanceService implements FinanceServiceContract
         });
     }
 
-    public function requestDeposit(Customer $customer, float $amount, string $comment): Finance
+    public function requestDeposit(Customer $customer, float $amount, string|null $requester_comment = null): Finance
     {
-        return DB::transaction(function () use ($customer, $amount, $comment) {
+        return DB::transaction(function () use ($customer, $amount, $requester_comment) {
             // Create Finance request model.
-            $finance = $this->makeDeposit($customer, $amount, $comment);
+            $finance = $this->makeDeposit($customer, $amount, $requester_comment);
 
             // Send notification about finance requesting.
             $this->notificationService->financeHasBeenRequested($finance);
@@ -133,7 +133,7 @@ class FinanceService implements FinanceServiceContract
         });
     }
 
-    protected function makeArchived(Finance $finance, bool $status, string $resolver_comment = ""): ArchivedFinance
+    protected function makeArchived(Finance $finance, bool $status, string|null $resolver_comment = null): ArchivedFinance
     {
         $archived = new ArchivedFinance();
         $archived->id = $finance->id;
@@ -143,7 +143,7 @@ class FinanceService implements FinanceServiceContract
         $archived->requester_id = $finance->requester_id;
         $archived->resolver_id = auth()->user()->getAuthIdentifier();
 
-        if (! empty($finance->comment)) $archived->requester_comment = $finance->comment;
+        if (! empty($finance->requester_comment)) $archived->requester_comment = $finance->requester_comment;
         if (! empty($resolver_comment)) $archived->resolver_comment = $resolver_comment;
 
         $archived->created_at = $finance->created_at;
@@ -155,7 +155,7 @@ class FinanceService implements FinanceServiceContract
 
     public function delete(EloquentCollection|Finance|Collection $finances): void
     {
-        if (! is_array($finances)) $finances = [$finances];
+        if (! is_iterable($finances)) $finances = [$finances];
 
         $ids = [];
 

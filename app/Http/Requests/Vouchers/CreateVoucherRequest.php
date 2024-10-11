@@ -5,6 +5,10 @@ namespace App\Http\Requests\Vouchers;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
+/**
+ * @property float $amount
+ * @property int $count
+ */
 class CreateVoucherRequest extends FormRequest
 {
     /**
@@ -23,8 +27,8 @@ class CreateVoucherRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'amount' => 'required|numeric|min:1|max:10000',
-            'count' => 'required|integer|min:1|max:50'
+            'amount' => 'required|decimal:2|min:1|max:10000',
+            'count' => 'nullable|integer|min:1|max:25'
         ];
     }
 }

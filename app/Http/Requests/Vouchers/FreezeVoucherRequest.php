@@ -5,6 +5,9 @@ namespace App\Http\Requests\Vouchers;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
+/**
+ * @property string $code
+ */
 class FreezeVoucherRequest extends FormRequest
 {
     /**
@@ -23,7 +26,7 @@ class FreezeVoucherRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'code' => 'required|string'
+            'code' => 'required|string|exists:vouchers,code'
         ];
     }
 }

@@ -36,6 +36,8 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
     {
         parent::boot();
 
+        Nova::userTimezone(fn (Request $request) => $request->user()?->timezone);
+
         Nova::footer(fn() => null);
 
         Nova::initialPath("/dashboards/home");

@@ -7,6 +7,8 @@ use App\Models\Permission as PermissionModel;
 use App\Nova\Actions\CreateCustomer;
 use App\Nova\Fields\Badge;
 use App\Nova\Fields\Currency;
+use App\Nova\Fields\DateTime;
+use App\Nova\Fields\FieldHelper;
 use App\Nova\Fields\HasMany;
 use App\Nova\Fields\ID;
 use App\Nova\Fields\Select;
@@ -59,7 +61,7 @@ class Customer extends Resource
      */
     public function fields(NovaRequest $request): array
     {
-        return [
+        return FieldHelper::make([
             ID::make(__("fields.id"), "id")->sortable()
                 ->onlyForAdmins(),
 
@@ -86,6 +88,8 @@ class Customer extends Resource
                 Model::TYPE_MERCHANT => "success"
             ])->filterable()->onlyForAdmins(),
 
+            DateTime::timestamps(),
+
             HasMany::make(__("fields.users"), "users", Account::class)->onlyOnDetail()
                 ->collapsable()->collapsedByDefault()->onlyForAdmins([PermissionModel::CUSTOMERS_VIEW]),
 
@@ -106,7 +110,7 @@ class Customer extends Resource
 
             HasMany::make("Archived finances", "archivedFinances", ArchivedFinance::class)
                 ->onlyForAdmins([PermissionModel::FINANCES_VIEW])->collapsedByDefault()->onlyOnDetail(),
-        ];
+        ]);
     }
 
     public static function authorizedToCreate(Request $request): bool

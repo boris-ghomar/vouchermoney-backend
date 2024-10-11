@@ -2,6 +2,7 @@
 
 namespace App\Nova\Fields;
 
+use App\Models\User;
 use Carbon\Carbon;
 use Laravel\Nova\Fields\DateTime as NovaDateTime;
 
@@ -15,7 +16,10 @@ class DateTime extends NovaDateTime
     {
         parent::__construct($name, $attribute, $resolveCallback);
 
-        $this->displayUsing(fn ($value) => $value instanceof Carbon ? $value->format(static::FORMAT) : $value);
+        /** @var User $user */
+        $user = auth()->user();
+
+        $this->displayUsing(fn ($value) => $value instanceof Carbon ? $value->timezone($user->timezone)->format(static::FORMAT) : $value);
     }
 
     public static function createdAt($customTitle = ""): static

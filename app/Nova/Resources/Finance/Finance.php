@@ -74,21 +74,13 @@ abstract class Finance extends Resource
 
             Text::make('Requester Comment', 'requester_comment')->onlyOnDetail(),
 
-//            Text::make("Transaction", function () {
-//                if (empty($this->transaction)) return null;
-//
-//                $resource = $this->transaction instanceof \App\Models\Finance\ArchivedFinance ? ArchivedFinance::uriKey() : ActiveFinance::uriKey();
-//
-//                return "<a href='/resources/$resource/{$this->transaction->id}'>{$this->transaction->id}</a>";
-//            })->asHtml()->onlyOnDetail(),
-
             Text::link("Transaction", function () {
                 if (empty($this->transaction)) return null;
 
                 $resource = $this->transaction instanceof \App\Models\Transaction\ArchivedTransaction ? ArchivedTransaction::uriKey() : ActiveTransactions::uriKey();
 
                 return "/resources/$resource/{$this->transaction->id}";
-            }, fn () => $this->transaction->id),
+            }, fn () => $this->transaction?->id),
 
             DateTime::createdAt()->sortable(),
             DateTime::updatedAt()->onlyForAdmins(),

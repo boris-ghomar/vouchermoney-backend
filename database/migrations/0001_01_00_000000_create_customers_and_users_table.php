@@ -28,6 +28,7 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->foreignUlid("customer_id")->nullable()->constrained()->cascadeOnDelete();
+            $table->string("timezone")->default(config("app.timezone"));
             $table->rememberToken();
             $table->softDeletes();
             $table->timestamps();

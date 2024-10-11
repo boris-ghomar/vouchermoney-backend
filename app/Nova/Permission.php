@@ -16,27 +16,11 @@ use Laravel\Nova\Http\Requests\NovaRequest;
  */
 class Permission extends Resource
 {
-    /**
-     * The model the resource corresponds to.
-     *
-     * @var class-string<Model>
-     */
     public static string $model = Model::class;
-
-    /**
-     * The columns that should be searched.
-     *
-     * @var array
-     */
     public static $search = [];
-
     public static $searchable = false;
     public static $globallySearchable = false;
-
-    public function title(): string
-    {
-        return $this->name_label . " - " . $this->description;
-    }
+    public static $title = "title";
 
     public function subtitle(): string
     {

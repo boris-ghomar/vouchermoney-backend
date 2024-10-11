@@ -121,7 +121,7 @@ class RequestFinance extends Action
                 ->rules('required')->options($customerService->allCustomersPlucked())->searchable();
 
             if ($request->viaResource === "customers")
-                $select->default(fn() => $request->viaResourceId)->readonly();
+                $select->default(fn() => $request->viaResourceId);
 
             $fields[] = $select;
         }

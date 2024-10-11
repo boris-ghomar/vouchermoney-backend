@@ -7,10 +7,11 @@ use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Permission\Models\Permission as SpatiePermission;
 
 /**
- * @property-read string $description
- * @property-read string $description_long
- * @property-read string $name_label
- * @property-read string $name_title
+ * @property-read  string  $description
+ * @property-read  string  $description_long
+ * @property-read  string  $name_label
+ * @property-read  string  $name_title
+ * @property-read  string  $title
  */
 class Permission extends SpatiePermission
 {
@@ -139,9 +140,10 @@ class Permission extends SpatiePermission
         self::FINANCES_MANAGEMENT,
         self::ACTIVITY_VIEW
     ];
-  
-    public static function getApiTokenPermissions(): array {
-        $permissions = static::query()->whereIn("name", static::$apiPermissions)->pluck('name', 'id')
+
+    public static function getApiTokenPermissions(): array
+    {
+        $permissions = static::query()->whereIn("name", static::$apiTokenPermissions)->pluck('name', 'id');
 
         foreach ($permissions as $key => $permission) {
             $permissions[$key] = [
@@ -149,7 +151,7 @@ class Permission extends SpatiePermission
                 'name' => $permission->name_label . $permission->description,
             ];
         }
-      
+
         return $permissions;
     }
 
@@ -171,6 +173,11 @@ class Permission extends SpatiePermission
     public function getNameTitleAttribute(): string
     {
         return __("permissions." . $this->name . ".title");
+    }
+
+    public function getTitleAttribute(): string
+    {
+        return $this->name_label . " - " . $this->description;
     }
 
     public function getActivitylogOptions(): LogOptions

@@ -21,6 +21,16 @@ return new class extends Migration
             $table->softDeletes();
             $table->timestamps();
         });
+
+        Schema::create('customer_api_token_activities', function (Blueprint $table) {
+            $table->ulid('id')->primary();
+            $table->foreignUlid("token_id");
+            $table->string("action");
+            $table->json("request");
+            $table->json("response");
+            $table->json("properties")->nullable();
+            $table->timestamps();
+        });
     }
 
     /**

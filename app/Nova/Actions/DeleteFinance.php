@@ -5,8 +5,10 @@ namespace App\Nova\Actions;
 use App\Models\Finance\Finance;
 use App\Models\Permission;
 use App\Models\User;
+use App\Nova\Resources\Finance\ActiveFinance;
 use App\Services\Activity\Contracts\ActivityServiceContract;
 use App\Services\Customer\Contracts\CustomerServiceContract;
+use App\Services\Finance\Contracts\FinanceServiceContract;
 use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Http\Request;
@@ -14,6 +16,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Collection;
 use Laravel\Nova\Actions\ActionResponse;
 use Laravel\Nova\Actions\DestructiveAction;
+use Laravel\Nova\Fields\ActionFields;
 use Lednerb\ActionButtonSelector\ShowAsButton;
 
 class DeleteFinance extends DestructiveAction
@@ -40,27 +43,21 @@ class DeleteFinance extends DestructiveAction
         return $user && $user->can(Permission::CUSTOMER_FINANCE);
     }
 
-    /**
-     * Perform the action on the given models.
-     *
-     * @param  Collection<Finance>  $models
-     * @return ActionResponse
-     */
-    public function handle(Collection $models): ActionResponse
+    public function handle(ActionFields $fields, Collection $models): ActionResponse
     {
-        /** @var CustomerServiceContract $customerService */
-        $customerService = app(CustomerServiceContract::class);
+        /** @var FinanceServiceContract $financeService */
+        $financeService = app(FinanceServiceContract::class);
         /** @var ActivityServiceContract $activityService */
         $activityService = app(ActivityServiceContract::class);
 
         try {
-            $customerService->cancelRequests($models);
+            $financeService->cancelRequests($models);
         } catch (Exception $exception) {
             $activityService->novaException($exception, ["finances" => $models]);
             return ActionResponse::danger($exception->getMessage());
         }
 
-        return ActionResponse::message("Financial requests canceled");
+        return ActionResponse::redirect("/resources/" . ActiveFinance::uriKey());
     }
 
     public static function make(...$arguments): static
