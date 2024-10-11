@@ -52,17 +52,17 @@ class CustomerPolicy
     /**
      * Determine whether the user can delete the model.
      */
-    public function delete(): bool
+    public function delete(User $user): bool
     {
-        return false;
+        return $user->is_super;
     }
 
     /**
      * Determine whether the user can restore the model.
      */
-    public function restore(): bool
+    public function restore(User $user): bool
     {
-        return $this->delete();
+        return $this->delete($user);
     }
 
     /**
@@ -78,6 +78,6 @@ class CustomerPolicy
      */
     public function forceDelete(): bool
     {
-        return $this->delete();
+        return false;
     }
 }
