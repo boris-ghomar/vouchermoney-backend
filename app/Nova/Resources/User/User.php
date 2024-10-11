@@ -94,7 +94,7 @@ class User extends Resource
                     /** @var Model $user */
                     $user = $request->user();
 
-                    if (!$user || $user->id === $this->id)
+                    if (!$user || $user->id === $this->id || $this->is_customer_admin || $this->is_super)
                         return false;
 
                     return $user->is_super || $user->is_customer_admin;
