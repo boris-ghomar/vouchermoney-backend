@@ -60,6 +60,10 @@ class Customer extends Model
         static::deleting(function (Customer $customer) {
             $customer->users()->delete();
         });
+
+        static::restoring(function (Customer $customer) {
+            User::withTrashed()->where("customer_id", $customer->id)->oldest()->first()->restore();
+        });
     }
 
     public function users(): HasMany

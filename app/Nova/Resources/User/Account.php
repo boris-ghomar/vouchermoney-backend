@@ -56,12 +56,18 @@ class Account extends User
         ]);
     }
 
-    public static function authorizedToCreate(Request $request)
+    public static function authorizedToCreate(Request $request): bool
     {
-        if ($request->viaResource && $request->viaResourceId && $request->viaResource === "customers" && ! empty(\App\Models\Customer::find($request->viaResourceId)?->deleted_at))
+        /** @var Model $user */
+        $user = auth()->user();
+
+        if ($request->viaResource === "customers" && ! empty(\App\Models\Customer::withTrashed()->find($request->viaResourceId)->deleted_at))
             return false;
 
-        return $request->user()?->is_super;
+        if ($request->resource === "customers" && ! empty(\App\Models\Customer::withTrashed()->find($request->resourceId)->deleted_at))
+            return false;
+
+        return $user && ($user->is_super || $user->is_customer_admin);
     }
 
     public static function relatablePermissions(NovaRequest $request, $query)
