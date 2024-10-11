@@ -9,6 +9,7 @@ use App\Nova\Customer;
 use App\Nova\Fields\BelongsTo;
 use App\Nova\Fields\Hidden;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Request;
 use Laravel\Nova\Http\Requests\NovaRequest;
 
 class Account extends User
@@ -53,6 +54,14 @@ class Account extends User
                     $model->{$attribute} = $request->user()->customer_id;
                 }),
         ]);
+    }
+
+    public static function authorizedToCreate(Request $request)
+    {
+        if ($request->viaResource && $request->viaResourceId && $request->viaResource === "customers" && ! empty(\App\Models\Customer::find($request->viaResourceId)?->deleted_at))
+            return false;
+
+        return $request->user()?->is_super;
     }
 
     public static function relatablePermissions(NovaRequest $request, $query)
