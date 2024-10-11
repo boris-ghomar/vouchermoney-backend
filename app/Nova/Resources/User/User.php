@@ -76,7 +76,7 @@ class User extends Resource
             // "name" attribute
             $this->getNameFields(),
 
-            Timezone::make("Timezone", "timezone")->rules("required"),
+            Timezone::make("Timezone", "timezone")->rules("required")->default(fn() => config('app.timezone')),
 
             Text::make(__("fields.email"), "email")->sortable()
                 ->rules('required', 'email:dns', 'max:255')
