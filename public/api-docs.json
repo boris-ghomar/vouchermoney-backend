@@ -10,13 +10,83 @@
         }
     ],
     "paths": {
+        "/vouchers/view": {
+            "get": {
+                "tags": [
+                    "Vouchers"
+                ],
+                "summary": "View Voucher by Code",
+                "description": "Get voucher details using a unique voucher code.",
+                "operationId": "e1e99534bf432bfcebae10e698140b17",
+                "parameters": [
+                    {
+                        "name": "code",
+                        "in": "query",
+                        "description": "The voucher code to search for",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Voucher found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Voucher found."
+                                        },
+                                        "voucher": {
+                                            "$ref": "#/components/schemas/VoucherResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Voucher not found or already used",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "error"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Voucher not found or already used."
+                                        },
+                                        "voucher": {
+                                            "type": "null",
+                                            "example": null
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/v1/vouchers/generate": {
             "post": {
                 "tags": [
                     "Vouchers"
                 ],
                 "summary": "Generate vouchers",
-                "operationId": "e1ca8afae0aecf6221f12e2837a7e02c",
+                "operationId": "5fe8813d4de1cab7d75235bbef4cdea6",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -107,122 +177,6 @@
                     },
                     "400": {
                         "description": "Bad request"
-                    }
-                },
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ]
-            }
-        },
-        "/v1/vouchers/freeze": {
-            "put": {
-                "tags": [
-                    "Vouchers"
-                ],
-                "summary": "Freeze a voucher",
-                "operationId": "53de7e2e2ea6e2f2ec5009a9e094742f",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/FreezeVoucherRequest"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Voucher successfully frozen",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "status": {
-                                            "type": "string",
-                                            "example": "success"
-                                        },
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Voucher successfully frozen"
-                                        },
-                                        "voucher": {
-                                            "$ref": "#/components/schemas/VoucherResource"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Voucher not found"
-                    },
-                    "422": {
-                        "description": "Validation error"
-                    },
-                    "401": {
-                        "description": "Unauthorized"
-                    }
-                },
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ]
-            }
-        },
-        "/v1/vouchers/activate": {
-            "put": {
-                "tags": [
-                    "Vouchers"
-                ],
-                "summary": "Activate a voucher",
-                "operationId": "db09e56ec1bc5295e481693962437edc",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/FreezeVoucherRequest"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Voucher successfully activated",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "status": {
-                                            "type": "string",
-                                            "example": "success"
-                                        },
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Voucher successfully activated"
-                                        },
-                                        "voucher": {
-                                            "$ref": "#/components/schemas/VoucherResource"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Voucher not found"
-                    },
-                    "422": {
-                        "description": "Validation error"
-                    },
-                    "401": {
-                        "description": "Unauthorized"
                     }
                 },
                 "security": [
@@ -340,6 +294,19 @@
                         "type": "string",
                         "maxLength": 200,
                         "example": "Redeemed for a special offer"
+                    }
+                },
+                "type": "object"
+            },
+            "ViewVoucherRequest": {
+                "required": [
+                    "code"
+                ],
+                "properties": {
+                    "code": {
+                        "description": "The voucher code that need to check",
+                        "type": "string",
+                        "example": "XXXX-XXXX-XXXX-XXXX-XXXX-XXXX"
                     }
                 },
                 "type": "object"

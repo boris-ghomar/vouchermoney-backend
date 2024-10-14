@@ -26,7 +26,7 @@ class FreezeVoucherRequest extends ApiRequest
     public function rules(): array
     {
         return [
-            'code' => 'required|exists:vouchers,code'
+            'code' => 'required|string|min:14|max:32'
         ];
     }
 }
