@@ -28,7 +28,7 @@ class RedeemVoucherRequest extends ApiRequest
     public function rules(): array
     {
         return [
-            'code' => 'required|string|exists:vouchers,code',
+            'code' => 'required|string|min:14|max:32',
             'note' => 'nullable|string|max:200',
         ];
     }

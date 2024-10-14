@@ -6,6 +6,7 @@ use App\Exceptions\AttemptToRedeemFrozenVoucher;
 use App\Http\Requests\Vouchers\CreateVoucherRequest;
 use App\Http\Requests\Vouchers\FreezeVoucherRequest;
 use App\Http\Requests\Vouchers\RedeemVoucherRequest;
+use App\Http\Requests\Vouchers\ViewVoucherRequest;
 use App\Http\Resources\ArchivedVoucherResource;
 use App\Http\Resources\VoucherResource;
 use App\Models\CustomerApiToken;
@@ -48,6 +49,69 @@ class ApiVoucherController extends Controller
         protected VoucherServiceContract $voucherService
     ) {
         $this->user = $request->user();
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/vouchers/view",
+     *     summary="View Voucher by Code",
+     *     description="Get voucher details using a unique voucher code.",
+     *     tags={"Vouchers"},
+     *     @OA\Parameter(
+     *         name="code",
+     *         in="query",
+     *         description="The voucher code to search for",
+     *         required=true,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Voucher found",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="status", type="string", example="success"),
+     *             @OA\Property(property="message", type="string", example="Voucher found."),
+     *             @OA\Property(property="voucher", ref="#/components/schemas/VoucherResource")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Voucher not found or already used",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="status", type="string", example="error"),
+     *             @OA\Property(property="message", type="string", example="Voucher not found or already used."),
+     *             @OA\Property(property="voucher", type="null", example=null)
+     *         )
+     *     ),
+     * )
+     *
+     * View voucher details by code.
+     *
+     * @param ViewVoucherRequest $request
+     * @return JsonResponse
+     */
+    public function view(ViewVoucherRequest $request): JsonResponse
+    {
+        $code = $request->code;
+
+        $voucher = Voucher::findByCode($code);
+
+        if (empty($voucher)) {
+            $response = response()->json([
+                'status' => "error",
+                'message' => 'Voucher not found or already used.',
+                "voucher" => null
+            ], 400);
+        } else {
+            $response = response()->json([
+                'status' => "success",
+                'message' => 'Voucher found.',
+                "voucher" => VoucherResource::make($voucher)
+            ]);
+        }
+
+        $this->activityService->apiActivity("view", $request, $response);
+
+        return $response;
     }
 
     /**
@@ -99,7 +163,7 @@ class ApiVoucherController extends Controller
      *     @OA\Response(response=400, description="Bad request")
      * )
      */
-    public function create(CreateVoucherRequest $request): JsonResponse
+    public function generate(CreateVoucherRequest $request): JsonResponse
     {
         $count = $request->count ?? 1;
         $amount = $request->amount;
@@ -122,132 +186,6 @@ class ApiVoucherController extends Controller
         }
 
         $this->activityService->apiActivity("generate", $request, $response);
-
-        return $response;
-    }
-
-    /**
-     * @OA\Put(
-     *     path="/v1/vouchers/freeze",
-     *     tags={"Vouchers"},
-     *     summary="Freeze a voucher",
-     *     security={{"BearerAuth": {}}},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(ref="#/components/schemas/FreezeVoucherRequest")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Voucher successfully frozen",
-     *         @OA\JsonContent(
-     *             type="object",
-     *             @OA\Property(property="status", type="string", example="success"),
-     *             @OA\Property(property="message", type="string", example="Voucher successfully frozen"),
-     *             @OA\Property(property="voucher", ref="#/components/schemas/VoucherResource")
-     *         )
-     *     ),
-     *     @OA\Response(response=404, description="Voucher not found"),
-     *     @OA\Response(response=422, description="Validation error"),
-     *     @OA\Response(response=401, description="Unauthorized")
-     * )
-     */
-    public function freeze(FreezeVoucherRequest $request): JsonResponse
-    {
-        try {
-            $voucher = Voucher::findByCode($request->code);
-
-            if (empty($voucher) || $voucher->customer_id !== $this->user->customer_id) {
-                $response = response()->json([
-                    "status" => "error",
-                    "message" => "Voucher not found"
-                ], 404);
-            } else {
-                if ($voucher->is_frozen) {
-                    $description = "Voucher has already been frozen";
-                } else {
-                    $this->voucherService->freeze($voucher);
-                    $description = "Voucher successfully frozen";
-                }
-
-                $response = response()->json([
-                    "status" => "success",
-                    "message" => $description,
-                    "voucher" => VoucherResource::make($voucher)
-                ]);
-            }
-        } catch (Exception $exception) {
-            $this->activityService->apiException($exception);
-
-            $response = response()->json([
-                "status" => "error",
-                "message" => $exception->getMessage()
-            ], 400);
-        }
-
-        $this->activityService->apiActivity("freeze", $request, $response);
-
-        return $response;
-    }
-
-    /**
-     * @OA\Put(
-     *     path="/v1/vouchers/activate",
-     *     tags={"Vouchers"},
-     *     summary="Activate a voucher",
-     *     security={{"BearerAuth": {}}},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(ref="#/components/schemas/FreezeVoucherRequest")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Voucher successfully activated",
-     *         @OA\JsonContent(
-     *             type="object",
-     *             @OA\Property(property="status", type="string", example="success"),
-     *             @OA\Property(property="message", type="string", example="Voucher successfully activated"),
-     *             @OA\Property(property="voucher", ref="#/components/schemas/VoucherResource")
-     *         )
-     *     ),
-     *     @OA\Response(response=404, description="Voucher not found"),
-     *     @OA\Response(response=422, description="Validation error"),
-     *     @OA\Response(response=401, description="Unauthorized")
-     * )
-     */
-    public function activate(FreezeVoucherRequest $request): JsonResponse
-    {
-        try {
-            $voucher = Voucher::findByCode($request->code);
-
-            if (empty($voucher) || $voucher->customer_id !== $this->user->customer_id) {
-                $response = response()->json([
-                    "status" => "error",
-                    "message" => "Voucher not found"
-                ], 404);
-            } else {
-                if ($voucher->is_active) {
-                    $description = "Voucher has already been active";
-                } else {
-                    $this->voucherService->activate($voucher);
-                    $description = "Voucher successfully activated";
-                }
-
-                $response = response()->json([
-                    "status" => "success",
-                    "message" => $description,
-                    "voucher" => new VoucherResource($voucher)
-                ]);
-            }
-        } catch (Exception $exception) {
-            $this->activityService->apiException($exception);
-
-            $response = response()->json([
-                "status" => "error",
-                "message" => $exception->getMessage()
-            ], 400);
-        }
-
-        $this->activityService->apiActivity("activate", $request, $response);
 
         return $response;
     }
