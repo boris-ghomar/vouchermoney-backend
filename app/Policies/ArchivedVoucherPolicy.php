@@ -21,12 +21,7 @@ class ArchivedVoucherPolicy
      */
     public function view(User $user, ArchivedVoucher $voucher): bool
     {
-        if ($user->can(Permission::VOUCHERS_VIEW) ||
-            (
-                $user->customer_id === $voucher->customer->id &&
-                $user->can([Permission::CUSTOMER_VOUCHER_VIEW])
-            )
-        ) return true;
+        if ($user->can(Permission::VOUCHERS_VIEW) || $user->can([Permission::CUSTOMER_VOUCHER_VIEW])) return true;
 
         return false;
     }

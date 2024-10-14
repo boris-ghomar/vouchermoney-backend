@@ -25,13 +25,7 @@ class VoucherPolicy
      */
     public function view(User $user, Voucher $voucher): bool
     {
-        if (
-            $user->can(Permission::VOUCHERS_VIEW) ||
-            (
-                $user->customer_id === $voucher->customer_id &&
-                $user->canAny([Permission::CUSTOMER_VOUCHER_VIEW, Permission::CUSTOMER_VOUCHER_FREEZE])
-            )
-        ) return true;
+        if ($user->can(Permission::VOUCHERS_VIEW) || $user->canAny([Permission::CUSTOMER_VOUCHER_VIEW, Permission::CUSTOMER_VOUCHER_FREEZE])) return true;
 
         return false;
     }

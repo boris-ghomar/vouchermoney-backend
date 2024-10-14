@@ -9,10 +9,8 @@ use App\Services\Activity\Contracts\ActivityServiceContract;
 use App\Services\Voucher\Contracts\VoucherServiceContract;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Laravel\Nova\Actions\Action;
 use Laravel\Nova\Actions\ActionResponse;
-use Laravel\Nova\Actions\DestructiveAction;
 use Laravel\Nova\Fields\ActionFields;
 use Lednerb\ActionButtonSelector\ShowAsButton;
 use Exception;
@@ -24,6 +22,7 @@ class FreezeVoucher extends Action
     public $showInline = true;
     public $uriKey = "freeze-voucher";
     public $sole = true;
+    public $onlyOnIndex = true;
     public $withoutActionEvents = true;
     protected string $type = 'freeze';
 
@@ -57,14 +56,11 @@ class FreezeVoucher extends Action
 
     public function authorizedToRun(Request $request, $model): bool
     {
-        return true;
+        return $this->authorizedToSee($request) && $request->user()->customer_id === $model->customer_id;
     }
 
     public function handle(ActionFields $fields, Collection $models): ActionResponse
     {
-        /** @var User $user */
-        $user = auth()->user();
-
         /** @var VoucherServiceContract $voucherService */
         $voucherService = app(VoucherServiceContract::class);
         /** @var ActivityServiceContract $activityService */
