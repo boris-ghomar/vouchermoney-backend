@@ -82,8 +82,8 @@ abstract class Voucher extends Resource
                     CustomerApiToken::class => CustomerApiTokenModel::class
                 ])->exceptOnForms(),
 
-            Text::link("Transaction", function () {
-                if (empty($this->transaction)) return null;
+            Text::link("Transaction", function () use ($request) {
+                if (empty($this->transaction) || $this->transaction->customer_id !== $request->user()?->customer_id) return null;
 
                 $resource = $this->transaction instanceof \App\Models\Transaction\ArchivedTransaction ? ArchivedTransaction::uriKey() : ActiveTransactions::uriKey();
 
