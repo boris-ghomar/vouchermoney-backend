@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Nova\Actions;
+
 use Laravel\Nova\Actions\Action;
 
 class ActionHelper

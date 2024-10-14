@@ -2,22 +2,24 @@
 
 namespace App\Policies;
 
+use App\Models\User;
+
 class PermissionPolicy
 {
     /**
      * Determine whether the user can view any models.
      */
-    public function viewAny(): bool
+    public function viewAny(User $user): bool
     {
-        return true;
+        return $user->is_admin || $user->is_customer_admin;
     }
 
     /**
      * Determine whether the user can view the model.
      */
-    public function view(): bool
+    public function view(User $user): bool
     {
-        return false;
+        return $this->viewAny($user);
     }
 
     /**

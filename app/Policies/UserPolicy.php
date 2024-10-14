@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Models\Customer;
 use App\Models\Permission;
 use App\Models\User;
 
@@ -12,7 +13,7 @@ class UserPolicy
      */
     public function viewAny(User $user): bool
     {
-        return ($user->is_admin && $user->can("user:view-any")) || ($user->is_customer && $user->can("customer:user:view-any"));
+        return $user->is_admin || ($user->can(Permission::CUSTOMER_USER_VIEW));
     }
 
     /**
@@ -21,12 +22,13 @@ class UserPolicy
     public function view(User $user, User $model): bool
     {
         if (
+            $user->can(Permission::CUSTOMERS_VIEW) ||
             $user->id === $model->id ||
-            ($user->is_admin && $user->can("user:view-any")) ||
-            ($user->is_customer && $user->customer_id === $model->customer_id && $user->can("customer:user:view-any"))
+            ($user->is_admin && $model->is_admin) ||
+            ($user->customer_id === $model->customer_id && $user->can(Permission::CUSTOMER_USER_VIEW))
         ) return true;
 
-        return $this->viewAny($user);
+        return false;
     }
 
     /**
@@ -34,7 +36,7 @@ class UserPolicy
      */
     public function create(User $user): bool
     {
-        return $user->can("user:create") || $user->can("customer:user:create");
+        return $user->is_super || ($user->is_customer_admin && is_null($user->deleted_at));
     }
 
     /**
@@ -42,7 +44,7 @@ class UserPolicy
      */
     public function update(User $user, User $model): bool
     {
-        return $user->id === $model->id;
+        return $user->is_super || $user->id === $model->id || $user->isOwnerOf($model);
     }
 
     /**
@@ -50,9 +52,7 @@ class UserPolicy
      */
     public function delete(User $user, User $model): bool
     {
-        return
-            ($user->is_customer && ($model->customer_id === $user->customer_id && $user->can("customer:user:delete"))) ||
-            ($user->is_admin && $user->can("user:delete"));
+        return $user->id !== $model->id && ($user->is_super || $user->isOwnerOf($model)) && ! $model->is_customer_admin;
     }
 
     /**
@@ -60,15 +60,15 @@ class UserPolicy
      */
     public function restore(User $user, User $model): bool
     {
-        return $this->update($user, $model);
+        return $user->id !== $model->id && ! $model->is_customer_admin && $model->customer_id && ! Customer::withTrashed()->find($model->customer_id)?->trashed() && ($user->is_super || $user->isOwnerOf($model));
     }
 
     /**
      * Determine whether the user can permanently delete the model.
      */
-    public function forceDelete(User $user, User $model): bool
+    public function forceDelete(): bool
     {
-        return $this->delete($user, $model);
+        return false;
     }
 
     /**
@@ -77,21 +77,5 @@ class UserPolicy
     public function replicate(): bool
     {
         return false;
-    }
-
-    public function attachPermission(User $user, User $model, Permission $permission): bool
-    {
-        return $user->can($permission->name) && (
-            ($user->is_customer && $user->customer_id === $model->customer_id && $user->can("customer:user:attach-permission")) ||
-            ($user->is_admin && $user->can("user:attach-permission"))
-        );
-    }
-
-    public function detachPermission(User $user, User $model, Permission $permission): bool
-    {
-        return $user->can($permission->name) && (
-                ($user->is_customer && $user->customer_id === $model->customer_id && $user->can("customer:user:attach-permission")) ||
-                ($user->is_admin && $user->can("user:attach-permission"))
-            );
     }
 }

@@ -2,14 +2,17 @@
 
 namespace App\Nova\Actions;
 
-use App\Exceptions\InsufficientBalance;
 use App\Models\Customer;
 use App\Models\Finance\AbstractFinance;
-use App\Models\Finance\Finance;
+use App\Models\Permission;
 use App\Models\User;
+use App\Services\Activity\Contracts\ActivityServiceContract;
+use App\Services\Customer\Contracts\CustomerServiceContract;
+use App\Services\Finance\Contracts\FinanceServiceContract;
+use Exception;
 use Illuminate\Bus\Queueable;
+use Illuminate\Http\Request;
 use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Support\Collection;
 use Laravel\Nova\Actions\Action;
 use Laravel\Nova\Actions\ActionResponse;
 use Laravel\Nova\Fields\ActionFields;
@@ -30,18 +33,29 @@ class RequestFinance extends Action
 
     public function withdraw(): static
     {
-        return $this->setType(AbstractFinance::TYPE_WITHDRAW);
+        $this->type = AbstractFinance::TYPE_WITHDRAW;
+
+        return $this;
     }
 
     public function deposit(): static
     {
-        return $this->setType(AbstractFinance::TYPE_DEPOSIT);
+        $this->type = AbstractFinance::TYPE_DEPOSIT;
+
+        return $this;
     }
 
-    private function setType(string $type): static
+    public function authorizedToRun(Request $request, $model): bool
     {
-        $this->type = $type;
-        return $this;
+        return $this->authorizedToSee($request);
+    }
+
+    public function authorizedToSee(Request $request): bool
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        return $user && $user->canAny([Permission::FINANCES_MANAGEMENT, Permission::CUSTOMER_FINANCE]);
     }
 
     /**
@@ -51,30 +65,35 @@ class RequestFinance extends Action
      */
     public function name(): string
     {
-        return "Request " . $this->type;
+        return ucfirst($this->type);
     }
 
     /**
      * Perform the action on the given models.
      *
      * @param  ActionFields  $fields
-     * @param  Collection  $models
      * @return ActionResponse
      */
-    public function handle(ActionFields $fields, Collection $models): ActionResponse
+    public function handle(ActionFields $fields): ActionResponse
     {
-        /** @var User $authUser */
-        $authUser = auth()->user();
+        /** @var User $user */
+        $user = auth()->user();
 
-        if (!$authUser) return ActionResponse::danger("Not authorized for that action");
+        /** @var FinanceServiceContract $financeService */
+        $financeService = app(FinanceServiceContract::class);
+        /** @var ActivityServiceContract $activityService */
+        $activityService = app(ActivityServiceContract::class);
 
-        if (!empty($fields->customer_id)) $customer = Customer::find($fields->customer_id);
-        else $customer = $authUser->customer;
+        $customer_id = $fields->get("customer_id");
+        $comment = $fields->get("comment");
+        $amount = $fields->get("amount");
+
+        $customer = ! empty($customer_id) ? Customer::find($customer_id) : $user->customer;
 
         try {
-            if ($this->type === AbstractFinance::TYPE_DEPOSIT) $customer->requestDeposit($authUser, $fields->amount, $fields->comment ?: "");
-            else $customer->requestWithdraw($authUser, $fields->amount, $fields->comment ?: "");
-        } catch (InsufficientBalance $exception) {
+            $financeService->{"request" . ucfirst($this->type)}($customer, $amount, $comment);
+        } catch (Exception $exception) {
+            $activityService->novaException($exception, ["fields" => $fields]);
             return ActionResponse::danger($exception->getMessage());
         }
 
@@ -89,16 +108,27 @@ class RequestFinance extends Action
      */
     public function fields(NovaRequest $request): array
     {
+        /** @var User $user */
         $user = $request->user();
-        $fields = [
-            Currency::make(__("fields.amount"), "amount")->rules('required', "min:1", "max:10000"),
-            Text::make(__("fields.comment"), 'comment')->rules('nullable'),
-        ];
 
-        if ($user?->is_admin)
-            array_unshift($fields, Select::make(__("fields.customer"), 'customer_id')
-                ->rules('required')->options(Customer::toOptionsArray())
-                ->searchable());
+        $fields = [];
+
+        if ($user && $user->is_admin) {
+            /** @var CustomerServiceContract $customerService */
+            $customerService = app(CustomerServiceContract::class);
+
+            $select = Select::make(__("fields.customer"), 'customer_id')
+                ->rules('required')->options($customerService->allCustomersPlucked())->searchable();
+
+            if ($request->viaResource === "customers")
+                $select->default(fn() => $request->viaResourceId);
+
+            $fields[] = $select;
+        }
+
+        $fields[] = Currency::make(__("fields.amount"), "amount")->rules('required', "min:1", "max:10000");
+
+        $fields[] = Text::make(__("fields.comment"), 'comment')->rules('nullable', 'string');
 
         return $fields;
     }

@@ -25,14 +25,15 @@ class AccountBalance extends Value
         /** @var User $user */
         $user = $request->user();
 
-        if ($user->is_admin) {
+        if ($user?->is_admin) {
             $customerId = $request->resourceId;
+            /** @var Customer $customer */
             $customer = Customer::find($customerId);
         } else {
-            $customer = $user->customer;
+            $customer = $user?->customer;
         }
 
-        return $this->result($customer->balance)->currency()->allowZeroResult()->format("0,0.00");
+        return $this->result(!$customer ? 0 : $customer->balance)->currency()->allowZeroResult()->format("0,0.00");
     }
 
     /**

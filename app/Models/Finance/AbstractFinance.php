@@ -2,68 +2,57 @@
 
 namespace App\Models\Finance;
 
-use App\Models\Customer;
+use App\Models\Traits\AbstractModel;
+use App\Models\Traits\HasAmount;
+use App\Models\Traits\HasCustomer;
+use App\Models\Traits\HasTransaction;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 /**
  * @property  string       $id
  * @property  string       $customer_id
- * @property  string|null  $user_id
+ * @property  string       $requester_id
  * @property  float        $amount
+ * @property  string|null  $requester_comment
  * @property  Carbon       $created_at
  * @property  Carbon       $updated_at
  *
- * @property-read  bool    $is_deposit
- * @property-read  bool    $is_withdraw
- * @property-read  string  $type "withdraw" or "deposit"
- *
- * @property-read  Customer   $customer
- * @property-read  User|null  $user
- *
- * @method  Builder|static  onlyWithdraws()
- * @method  Builder|static  onlyDeposits()
+ * @property-read  User   $requester
  */
 abstract class AbstractFinance extends Model
 {
-    const TYPE_WITHDRAW = "withdraw";
-    const TYPE_DEPOSIT = "deposit";
+    use LogsActivity, HasAmount, HasTransaction, AbstractModel, HasCustomer;
 
-    public function getTypeAttribute(): string
+    protected $keyType = "string";
+    public $incrementing = false;
+
+    protected $fillable = [
+        "id",
+        "customer_id",
+        "requester_id",
+        "amount",
+        "requester_comment",
+        "created_at",
+        "updated_at"
+    ];
+
+    protected $casts = [
+        "amount" => "decimal:2",
+        "created_at" => "datetime",
+        "updated_at" => "datetime",
+    ];
+
+    public function requester(): BelongsTo
     {
-        return $this->amount < 0 ? static::TYPE_WITHDRAW : static::TYPE_DEPOSIT;
+        return $this->belongsTo(User::class, "requester_id");
     }
 
-    public function getIsDepositAttribute(): bool
+    public function logColumns(): array
     {
-        return $this->amount > 0;
-    }
-
-    public function getIsWithdrawAttribute(): bool
-    {
-        return $this->amount < 0;
-    }
-
-    public function customer(): BelongsTo
-    {
-        return $this->belongsTo( Customer::class);
-    }
-
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
-    }
-
-    public function scopeOnlyWithdraws(Builder $query): void
-    {
-        $query->where("amount", "<", 0);
-    }
-
-    public function scopeOnlyDeposits(Builder $query): void
-    {
-        $query->where("amount", ">", 0);
+        return ['customer_id', 'requester_id', 'amount', 'requester_comment', 'created_at', 'updated_at'];
     }
 }

@@ -2,19 +2,22 @@
 
 namespace App\Http\Requests\Vouchers;
 
+use App\Http\Requests\ApiRequest;
 use Illuminate\Contracts\Validation\ValidationRule;
-use Illuminate\Foundation\Http\FormRequest;
+use OpenApi\Annotations as OA;
 
-class FreezeVoucherRequest extends FormRequest
+/**
+ * @OA\Schema(
+ *     schema="FreezeVoucherRequest",
+ *     type="object",
+ *     required={"code"},
+ *     @OA\Property(property="code", type="string", example="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX", description="The voucher code to freeze")
+ * )
+ *
+ * @property string $code
+ */
+class FreezeVoucherRequest extends ApiRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
-    public function authorize(): bool
-    {
-        return true;
-    }
-
     /**
      * Get the validation rules that apply to the request.
      *
@@ -23,7 +26,7 @@ class FreezeVoucherRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'code' => 'required|string'
+            'code' => 'required|string|min:14|max:32'
         ];
     }
 }

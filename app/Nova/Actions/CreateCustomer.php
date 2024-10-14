@@ -2,61 +2,74 @@
 
 namespace App\Nova\Actions;
 
-use App\Models\Permission;
+use App\Models\Customer;
+use App\Models\User;
+use App\Nova\Fields\Password;
+use App\Nova\Fields\Select;
+use App\Nova\Fields\Text;
+use App\Services\Activity\Contracts\ActivityServiceContract;
+use App\Services\Customer\Contracts\CustomerServiceContract;
+use Exception;
 use Illuminate\Bus\Queueable;
+use Illuminate\Http\Request;
 use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Validation\Rules\Password as PasswordRule;
 use Laravel\Nova\Actions\Action;
 use Laravel\Nova\Actions\ActionResponse;
 use Laravel\Nova\Fields\ActionFields;
-use Laravel\Nova\Fields\Password;
-use Laravel\Nova\Fields\Select;
-use Laravel\Nova\Fields\Text;
-use App\Models\User;
-use App\Models\Customer;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Lednerb\ActionButtonSelector\ShowAsButton;
-use Illuminate\Validation\Rules\Password as PasswordRule;
 
 class CreateCustomer extends Action
 {
     use InteractsWithQueue, Queueable, ShowAsButton;
 
-    public function name(): string
+    public $name = "Add";
+    public $standalone = true;
+    public $confirmText = "";
+    public $onlyOnIndex = true;
+    public $confirmButtonText = "Add";
+
+    public function authorizedToSee(Request $request): bool
     {
-        return __("actions.create_customer");
+        /** @var User $user */
+        $user = $request->user();
+
+        return $user && $user->is_super;
     }
 
-    public $standalone = true;
-
-    public $confirmText = "";
-
-    public $onlyOnIndex = true;
-
-    public $confirmButtonText = "Create";
+    public function authorizedToRun(Request $request, $model): bool
+    {
+        return $this->authorizedToSee($request);
+    }
 
     /**
      * Perform the action on the given models.
      *
      * @param ActionFields $fields
-     * @return Action|ActionResponse
+     * @return ActionResponse
      */
-    public function handle(ActionFields $fields): ActionResponse|Action
+    public function handle(ActionFields $fields): ActionResponse
     {
-        $customer = new Customer();
-        $customer->name = $fields->name;
-        $customer->type = $fields->type;
-        $customer->save();
+        /** @var CustomerServiceContract $customerService */
+        $customerService = app(CustomerServiceContract::class);
+        /** @var ActivityServiceContract $activityService */
+        $activityService = app(ActivityServiceContract::class);
 
-        $user = new User();
-        $user->name = "Admin";
-        $user->email = $fields->email;
-        $user->customer_id = $customer->id;
-        $user->password = $fields->password;
-        $user->save();
+        $type = $fields->get("type");
+        $name = $fields->get("name");
+        $email = $fields->get("email");
+        $password = $fields->get("password");
 
-        $user->syncPermissions(Permission::getCustomerPermissions());
+        try {
+            /** @var Customer $customer */
+            $customer = $customerService->{"make" . ucfirst($type)}($name, $email, $password);
+        } catch (Exception $exception) {
+            $activityService->novaException($exception, ["fields" => $fields]);
+            return ActionResponse::danger($exception->getMessage());
+        }
 
-        return Action::visit("/resources/customers/" . $customer->id);
+        return ActionResponse::visit("/resources/customers/" . $customer->id);
     }
 
     /**
@@ -75,7 +88,7 @@ class CreateCustomer extends Action
                 ->rules('required', 'email:dns', 'unique:users,email'),
 
             Password::make(__("fields.password"), "password")
-                ->rules('required', PasswordRule::default()),
+                ->rules('required', PasswordRule::default(), "min:8"),
 
             Select::make(__("fields.type"), "type")
                 ->options([

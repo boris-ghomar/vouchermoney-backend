@@ -2,12 +2,14 @@
 
 namespace App\Nova\Actions;
 
-use App\Exceptions\AttemptToRedeemFrozenVoucher;
+use App\Models\Permission;
 use App\Models\User;
 use App\Models\Voucher\Voucher;
-use App\Models\Voucher\VoucherCode;
 use App\Nova\Fields\Text;
+use App\Services\Activity\Contracts\ActivityServiceContract;
+use App\Services\Customer\Contracts\CustomerServiceContract;
 use Illuminate\Bus\Queueable;
+use Illuminate\Http\Request;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Collection;
 use Laravel\Nova\Actions\Action;
@@ -23,49 +25,62 @@ class RedeemVoucher extends Action
 
     public $standalone = true;
     public $confirmText = "";
+    public $onlyOnIndex = true;
 
     public function name(): string
     {
         return __("actions.redeem");
     }
 
-    /**
-     * Perform the action on the given models.
-     *
-     * @param  ActionFields  $fields
-     * @param  Collection  $models
-     * @return ActionResponse
-     */
+    public function authorizedToRun(Request $request, $model): bool
+    {
+        return $this->authorizedToSee($request);
+    }
+
+    public function authorizedToSee(Request $request): bool
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        return $user && $user->can(Permission::CUSTOMER_VOUCHER_REDEEM);
+    }
+
     public function handle(ActionFields $fields, Collection $models): ActionResponse
     {
-        $voucher_code = $fields->voucher_code;
         /** @var User $user */
         $user = auth()->user();
 
-        if (!$user || !$user->customer?->id || !$user->can("customer:voucher:redeem"))
-            return ActionResponse::danger("Not authorized to perform this action");
+        $code = $fields->get("code");
+        $note = $fields->get("note");
 
-        /** @var Voucher $voucher */
-        $voucher = Voucher::find($voucher_code);
+        $voucher = Voucher::findByCode($code);
 
-        if (!$voucher) return ActionResponse::danger("Voucher not found");
+        /** @var ActivityServiceContract $activityService */
+        $activityService = app(ActivityServiceContract::class);
 
-        if (!$voucher->active) return ActionResponse::danger("Voucher frozen");
+        /** @var CustomerServiceContract $customerService */
+        $customerService = app(CustomerServiceContract::class);
+
+        if (empty($voucher)) {
+            $activityService->activity("attempt:nova:redeem-voucher", "Attempt to redeem voucher that not exists", ["fields" => $fields]);
+            return ActionResponse::danger("Voucher not found, not active or already used");
+        }
+
+        if (! $voucher->active) {
+            $activityService->activity(
+                "attempt:nova:redeem-voucher",
+                "Attempt to redeem voucher that frozen",
+                ["fields" => $fields, "voucher" => $voucher]
+            );
+
+            return ActionResponse::danger("Voucher not found, not active or already used");
+        }
 
         try {
-            $voucher->redeem($voucher->customer_id === $user->customer_id ? null : $user->customer_id);
-        } catch (AttemptToRedeemFrozenVoucher $e) {
-            return ActionResponse::danger($e->getMessage());
+            $customerService->redeemVoucher($user->customer, $voucher, $note);
         } catch (Exception $exception) {
-            activity(static::class)
-                ->withProperties([
-                    "exception" => $exception->getMessage(),
-                    "voucher_code" => $voucher_code,
-                    "voucher" => $voucher,
-                    "user" => $user
-                ])->causedBy($user)->log("Failed to redeem voucher");
-
-            return ActionResponse::danger("Something went wrong");
+            $activityService->novaException($exception, ["fields" => $fields, "voucher" => $voucher]);
+            return ActionResponse::danger($exception->getMessage());
         }
 
         return ActionResponse::message("Voucher successfully redeemed");
@@ -80,8 +95,11 @@ class RedeemVoucher extends Action
     public function fields(NovaRequest $request): array
     {
         return [
-            Text::make("Voucher code", "voucher_code")
-                ->rules("required", "size:" . VoucherCode::getVoucherCodeLength())
+            Text::make(__("fields.code"), "code")
+                ->rules("required"),
+
+            Text::make(__("fields.note"), "note")
+                ->rules("nullable", "string", "max:200")
         ];
     }
 

@@ -6,124 +6,250 @@ use App\Exceptions\AttemptToRedeemFrozenVoucher;
 use App\Http\Requests\Vouchers\CreateVoucherRequest;
 use App\Http\Requests\Vouchers\FreezeVoucherRequest;
 use App\Http\Requests\Vouchers\RedeemVoucherRequest;
-use App\Models\Customer;
+use App\Http\Requests\Vouchers\ViewVoucherRequest;
+use App\Http\Resources\ArchivedVoucherResource;
+use App\Http\Resources\VoucherResource;
+use App\Models\CustomerApiToken;
 use App\Models\Voucher\Voucher;
+use App\Services\Activity\Contracts\ActivityServiceContract;
+use App\Services\Customer\Contracts\CustomerServiceContract;
+use App\Services\Voucher\Contracts\VoucherServiceContract;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use OpenApi\Annotations as OA;
+
+/**
+ * @OA\Info(
+ *     title="Voucher Money API Documentation",
+ *     version="1.0.0"
+ * )
+ *
+ * @OA\SecurityScheme(
+ *     securityScheme="BearerAuth",
+ *     type="apiKey",
+ *     in="header",
+ *     name="Authorization",
+ *     description="Enter the token as 'Bearer {token}'"
+ * )
+ *
+ * @OA\Tag(
+ *     name="Vouchers",
+ *     description="Operations related to vouchers"
+ * )
+ */
 class ApiVoucherController extends Controller
 {
-    /**
-     * @param Request $request
-     * @return mixed
-     */
-    private function getAuthenticatedUser(Request $request)
-    {
-        return $request->get('authenticatedUser');
+    protected CustomerApiToken $user;
+
+    public function __construct(
+        Request $request,
+        protected CustomerServiceContract $customerService,
+        protected ActivityServiceContract $activityService,
+        protected VoucherServiceContract $voucherService
+    ) {
+        $this->user = $request->user();
     }
 
     /**
-     * @param Request $request
+     * @OA\Get(
+     *     path="/vouchers/view",
+     *     summary="View Voucher by Code",
+     *     description="Get voucher details using a unique voucher code.",
+     *     tags={"Vouchers"},
+     *     @OA\Parameter(
+     *         name="code",
+     *         in="query",
+     *         description="The voucher code to search for",
+     *         required=true,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Voucher found",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="status", type="string", example="success"),
+     *             @OA\Property(property="message", type="string", example="Voucher found."),
+     *             @OA\Property(property="voucher", ref="#/components/schemas/VoucherResource")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Voucher not found or already used",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="status", type="string", example="error"),
+     *             @OA\Property(property="message", type="string", example="Voucher not found or already used."),
+     *             @OA\Property(property="voucher", type="null", example=null)
+     *         )
+     *     ),
+     * )
+     *
+     * View voucher details by code.
+     *
+     * @param ViewVoucherRequest $request
      * @return JsonResponse
      */
-    public function index(Request $request): JsonResponse
+    public function view(ViewVoucherRequest $request): JsonResponse
     {
-        $user = $this->getAuthenticatedUser($request);
-        $vouchers = $user->customer->vouchers()->onlyActive()->get();
-        return response()->json([
-            "status" => 201,
-            "vouchers" =>[$vouchers]
-        ]);
-    }
+        $code = $request->code;
 
-    /**
-     * @param CreateVoucherRequest $request
-     * @return JsonResponse
-     */
-    public function create(CreateVoucherRequest $request): JsonResponse
-    {
-        $user = $this->getAuthenticatedUser($request);
-        for ($i = 0; $i < $request->count; $i++) {
-            $user->customer->generateVoucher($request->amount);
-        }
-        return response()->json([
-            'status' => 201,
-            'message' => 'Vouchers created successfully.'
-        ]);
-    }
+        $voucher = Voucher::findByCode($code);
 
-    /**
-     * @param FreezeVoucherRequest $request
-     * @return JsonResponse
-     */
-    public function freeze(FreezeVoucherRequest $request): JsonResponse
-    {
-        return $this->voucherState($request->code, Voucher::FREEZE_VOUCHER);
-    }
-
-    /**
-     * @param FreezeVoucherRequest $request
-     * @return JsonResponse
-     */
-    public function unfreeze(FreezeVoucherRequest $request): JsonResponse
-    {
-        return $this->voucherState($request->code, Voucher::ACTIVATE_VOUCHER);
-    }
-
-    /**
-     * @param string $code
-     * @param string $action
-     * @return JsonResponse
-     */
-    private function voucherState(string $code, string $action): JsonResponse
-    {
-        $user = $this->getAuthenticatedUser(request());
-        $voucher = Voucher::findOrFail($code);
-
-        if ($voucher->customer_id !== $user->customer_id) {
-            return response()->json([
-                'status' => 404,
-                'message' => 'Voucher not found or access denied.',
+        if (empty($voucher)) {
+            $response = response()->json([
+                'status' => "error",
+                'message' => 'Voucher not found or already used.',
+                "voucher" => null
+            ], 400);
+        } else {
+            $response = response()->json([
+                'status' => "success",
+                'message' => 'Voucher found.',
+                "voucher" => VoucherResource::make($voucher)
             ]);
         }
 
-        $voucher->{$action}();
+        $this->activityService->apiActivity("view", $request, $response);
 
-        return response()->json([
-            'status' => 200,
-            'message' => $action === 'freeze' ? 'Voucher frozen successfully.' : 'Voucher unfrozen successfully.',
-        ]);
+        return $response;
     }
 
     /**
-     * @param RedeemVoucherRequest $request
-     * @return JsonResponse
+     * @OA\Post(
+     *     path="/v1/vouchers/generate",
+     *     tags={"Vouchers"},
+     *     summary="Generate vouchers",
+     *     security={{"BearerAuth": {}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(ref="#/components/schemas/CreateVoucherRequest")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Vouchers generated successfully",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="status", type="string", example="success"),
+     *             @OA\Property(property="message", type="string", example="Vouchers generated successfully."),
+     *             @OA\Property(property="vouchers", type="array", @OA\Items(ref="#/components/schemas/VoucherResource"))
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="status", type="string", example="error"),
+     *             @OA\Property(property="message", type="string", example="Validation error"),
+     *             @OA\Property(
+     *                 property="errors",
+     *                 type="object",
+     *                 example={
+     *                     "amount": {"The amount field is required."},
+     *                     "count": {"The count must be at least 1."}
+     *                 }
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthorized",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="status", type="string", example="error"),
+     *             @OA\Property(property="message", type="string", example="Unauthorized")
+     *         )
+     *     ),
+     *     @OA\Response(response=400, description="Bad request")
+     * )
+     */
+    public function generate(CreateVoucherRequest $request): JsonResponse
+    {
+        $count = $request->count ?? 1;
+        $amount = $request->amount;
+
+        try {
+            $vouchers = $this->customerService->generateVoucher($this->user->customer, $amount, $count);
+
+            $response = response()->json([
+                'status' => "success",
+                'message' => 'Vouchers generated successfully.',
+                "vouchers" => $count > 1 ? VoucherResource::collection($vouchers) : [VoucherResource::make($vouchers)]
+            ]);
+        } catch (Exception $exception) {
+            $this->activityService->apiException($exception);
+
+            $response = response()->json([
+                'status' => "error",
+                'message' => $exception->getMessage()
+            ], 400);
+        }
+
+        $this->activityService->apiActivity("generate", $request, $response);
+
+        return $response;
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/v1/vouchers/redeem",
+     *     tags={"Vouchers"},
+     *     summary="Redeem a voucher",
+     *     security={{"BearerAuth": {}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(ref="#/components/schemas/RedeemVoucherRequest")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Voucher redeemed successfully",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="status", type="string", example="success"),
+     *             @OA\Property(property="message", type="string", example="Voucher redeemed successfully"),
+     *             @OA\Property(property="voucher", ref="#/components/schemas/ArchivedVoucherResource")
+     *         )
+     *     ),
+     *     @OA\Response(response=404, description="Voucher not found"),
+     *     @OA\Response(response=422, description="Validation error"),
+     *     @OA\Response(response=401, description="Unauthorized")
+     * )
      */
     public function redeem(RedeemVoucherRequest $request): JsonResponse
     {
-        $user = $request->get('authenticatedUser');
-        $voucher = Voucher::findOrFail($request->code);
-        if (!$voucher || $voucher->customer_id !== $user->customer_id)
-        {
-            return response()->json([
-                'status' => 404,
-                'message' => 'Something went wrong'
-            ]);
-        }
         try {
-            $recipient = $request->recipient_id ? Customer::find($request->recipient_id) : null;
+            $voucher = Voucher::findByCode($request->code);
 
-            $archivedVoucher = $voucher->redeem($recipient);
+            if (empty($voucher) || $voucher->customer_id !== $this->user->customer_id) {
+                $response = response()->json([
+                    'status' => "error",
+                    'message' => 'Voucher not found'
+                ], 404);
+            } else {
+                $archived = $this->customerService->redeemVoucher($this->user->customer, $voucher, $request->note);
 
-            return response()->json([
-                'status' => 200,
-                'message' => 'Voucher redeemed successfully.',
-                'archivedVoucher' => $archivedVoucher,
-            ]);
-        } catch (AttemptToRedeemFrozenVoucher $e) {
-            return response()->json([
-                'status' => 403,
-                'message' => 'Cannot redeem a frozen voucher.',
-            ], 403);
+                $response = response()->json([
+                    'status' => "success",
+                    'message' => 'Voucher redeemed successfully',
+                    'voucher' => new ArchivedVoucherResource($archived),
+                ]);
+            }
+        } catch (AttemptToRedeemFrozenVoucher $exception) {
+            $this->activityService->apiException($exception);
+            $response = response()->json([
+                'status' => "error",
+                'message' => 'Cannot redeem frozen voucher',
+            ], 400);
+        } catch (Exception $exception) {
+            $this->activityService->apiException($exception);
+            $response = response()->json([
+                'status' => "error",
+                'message' => $exception->getMessage(),
+            ], 400);
         }
+
+        $this->activityService->apiActivity("redeem", $request, $response);
+
+        return $response;
     }
 }

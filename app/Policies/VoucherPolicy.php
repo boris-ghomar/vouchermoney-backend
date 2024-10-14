@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Models\Permission;
 use App\Models\User;
 use App\Models\Voucher\Voucher;
 
@@ -13,11 +14,9 @@ class VoucherPolicy
     public function viewAny(User $user): bool
     {
         return $user->canAny([
-            "voucher:view",
-            "customer:voucher:view",
-            "customer:voucher:generate",
-            "customer:voucher:redeem",
-            "customer:voucher:freeze",
+            Permission::VOUCHERS_VIEW,
+            Permission::CUSTOMER_VOUCHER_VIEW,
+            Permission::CUSTOMER_VOUCHER_FREEZE
         ]);
     }
 
@@ -27,12 +26,14 @@ class VoucherPolicy
     public function view(User $user, Voucher $voucher): bool
     {
         if (
-            $user->is_customer &&
-            $user->can("customer:voucher:view") &&
-            $voucher->customer_id === $user->customer->id
+            $user->can(Permission::VOUCHERS_VIEW) ||
+            (
+                $user->customer_id === $voucher->customer_id &&
+                $user->canAny([Permission::CUSTOMER_VOUCHER_VIEW, Permission::CUSTOMER_VOUCHER_FREEZE])
+            )
         ) return true;
 
-        return $this->viewAny($user);
+        return false;
     }
 
     /**
@@ -40,8 +41,7 @@ class VoucherPolicy
      */
     public function create(User $user): bool
     {
-        if ($user->is_customer && $user->can("customer:voucher:generate"))
-            return true;
+        if ($user->can(Permission::CUSTOMER_VOUCHER_GENERATE)) return true;
 
         return false;
     }
@@ -51,8 +51,12 @@ class VoucherPolicy
      */
     public function update(User $user, Voucher $voucher): bool
     {
-        if ($user->customer_id === $voucher->customer_id)
-            return true;
+        if ($user->is_admin) return false;
+
+        if (
+            $user->can(Permission::CUSTOMER_VOUCHER_FREEZE) &&
+            $user->customer_id === $voucher->customer_id
+        ) return true;
 
         return false;
     }

@@ -3,14 +3,20 @@
 namespace App\Nova\Actions;
 
 use App\Models\Finance\Finance;
+use App\Models\Permission;
+use App\Models\User;
+use App\Nova\Resources\Finance\ActiveFinance;
+use App\Services\Activity\Contracts\ActivityServiceContract;
+use App\Services\Customer\Contracts\CustomerServiceContract;
+use App\Services\Finance\Contracts\FinanceServiceContract;
 use Exception;
 use Illuminate\Bus\Queueable;
+use Illuminate\Http\Request;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Collection;
 use Laravel\Nova\Actions\ActionResponse;
 use Laravel\Nova\Actions\DestructiveAction;
 use Laravel\Nova\Fields\ActionFields;
-use Laravel\Nova\Http\Requests\NovaRequest;
 use Lednerb\ActionButtonSelector\ShowAsButton;
 
 class DeleteFinance extends DestructiveAction
@@ -24,33 +30,34 @@ class DeleteFinance extends DestructiveAction
         return __("actions.delete");
     }
 
-    /**
-     * Perform the action on the given models.
-     *
-     * @param  ActionFields  $fields
-     * @param  Collection<Finance>  $models
-     * @return ActionResponse
-     */
-    public function handle(ActionFields $fields, Collection $models): ActionResponse
+    public function authorizedToRun(Request $request, $model): bool
     {
-        try {
-            foreach ($models as $model) $model->cancel();
-        } catch (Exception $exception) {
-            return ActionResponse::danger("Something went wrong");
-        }
-
-        return ActionResponse::message("Financial requests cancelled");
+        return $this->authorizedToSee($request);
     }
 
-    /**
-     * Get the fields available on the action.
-     *
-     * @param  NovaRequest  $request
-     * @return array
-     */
-    public function fields(NovaRequest $request): array
+    public function authorizedToSee(Request $request): bool
     {
-        return [];
+        /** @var User $user */
+        $user = $request->user();
+
+        return $user && $user->can(Permission::CUSTOMER_FINANCE);
+    }
+
+    public function handle(ActionFields $fields, Collection $models): ActionResponse
+    {
+        /** @var FinanceServiceContract $financeService */
+        $financeService = app(FinanceServiceContract::class);
+        /** @var ActivityServiceContract $activityService */
+        $activityService = app(ActivityServiceContract::class);
+
+        try {
+            $financeService->cancelRequests($models);
+        } catch (Exception $exception) {
+            $activityService->novaException($exception, ["finances" => $models]);
+            return ActionResponse::danger($exception->getMessage());
+        }
+
+        return ActionResponse::redirect("/resources/" . ActiveFinance::uriKey());
     }
 
     public static function make(...$arguments): static

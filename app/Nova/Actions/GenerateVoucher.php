@@ -2,15 +2,19 @@
 
 namespace App\Nova\Actions;
 
+use App\Models\Permission;
 use App\Models\User;
+use App\Services\Activity\Contracts\ActivityServiceContract;
+use App\Services\Customer\Contracts\CustomerServiceContract;
 use Illuminate\Bus\Queueable;
+use Illuminate\Http\Request;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Collection;
 use Laravel\Nova\Actions\Action;
 use Laravel\Nova\Actions\ActionResponse;
 use Laravel\Nova\Fields\ActionFields;
-use Laravel\Nova\Fields\Currency;
-use Laravel\Nova\Fields\Number;
+use App\Nova\Fields\Currency;
+use App\Nova\Fields\Number;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Lednerb\ActionButtonSelector\ShowAsButton;
 use Exception;
@@ -20,65 +24,48 @@ class GenerateVoucher extends Action
     use InteractsWithQueue, Queueable, ShowAsButton;
 
     public $onlyOnIndex = true;
-
     public $standalone = true;
+    public $confirmText = "";
 
     public function name(): string
     {
         return __("actions.generate");
     }
 
-    public function getConfirmButtonText(): string
+    public function authorizedToSee(Request $request): bool
     {
-        return __("actions.generate");
+        /** @var User $user */
+        $user = $request->user();
+
+        return $user && $user->can(Permission::CUSTOMER_VOUCHER_GENERATE);
     }
 
-    public function getCancelButtonText(): string
+    public function authorizedToRun(Request $request, $model): bool
     {
-        return __("actions.cancel");
+        return $this->authorizedToSee($request);
     }
 
-    public $confirmText = "";
-
-    /**
-     * Perform the action on the given models.
-     *
-     * @param  ActionFields  $fields
-     * @param  Collection  $models
-     * @return ActionResponse
-     */
     public function handle(ActionFields $fields, Collection $models): ActionResponse
     {
         /** @var User $user */
         $user = auth()->user();
 
-        if (empty($user) || empty($user->customer))
-            return ActionResponse::danger(__("actions.customer_not_found"));
+        $count = (int) $fields->get("count");
+        $amount = (float) $fields->get("amount");
 
-        $count = +$fields->count ?: 1;
-        $amount = $fields->amount;
-        $i = 0;
-
-        if (!$user->customer->hasEnoughBalance($count * $amount)) {
-            return ActionResponse::danger("Insufficient balance for that action");
-        }
+        /** @var CustomerServiceContract $customerService */
+        $customerService = app(CustomerServiceContract::class);
+        /** @var ActivityServiceContract $activityService */
+        $activityService = app(ActivityServiceContract::class);
 
         try {
-            for (; $i < $count; $i++) $user->customer->generateVoucher($amount);
+            $customerService->generateVoucher($user->customer, $amount, $count);
         } catch (Exception $exception) {
-            activity(static::class)
-                ->causedBy($user)
-                ->performedOn($user->customer)
-                ->withProperties([
-                    "user" => $user,
-                    "customer" => $user->customer,
-                    "error" => $exception->getMessage(),
-                    "session" => session()->all()
-                ])->log("Failed to generate voucher via Nova action");
+            $activityService->novaException($exception, ["fields" => $fields]);
             return ActionResponse::danger($exception->getMessage());
         }
 
-        return ActionResponse::message("Voucher" . ($count === 1 ? "" : "s") . " generated");
+        return ActionResponse::message("Generated!");
     }
 
     /**
@@ -90,8 +77,15 @@ class GenerateVoucher extends Action
     public function fields(NovaRequest $request): array
     {
         return [
-            Number::make(__("fields.count"), "count")->default(1)->rules("required", "min:1", "max:5"),
-            Currency::make(__("fields.amount"), "amount")->rules("required", "min:1", "max:1000")
+            Number::make(__("fields.count"), "count")->default(1)->rules("required",'numeric', "min:1", "max:50"),
+            Currency::make(__("fields.amount"), "amount")->rules("required",'numeric', "min:1", "max:1000")
         ];
+    }
+
+    public static function make(...$arguments): static
+    {
+        return parent::make(...$arguments)
+            ->confirmButtonText(__("actions.generate"))
+            ->cancelButtonText(__("actions.cancel"));
     }
 }

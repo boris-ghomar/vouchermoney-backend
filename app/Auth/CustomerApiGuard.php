@@ -3,6 +3,7 @@
 namespace App\Auth;
 
 use App\Models\CustomerApiToken;
+use App\Models\Permission;
 use Illuminate\Auth\TokenGuard;
 use Illuminate\Contracts\Auth\UserProvider;
 use Illuminate\Http\Request;
@@ -14,15 +15,16 @@ class CustomerApiGuard extends TokenGuard
         parent::__construct($provider, $request);
     }
 
-    public function user()
+    public function user(): CustomerApiToken|null
     {
         $token = $this->request->bearerToken();
-        if (!$token) return null;
 
-        $hashedToken = hash('sha256', $token);
-        $customerApiToken = CustomerApiToken::query()->where('token', $hashedToken)->first();
+        if (empty($token)) return null;
 
-        if (!$customerApiToken || $customerApiToken->isExpired()) return null;
+        $customerApiToken = CustomerApiToken::findByToken($token);
+
+        if (empty($customerApiToken) || $customerApiToken->is_expired) return null;
+
         return $customerApiToken;
     }
 }

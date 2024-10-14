@@ -4,9 +4,10 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Validation\ValidationException;
 
-class ApiRequest extends FormRequest
+abstract class ApiRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -16,17 +17,20 @@ class ApiRequest extends FormRequest
         return true;
     }
 
-    /**
-     * @param Validator $validator
-     * @return mixed
-     * @throws ValidationException
-     */
-    protected function failedValidation(Validator $validator): mixed
+    protected function failedValidation(Validator $validator)
     {
-        throw new ValidationException($validator, response()->json([
+        throw new HttpResponseException(response()->json([
             "status" => "error",
             "message" => "Validation error",
             "errors" => $validator->errors()
-        ])->setStatusCode(422));
+        ], 422));
+    }
+
+    protected function failedAuthorization()
+    {
+        throw new HttpResponseException(response()->json([
+            "status" => "error",
+            "message" => "Unauthorized",
+        ], 401));
     }
 }

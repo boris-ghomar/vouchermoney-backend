@@ -2,19 +2,24 @@
 
 namespace App\Http\Requests\Vouchers;
 
+use App\Http\Requests\ApiRequest;
 use Illuminate\Contracts\Validation\ValidationRule;
-use Illuminate\Foundation\Http\FormRequest;
+use OpenApi\Annotations as OA;
 
-class RedeemVoucherRequest extends FormRequest
+/**
+ * @OA\Schema(
+ *     schema="RedeemVoucherRequest",
+ *     type="object",
+ *     required={"code"},
+ *     @OA\Property(property="code", type="string", example="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX", description="The voucher code to redeem"),
+ *     @OA\Property(property="note", type="string", maxLength=200, example="Redeemed for a special offer", description="Optional note for the voucher redemption")
+ * )
+ *
+ * @property  string       $code
+ * @property  string|null  $note
+ */
+class RedeemVoucherRequest extends ApiRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
-    public function authorize(): bool
-    {
-        return true;
-    }
-
     /**
      * Get the validation rules that apply to the request.
      *
@@ -23,8 +28,8 @@ class RedeemVoucherRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'code' => 'required|string',
-            'recipient_id' => 'nullable|string'
+            'code' => 'required|string|min:14|max:32',
+            'note' => 'nullable|string|max:200',
         ];
     }
 }

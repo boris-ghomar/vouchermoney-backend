@@ -2,78 +2,93 @@
 
 namespace App\Models;
 
-use App\Exceptions\InsufficientBalance;
-use App\Exceptions\TransactionWithZeroAmount;
 use App\Models\Finance\ArchivedFinance;
 use App\Models\Finance\Finance;
 use App\Models\Transaction\ArchivedTransaction;
 use App\Models\Transaction\Transaction;
+use App\Models\Voucher\ArchivedVoucher;
 use App\Models\Voucher\Voucher;
+use App\Services\Customer\Contracts\CustomerServiceContract;
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\Notification;
-use Laravel\Nova\Notifications\NovaNotification;
-use Closure;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 /**
  * @property  string       $id
  * @property  string       $name
  * @property  float        $balance
- * @property  string|null  $avatar
  * @property  string       $type
- * @property  Carbon|null  $created_at
- * @property  Carbon|null  $updated_at
+ * @property  Carbon|null  $deleted_at
+ * @property  Carbon       $created_at
+ * @property  Carbon       $updated_at
  *
- * @property  Collection<User>                 $users
- * @property  Collection<Transaction>          $transactions
- * @property  Collection<ArchivedTransaction>  $archived_transactions
+ * @property-read  float  $available_balance
+ *
+ * @property-read  Collection<User>                 $users
+ * @property-read  User                             $admin
+ * @property-read  Collection<Transaction>          $transactions
+ * @property-read  Collection<ArchivedTransaction>  $archived_transactions
+ * @property-read  Collection<Finance>              $finances
+ * @property-read  Collection<ArchivedFinance>      $archived_finances
+ * @property-read  Collection<Voucher>              $vouchers
+ * @property-read  Collection<ArchivedVoucher>      $archived_vouchers
+ *
+ * @method  static  static      find(string $id)
+ * @method  static  Collection  pluck(string $value, string $key)
  */
 class Customer extends Model
 {
-    use HasFactory, SoftDeletes, HasUlids;
-
-    protected $keyType = 'string';
-    public $incrementing = false;
+    use SoftDeletes, HasUlids, LogsActivity;
 
     const TYPE_RESELLER = "reseller";
     const TYPE_MERCHANT = "merchant";
-    const LIMIT_TOKEN = 5;
-    protected $fillable = [
-        'name',
-        'balance',
-        'avatar',
-        'type'
-    ];
+
+    protected $fillable = ['name', 'balance', 'type'];
+
+    protected $casts = ["balance" => "decimal:2"];
 
     protected static function boot(): void
     {
         parent::boot();
 
-        parent::deleted(function (Customer $model) {
-            $model->users()->delete();
+        static::deleting(function (Customer $customer) {
+            $customer->users()->delete();
+        });
+
+        static::restoring(function (Customer $customer) {
+            User::withTrashed()->where("customer_id", $customer->id)->oldest()->first()->restore();
         });
     }
 
     public function users(): HasMany
     {
-        return $this->hasMany(User::class, "customer_id");
+        return $this->hasMany(User::class);
     }
 
-    public function calculateBalance(): float
+    public function admin(): HasOne
     {
-        $balance = $this->balance;
+        return $this->hasOne(User::class)->oldestOfMany();
+    }
 
-        foreach ($this->transactions()->get() as $transaction) {
-            $balance += $transaction->amount;
-        }
+    public function apiTokens(): HasMany
+    {
+        return $this->hasMany(CustomerApiToken::class);
+    }
 
-        return $balance;
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(Transaction::class);
+    }
+
+    public function archivedTransactions(): HasMany
+    {
+        return $this->hasMany(ArchivedTransaction::class);
     }
 
     public function finances(): HasMany
@@ -86,167 +101,26 @@ class Customer extends Model
         return $this->hasMany(ArchivedFinance::class);
     }
 
-    /**
-     * @param string $message
-     * @param string $visitActionUrl
-     * @param string $type Supported types - info, success, error or warning
-     * @param string $icon
-     * @return void
-     */
-    public function notify(string $message, string $visitActionUrl = "", string $type = "info", string $icon = "", bool $onlyAdmin = false): void
-    {
-        if ($onlyAdmin) {
-            $users = $this->getAdminUser();
-        } else {
-            $users = $this->users->filter(function ($user) {
-                return $user->can("customer:notifications");
-            });
-        }
-
-        $notification = (new NovaNotification())
-            ->message($message)
-            ->type($type);
-
-        if ($visitActionUrl) $notification->action(__("actions.view"), $visitActionUrl);
-
-        if ($icon) $notification->icon($icon);
-
-        Notification::send($users, $notification);
-    }
-
-    public function notifyAdministrator(string $message, string $visitActionUrl = "", string $type = "info", string $icon = ""): void
-    {
-        $this->notify($message, $visitActionUrl, $type, $icon, true);
-    }
-
-    public function sendFinanceRequestedNotification(Finance $finance): void
-    {
-        $message = __("notifications.customer_finance_requested" . ($finance->user_id === $this->getAdminUserId() ? "" : "_by"), [
-            "amount" => $finance->amount,
-            "type" => $finance->type,
-            "by" => $finance->user->name
-        ]);
-
-        $this->notifyAdministrator($message, "/resources/finances/" . $finance->id);
-    }
-
-    /**
-     * @param string $financeId
-     * @param bool $state true if approved, false if rejected
-     * @return void
-     */
-    public function sendFinanceResolvedNotification(string $financeId, bool $state): void
-    {
-        $this->notify(
-            __("notifications.customer_finance", ["status" => __("actions." . ($state ? "approved" : "rejected"))]),
-            "/resources/archived-finances/" . $financeId,
-            $state ? "success" : "error", "currency-dollar");
-    }
-
-    public function hasEnoughBalance(float $amount): bool
-    {
-        $amount = abs($amount);
-
-        return $this->calculateBalance() >= $amount;
-    }
-
-    public function transactions(): HasMany
-    {
-        return $this->hasMany(Transaction::class);
-    }
-
-    /**
-     * @throws TransactionWithZeroAmount
-     */
-    public function deposit(float $amount, string $description = ""): Transaction
-    {
-        $amount = abs($amount);
-
-        $this->checkValidityOfAmount($amount);
-
-        return $this->transact($amount, $description);
-    }
-
-    /**
-     * @throws InsufficientBalance|TransactionWithZeroAmount
-     */
-    public function withdraw(float $amount, string $description = ""): Transaction
-    {
-        $amount = abs($amount);
-
-        $this->checkAbilityToMakeWithdrawalTransaction($amount);
-
-        return $this->transact($amount * -1, $description);
-    }
-
-    private function transact(float $amount, string $description = ""): Transaction
-    {
-        $transaction = new Transaction();
-        $transaction->customer_id = $this->id;
-        $transaction->amount = $amount;
-
-        if (!empty($description)) $transaction->description = $description;
-
-        $transaction->save();
-
-        return $transaction;
-    }
-
-    public function generateVoucher(float $amount): Voucher
-    {
-        return Voucher::generate($this, $amount);
-    }
     public function vouchers(): HasMany
     {
         return $this->hasMany(Voucher::class);
     }
 
-    /**
-     * @throws TransactionWithZeroAmount
-     */
-    private function checkValidityOfAmount(float $amount): void
+    public function archivedVouchers(): HasMany
     {
-        if (empty($amount)) throw new TransactionWithZeroAmount();
+        return $this->hasMany(ArchivedVoucher::class);
     }
 
-    /**
-     * @throws TransactionWithZeroAmount|InsufficientBalance
-     */
-    private function checkAbilityToMakeWithdrawalTransaction(float $amount): void
+    public function getAvailableBalanceAttribute(): float
     {
-        $this->checkValidityOfAmount($amount);
+        /** @var CustomerServiceContract $service */
+        $service = app(CustomerServiceContract::class);
 
-        if (!$this->hasEnoughBalance($amount)) throw new InsufficientBalance();
+        return $service->computeBalance($this);
     }
 
-    public function requestWithdraw(User $requestedBy, float $amount, string $comment): Finance
+    public function getActivitylogOptions(): LogOptions
     {
-        return Finance::withdraw($requestedBy, $this, $amount, $comment);
+        return LogOptions::defaults()->logOnly(['name', 'balance', "type", "created_at", "updated_at", "deleted_at", "available_balance"]);
     }
-
-    public function requestDeposit(User $requestedBy, float $amount, string $comment): Finance
-    {
-        return Finance::deposit($requestedBy, $this, $amount, $comment);
-    }
-
-    public static function toOptionsArray(): Closure
-    {
-        return fn() => Customer::query()->select(["id", "name"])
-            ->pluck('name','id')->toArray();
-    }
-
-    public function getAdminUser(): User
-    {
-        return $this->users()->oldest()->first();
-    }
-
-    public function getAdminUserId(): string
-    {
-        return $this->users()->oldest()->select("id")->limit(1)->first()->id;
-    }
-    public function apiTokens()
-    {
-        return $this->hasMany(CustomerApiToken::class);
-    }
-
 }

@@ -5,7 +5,7 @@ namespace Database\Seeders;
 use App\Models\Permission;
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
+use App\Models\Role;
 
 class PermissionSeeder extends Seeder
 {
@@ -15,31 +15,50 @@ class PermissionSeeder extends Seeder
     public function run(): void
     {
         $permissions = [
-            'customer:view-any',
-            'customer:create',
-            'customer:delete',
-            'user:view-any',
-            'user:create',
-            'user:delete',
-            'user:attach-permission',
-            'finance:request',
-            'finance:resolve',
-            'voucher:view',
-            'activity:view',
-            'transaction:view'
+            Permission::CUSTOMERS_VIEW,
+            Permission::VOUCHERS_VIEW,
+            Permission::TRANSACTIONS_VIEW,
+            Permission::FINANCES_VIEW,
+            Permission::FINANCES_MANAGEMENT,
+            Permission::ACTIVITY_VIEW,
+            Permission::CUSTOMER_VIEW,
+            Permission::CUSTOMER_USER_VIEW,
+            Permission::CUSTOMER_FINANCE,
+            Permission::CUSTOMER_VOUCHER_VIEW,
+            Permission::CUSTOMER_VOUCHER_GENERATE,
+            Permission::CUSTOMER_VOUCHER_REDEEM,
+            Permission::CUSTOMER_VOUCHER_FREEZE,
+            Permission::CUSTOMER_TRANSACTIONS_VIEW
         ];
 
-        foreach (array_merge($permissions, Permission::getCustomerPermissions()) as $permission) {
+        foreach ($permissions as $permission) {
             Permission::create(['name' => $permission]);
         }
 
+        foreach (Permission::$apiTokenPermissions as $permission) {
+            Permission::create(['name' => $permission, "guard_name" => "token"]);
+        }
+
         $user = new User();
-        $user->name = "Admin";
+        $user->name = "Administrator";
         $user->email = "admin@test.com";
         $user->email_verified_at = now();
         $user->password = "123123123";
         $user->save();
 
-        $user->syncPermissions($permissions);
+        $roles = [
+            Role::SUPER_ADMIN => Permission::$adminPermissions,
+            Role::CUSTOMER_ADMIN => Permission::$customerPermissions
+        ];
+
+        foreach ($roles as $name => $permissions) {
+            $role = new Role();
+            $role->name = $name;
+            $role->save();
+
+            $role->syncPermissions($permissions);
+        }
+
+        $user->assignRole(Role::SUPER_ADMIN);
     }
 }

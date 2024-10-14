@@ -2,37 +2,49 @@
 
 namespace App\Nova\Actions;
 
-use App\Models\Customer;
+use App\Exceptions\AttemptToCreateExpiredApiToken;
 use App\Models\CustomerApiToken;
 use App\Models\Permission;
-use App\Nova\Fields\DateTime;
+use App\Models\User;
 use App\Nova\Fields\Text;
+use App\Services\Activity\Contracts\ActivityServiceContract;
+use App\Services\Customer\Contracts\CustomerServiceContract;
 use Illuminate\Bus\Queueable;
+use Illuminate\Http\Request;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Crypt;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
+use Exception;
 use Laravel\Nova\Actions\Action;
 use Laravel\Nova\Actions\ActionResponse;
 use Laravel\Nova\Fields\ActionFields;
 use Laravel\Nova\Fields\BooleanGroup;
 use Laravel\Nova\Fields\Date;
-use Laravel\Nova\Fields\MultiSelect;
 use Outl1ne\DependencyContainer\DependencyContainer;
 use Laravel\Nova\Fields\Select;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Lednerb\ActionButtonSelector\ShowAsButton;
+
 class CreateCustomerApiToken extends Action
 {
     use InteractsWithQueue, Queueable, ShowAsButton;
 
     public $standalone = true;
     public $onlyOnIndex = true;
+    public $name = "Generate token";
 
-    public function name(): string
+    public function authorizedToSee(Request $request): bool
     {
-        return "Generate token";
+        /** @var User $user */
+        $user = $request->user();
+
+        if (! $user) return false;
+
+        return $user->is_customer_admin;
+    }
+
+    public function authorizedToRun(Request $request, $model): bool
+    {
+        return $this->authorizedToSee($request);
     }
 
     /**
@@ -44,27 +56,43 @@ class CreateCustomerApiToken extends Action
      */
     public function handle(ActionFields $fields, Collection $models): ActionResponse
     {
-        $customer = auth()->user()->customer;
-        $token = Str::random(64);
+        /** @var User $user */
+        $user = auth()->user();
 
-        $hashedToken = hash('sha256', $token);
-        $expiresAt = match ($fields->expires_at) {
+        if (empty($user)) {
+            return ActionResponse::danger("Not authorized");
+        }
+
+        $customer = $user->customer;
+
+        if (empty($customer)) {
+            return ActionResponse::danger("Not authorized");
+        }
+
+        /** @var CustomerServiceContract $customerService */
+        $customerService = app(CustomerServiceContract::class);
+        /** @var ActivityServiceContract $activityService */
+        $activityService = app(ActivityServiceContract::class);
+
+        $expires_at = $fields->get("expires_at");
+
+        $expires_at = match ($expires_at) {
             'custom' => $fields->get('select_expires_at'),
             'no_expiration' => null,
-            default => now()->addDays(+$fields->expires_at),
+            default => now()->addDays(+$expires_at),
         };
 
-        $customerApiToken = CustomerApiToken::create([
-            'customer_id' =>$customer->id,
-            'name' => $fields->name,
-            'token' => $hashedToken,
-            'expires_at' => $expiresAt,
-        ]);
-        $selectedPermissions = collect($fields->permissions)->filter(function ($value) {
-            return $value === true;
-        })->keys()->toArray();
-        if ($selectedPermissions) {
-            $customerApiToken->permissions()->attach($selectedPermissions,['model_type'=>CustomerApiToken::class]);
+        $name = $fields->get("name");
+        $permissions = collect($fields->get("permissions"))->filter(fn ($value) => $value === true)->keys()->toArray();
+
+        try {
+            $token = $customerService->createApiToken($customer, $name, $permissions, $expires_at);
+        } catch (AttemptToCreateExpiredApiToken $exception) {
+            $activityService->novaException($exception);
+            return ActionResponse::danger("Expiration time must be greater that current time");
+        } catch (Exception $exception) {
+            $activityService->novaException($exception);
+            return ActionResponse::danger($exception->getMessage());
         }
 
        return ActionResponse::modal('api-token-modal', [
@@ -82,11 +110,13 @@ class CreateCustomerApiToken extends Action
     public function fields(NovaRequest $request): array
     {
         return [
-            Text::make('Name', 'name')->rules('required'),
+            Text::make('Name', 'name')->rules('required', "string"),
+
             BooleanGroup::make('Permissions')
-                ->options(Permission::all()->pluck('name', 'id'))
+                ->options(Permission::getApiTokenPermissions())
                 ->rules('required'),
-            Select::make('Expires At','expires_at')->options([
+
+            Select::make('Expiration','expires_at')->options([
                 '7' => '7 Days',
                 '30' => '30 Days',
                 '60' => '60 Days',
@@ -94,9 +124,10 @@ class CreateCustomerApiToken extends Action
                 'custom' => 'Custom Date',
                 'no_expiration' => 'No Expiration',
             ])->rules('required')->displayUsingLabels(),
+
             DependencyContainer::make([
                 Date::make('Select Expiration Date', 'select_expires_at')
-                    ->rules('nullable', 'date')
+                    ->rules('nullable', 'date', "after:today")
             ])->dependsOn('expires_at', 'custom'),
         ];
     }

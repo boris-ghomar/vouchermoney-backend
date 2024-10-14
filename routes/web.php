@@ -1,13 +1,11 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Illuminate\Http\Request;
 
-Route::get("/", function (Request $request) {
-    $user = $request->user();
-
-    if (!$user)
-        return redirect("/login");
-
+Route::get("/", function () {
     return redirect("/dashboards/home");
+});
+
+Route::get('api-docs', function () {
+    return view('redoc');
 });

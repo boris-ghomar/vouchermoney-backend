@@ -4,55 +4,53 @@ namespace App\Models\Finance;
 
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * @property  bool         $status
- * @property  string|null  $request_comment
- * @property  string|null  $resolved_comment
- * @property  array        $resolver_data
+ * @property  bool         $status True - approved, False - rejected
+ * @property  string       $resolver_id
+ * @property  string|null  $resolver_comment
  * @property  Carbon       $resolved_at
  *
- * @property-read  User|null  $resolver
- * @property-read  bool       $is_approved
- * @property-read  bool       $is_rejected
+ * @property-read  User  $resolver
+ * @property-read  bool  $is_approved
+ * @property-read  bool  $is_rejected
  *
  * @method  Builder|static  onlyApproved()
  * @method  Builder|static  onlyRejected()
+ *
+ * @method  static  Builder|static  onlyApproved()
+ * @method  static  Builder|static  onlyRejected()
  */
 class ArchivedFinance extends AbstractFinance
 {
-    protected $keyType = "string";
-    public $incrementing = false;
     public $timestamps = false;
 
     const STATUS_APPROVED = true;
     const STATUS_REJECTED = false;
 
-    protected $fillable = [
-        'customer_id',
-        'amount',
+    protected array $additional_fillable = [
         'status',
-        'request_comment',
-        'resolved_comment',
-        'resolver_data',
+        'resolver_id',
+        'resolver_comment',
+    ];
+
+    protected array $additional_casts = [
+        "status" => "boolean",
+        "resolved_at" => "datetime",
+    ];
+
+    protected array $additional_log_columns = [
+        'status',
+        'resolver_id',
+        'resolver_comment',
         'resolved_at',
     ];
 
-    protected $casts = [
-        "resolved_at" => "datetime",
-        "resolver_data" => "array",
-        "status" => "boolean",
-        "created_at" => "datetime",
-        "updated_at" => "datetime"
-    ];
-
-    /**
-     * Relationship to the user, who approve/reject a finance
-     */
-    public function getResolverAttribute(): User|null
+    public function resolver(): BelongsTo
     {
-        return !empty($this->resolver_data["id"]) ? User::find($this->resolver_data["id"]) : null;
+        return $this->belongsTo(User::class, "resolver_id");
     }
 
     public function getIsApprovedAttribute(): bool
@@ -73,35 +71,5 @@ class ArchivedFinance extends AbstractFinance
     public function scopeOnlyRejected(Builder $query): void
     {
         $query->where("status", self::STATUS_REJECTED);
-    }
-
-    public static function makeApproved(Finance $finance, User $resolver, string $resolvedComment = ""): static
-    {
-        return static::make($finance, $resolver, static::STATUS_APPROVED, $resolvedComment);
-    }
-
-    public static function makeRejected(Finance $finance, User $resolver, string $resolvedComment = ""): static
-    {
-        return static::make($finance, $resolver, static::STATUS_REJECTED, $resolvedComment);
-    }
-
-    public static function make(Finance $finance, User $resolver, bool $status, string $resolvedComment = ""): static
-    {
-        $archivedFinance = new static();
-        $archivedFinance->id = $finance->id;
-        $archivedFinance->customer_id = $finance->customer_id;
-        $archivedFinance->amount = $finance->amount;
-        $archivedFinance->status = $status;
-        $archivedFinance->user_id = $finance->user_id;
-
-        if (!empty($finance->comment)) $archivedFinance->request_comment = $finance->comment;
-        if (!empty($resolvedComment)) $archivedFinance->resolved_comment = $resolvedComment;
-
-        $archivedFinance->resolver_data = $resolver->toJson();
-        $archivedFinance->created_at = $finance->created_at;
-        $archivedFinance->updated_at = $finance->updated_at;
-        $archivedFinance->save();
-
-        return $archivedFinance;
     }
 }

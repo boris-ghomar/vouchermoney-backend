@@ -2,22 +2,29 @@
 
 namespace App\Nova\Actions;
 
+use App\Models\Permission;
+use App\Models\User;
 use App\Models\Voucher\Voucher;
+use App\Services\Activity\Contracts\ActivityServiceContract;
+use App\Services\Voucher\Contracts\VoucherServiceContract;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Laravel\Nova\Actions\Action;
 use Laravel\Nova\Actions\ActionResponse;
 use Laravel\Nova\Actions\DestructiveAction;
 use Laravel\Nova\Fields\ActionFields;
-use Laravel\Nova\Http\Requests\NovaRequest;
 use Lednerb\ActionButtonSelector\ShowAsButton;
 use Exception;
 
-class FreezeVoucher extends DestructiveAction
+class FreezeVoucher extends Action
 {
     use ShowAsButton;
 
     public $showInline = true;
+    public $uriKey = "freeze-voucher";
     public $sole = true;
-
+    public $withoutActionEvents = true;
     protected string $type = 'freeze';
 
     public function activate(): static
@@ -30,71 +37,54 @@ class FreezeVoucher extends DestructiveAction
         return $this->setType("freeze");
     }
 
-    private function setType(string $type): static
+    public function setType(string $type): static
     {
         $this->type = $type;
-//        $this->name = $type === 'freeze' ? __('actions.freeze') : __('actions.activate');
+        $this->name = $type === 'freeze' ? __('actions.freeze') : __('actions.activate');
+        $this->cancelButtonText = __("actions.cancel");
+        $this->confirmButtonText = ucfirst($this->name);
+        $this->confirmText = __("actions." . $type . "_description");
+
         return $this;
     }
 
-    public function name()
+    public function authorizedToSee(Request $request): bool
     {
-        return $this->type === 'freeze' ? __('actions.freeze') : __('actions.activate');
+        /** @var User $user */
+        $user = $request->user();
+        return $user && $user->can(Permission::CUSTOMER_VOUCHER_FREEZE);
     }
 
-    public $uriKey = "freeze-voucher";
+    public function authorizedToRun(Request $request, $model): bool
+    {
+        return true;
+    }
 
-    public $withoutActionEvents = true;
-
-    /**
-     * Perform the action on the given models.
-     *
-     * @param  ActionFields  $fields
-     * @param  Collection  $models
-     * @return ActionResponse
-     */
     public function handle(ActionFields $fields, Collection $models): ActionResponse
     {
-        /** @var Voucher $voucher */
-        $voucher = $models->first();
+        /** @var User $user */
+        $user = auth()->user();
+
+        /** @var VoucherServiceContract $voucherService */
+        $voucherService = app(VoucherServiceContract::class);
+        /** @var ActivityServiceContract $activityService */
+        $activityService = app(ActivityServiceContract::class);
+
         try {
-            if ($voucher->active) $voucher->freeze();
-            else $voucher->activate();
+            /** @var Voucher $voucher */
+            $voucher = $models->first();
+            if ($voucher->is_active) $voucherService->freeze($voucher);
+            else $voucherService->activate($voucher);
         } catch (Exception $exception) {
-            return ActionResponse::danger("Something went wrong");
+            $activityService->novaException($exception, ["vouchers" => $models, "type" => $this->type]);
+            return ActionResponse::danger($exception->getMessage());
         }
 
-        return ActionResponse::message("Voucher " . ($voucher->active ? "activated" : "frozen"));
-    }
-
-    /**
-     * Get the fields available on the action.
-     *
-     * @param  NovaRequest  $request
-     * @return array
-     */
-    public function fields(NovaRequest $request): array
-    {
-        return [];
+        return ActionResponse::message("Success");
     }
 
     public static function make(...$arguments): static
     {
-        $result = parent::make();
-        $confirm = "actions.";
-        $description = "actions.";
-        if ($arguments[0] && $arguments[0]?->active) {
-            $result->freeze();
-            $confirm .= 'freeze';
-            $description .= 'freeze_description';
-        }
-        else {
-            $result->activate();
-            $confirm .= 'activate';
-            $description .= 'activate_description';
-        }
-        return $result->confirmButtonText(__($confirm))
-            ->cancelButtonText(__("actions.cancel"))
-            ->confirmText(__($description));
+        return parent::make()->{$arguments[0]->is_active ? "freeze" : "activate"}();
     }
 }

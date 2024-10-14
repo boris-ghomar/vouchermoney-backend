@@ -2,6 +2,8 @@
 
 namespace App\Nova\Dashboards;
 
+use App\Models\Permission;
+use App\Models\User;
 use App\Nova\Metrics\AccountBalance;
 use Illuminate\Http\Request;
 use Laravel\Nova\Dashboard;
@@ -15,8 +17,11 @@ class CustomerBalance extends Dashboard
         parent::__construct();
 
         $this->canSee(function (Request $request) {
+            /** @var User $user */
             $user = $request->user();
-            return $user && $user->is_customer && $user->can("customer:view-balance");
+            if (!$user || $user->is_admin) return false;
+
+            return $user->is_customer_admin || $user->can(Permission::CUSTOMER_VIEW);
         });
 
         $this->showRefreshButton();
