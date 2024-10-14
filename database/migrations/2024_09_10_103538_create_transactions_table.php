@@ -14,22 +14,25 @@ return new class extends Migration
         Schema::create('transactions', function (Blueprint $table) {
             $table->ulid("id")->primary();
             $table->foreignUlid("customer_id")->constrained()->cascadeOnDelete();
-            $table->decimal("amount");
+            // Specify precision and scale for the decimal column
+            $table->decimal("amount", 15, 2); // Allow negative amounts for withdrawals
             $table->string("description")->nullable();
             $table->nullableUlidMorphs("transactionable", "transactions_transactionable_index");
-            $table->timestamps();
+            $table->timestampsTz(); // Use timestampsTz for timezone support
         });
 
         Schema::create('archived_transactions', function (Blueprint $table) {
             $table->ulid("id")->primary();
             $table->foreignUlid("customer_id")->constrained()->cascadeOnDelete();
-            $table->decimal("amount");
+            // Specify precision and scale for the decimal column
+            $table->decimal("amount", 15, 2); // Allow negative amounts for withdrawals
             $table->string("description")->nullable();
             $table->nullableUlidMorphs("transactionable", "archived_transactions_transactionable_index");
-            $table->timestamp("archived_at")->useCurrent();
-            $table->timestamps();
+            $table->timestampTz("archived_at")->useCurrent(); // Use timestampTz for timezone support
+            $table->timestampsTz(); // Use timestampsTz for timezone support
         });
     }
+
     /**
      * Reverse the migrations.
      */

@@ -15,38 +15,47 @@ return new class extends Migration
         Schema::create('customers', function (Blueprint $table) {
             $table->ulid("id")->primary();
             $table->string('name')->unique();
-            $table->decimal('balance')->default(0);
-            $table->enum("type", [Customer::TYPE_RESELLER, Customer::TYPE_MERCHANT]);
+            // PostgreSQL requires precision and scale for decimal fields
+            $table->decimal('balance', 15, 2)->default(0);
+
+            // Using string for cross-compatibility instead of enum
+            $table->string("type");
+
             $table->softDeletes();
-            $table->timestamps();
+            $table->timestampsTz();
         });
 
         Schema::create('users', function (Blueprint $table) {
             $table->ulid("id")->primary();
             $table->string('name');
             $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
+            $table->timestampTz('email_verified_at')->nullable();
             $table->string('password');
             $table->foreignUlid("customer_id")->nullable()->constrained()->cascadeOnDelete();
             $table->string("timezone")->default(config("app.timezone"));
             $table->rememberToken();
             $table->softDeletes();
-            $table->timestamps();
+            $table->timestampsTz();
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();
             $table->string('token');
-            $table->timestamp('created_at')->nullable();
+            $table->timestampTz('created_at')->nullable();
         });
 
         Schema::create('sessions', function (Blueprint $table) {
             $table->string('id')->primary();
             $table->foreignUlid('user_id')->nullable()->index();
-            $table->string('ip_address', 45)->nullable();
+
+            // PostgreSQL has native support for IP address storage with the inet type
+            $table->ipAddress()->nullable();
+
             $table->text('user_agent')->nullable();
-            $table->longText('payload');
-            $table->integer('last_activity')->index();
+            // PostgreSQL does not have LONGTEXT, text() works for large content
+            $table->text('payload');
+            // Consider using bigInteger for future-proofing timestamps
+            $table->bigInteger('last_activity')->index();
         });
     }
 
@@ -58,7 +67,6 @@ return new class extends Migration
         Schema::dropIfExists('sessions');
         Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('users');
-
         Schema::dropIfExists('customers');
     }
 };
