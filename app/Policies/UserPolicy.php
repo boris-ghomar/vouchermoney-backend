@@ -60,7 +60,7 @@ class UserPolicy
      */
     public function restore(User $user, User $model): bool
     {
-        return $user->id !== $model->id && ! $model->is_customer_admin && ! Customer::withTrashed()->find($model->customer_id)->trashed() && ($user->is_super || $user->isOwnerOf($model));
+        return $user->id !== $model->id && ! $model->is_customer_admin && $model->customer_id && ! Customer::withTrashed()->find($model->customer_id)?->trashed() && ($user->is_super || $user->isOwnerOf($model));
     }
 
     /**
