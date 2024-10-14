@@ -13,13 +13,15 @@ return new class extends Migration
     {
         Schema::create('personal_access_tokens', function (Blueprint $table) {
             $table->id();
+            // Using the built-in morphs method, which will create a string type for tokenable_type and a string/char for tokenable_id
             $table->morphs('tokenable');
+
             $table->string('name');
             $table->string('token', 64)->unique();
-            $table->text('abilities')->nullable();
-            $table->timestamp('last_used_at')->nullable();
-            $table->timestamp('expires_at')->nullable();
-            $table->timestamps();
+            $table->text('abilities')->nullable(); // Postgres handles text type well
+            $table->timestampTz('last_used_at')->nullable(); // Timezone-aware
+            $table->timestampTz('expires_at')->nullable(); // Timezone-aware
+            $table->timestampsTz(); // Timezone-aware timestamps
         });
     }
 

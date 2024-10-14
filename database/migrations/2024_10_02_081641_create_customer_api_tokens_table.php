@@ -14,22 +14,24 @@ return new class extends Migration
         Schema::create('customer_api_tokens', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->foreignUlid("customer_id")->constrained()->cascadeOnDelete();
-            $table->string('token',64)->unique();
+
+            $table->string('token', 64)->unique();
             $table->string('name');
-            $table->timestamp('last_used_at')->nullable();
-            $table->timestamp('expires_at')->nullable();
-            $table->softDeletes();
-            $table->timestamps();
+            $table->timestampTz('last_used_at')->nullable();
+            $table->timestampTz('expires_at')->nullable();
+            $table->softDeletesTz();  // Using softDeletesTz for deleted_at with timezone
+            $table->timestampsTz();   // Using timestampsTz for created_at and updated_at
         });
 
         Schema::create('customer_api_token_activities', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->foreignUlid("token_id");
+            $table->foreignUlid("token_id")->constrained('customer_api_tokens');
+
             $table->string("action");
             $table->json("request");
             $table->json("response");
             $table->json("properties")->nullable();
-            $table->timestamps();
+            $table->timestampsTz();   // Using timestampsTz for created_at and updated_at
         });
     }
 
@@ -38,6 +40,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::dropIfExists('customer_api_token_activities');
         Schema::dropIfExists('customer_api_tokens');
     }
 };

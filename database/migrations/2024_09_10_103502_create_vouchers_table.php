@@ -22,10 +22,8 @@ return new class extends Migration
             $table->decimal('amount')->unsigned();
             $table->foreignUlid("customer_id")->constrained()->cascadeOnDelete();
             $table->ulidMorphs("creator");
-
             $table->boolean("active")->default(true);
-
-            $table->timestamps();
+            $table->timestampsTz(); // Creates 'created_at' and 'updated_at' columns
         });
 
         Schema::create('archived_vouchers', function (Blueprint $table) {
@@ -34,15 +32,13 @@ return new class extends Migration
             $table->decimal('amount')->unsigned();
             $table->foreignUlid("customer_id")->constrained()->cascadeOnDelete();
             $table->ulidMorphs("creator");
-
             $table->enum("state", [ArchivedVoucher::STATE_EXPIRED, ArchivedVoucher::STATE_REDEEMED])
                 ->default(ArchivedVoucher::STATE_REDEEMED);
             $table->foreignUlid("recipient_id")->nullable()->constrained("customers")->cascadeOnDelete();
             $table->ulidMorphs("resolver");
-
             $table->text("note")->nullable();
-            $table->timestamp("resolved_at")->useCurrent();
-            $table->timestamps();
+            $table->timestampTz("resolved_at")->useCurrent(); // Use timestampTz for timezone-aware timestamps
+            $table->timestampsTz(); // Creates 'created_at' and 'updated_at' columns
         });
     }
 

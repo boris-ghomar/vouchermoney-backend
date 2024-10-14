@@ -6,6 +6,8 @@
   - ext-gd
   - ext-zip
   - ext-intl
+  - ext-pdo_pgsql
+  - ext-pgsql
 - MySQL - MariaDB (10.4.32)
 - Laravel 11
 - Laravel Nova - v4.35.1 (Licensed)

@@ -13,16 +13,16 @@ return new class extends Migration
     {
         Schema::create('finances', function (Blueprint $table) {
             $table->ulid("id")->primary();
-            $table->decimal('amount');
+            $table->decimal('amount'); // Allow negative amounts for withdrawals
             $table->foreignUlid('customer_id')->constrained()->cascadeOnDelete();
             $table->foreignUlid('requester_id')->constrained("users")->cascadeOnDelete();
             $table->text('requester_comment')->nullable();
-            $table->timestamps();
+            $table->timestampsTz(); // Creates 'created_at' and 'updated_at' columns
         });
 
         Schema::create('archived_finances', function (Blueprint $table) {
             $table->ulid("id")->primary();
-            $table->decimal('amount');
+            $table->decimal('amount'); // Allow negative amounts for withdrawals
             $table->boolean('status')->comment("1 - approved, 0 - rejected");
 
             $table->foreignUlid('customer_id')->constrained()->cascadeOnDelete();
@@ -32,8 +32,8 @@ return new class extends Migration
             $table->text('requester_comment')->nullable();
             $table->text('resolver_comment')->nullable();
 
-            $table->timestamp("resolved_at")->useCurrent();
-            $table->timestamps();
+            $table->timestampTz("resolved_at")->useCurrent(); // Use timestampTz for timezone-aware timestamps
+            $table->timestampsTz(); // Creates 'created_at' and 'updated_at' columns
         });
     }
 

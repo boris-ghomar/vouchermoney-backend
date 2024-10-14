@@ -12,13 +12,14 @@ class CreateActivityLogTable extends Migration
             $table->bigIncrements('id');
             $table->string('log_name')->nullable();
             $table->text('description');
-            $table->nullableMorphs('subject', 'subject');
+            // Using nullableMorphs for polymorphic relation with unique index names for PostgreSQL
+            $table->nullableMorphs('subject', 'subject_type_subject_id_index');
             $table->string('event')->nullable();
-            $table->nullableMorphs('causer', 'causer');
-            $table->json('properties')->nullable();
-            $table->uuid('batch_uuid')->nullable();
-            $table->timestamps();
-            $table->index('log_name');
+            $table->nullableMorphs('causer', 'causer_type_causer_id_index');
+            $table->json('properties')->nullable(); // JSON data, PostgreSQL supports it natively
+            $table->uuid('batch_uuid')->nullable(); // UUID for batching, PostgreSQL supports native UUID type
+            $table->timestampsTz(); // Timezone-aware timestamps
+            $table->index('log_name'); // Index on log_name for query efficiency
         });
     }
 

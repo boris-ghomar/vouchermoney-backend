@@ -15,7 +15,6 @@ use Laravel\Nova\Http\Requests\NovaRequest;
 class ActiveFinance extends Finance
 {
     public static string $model = Model::class;
-    public static $polling = true;
     public function actions(NovaRequest $request): array
     {
         return ActionHelper::make([
