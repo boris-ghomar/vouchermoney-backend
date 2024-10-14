@@ -26,7 +26,7 @@ class ResolveFinance extends Action
     protected string $type;
     public $confirmText = "";
     public $showInline = true;
-    public $sole = true;
+    public $onlyOnIndex = true;
 
     public function approve(): static
     {
@@ -91,7 +91,7 @@ class ResolveFinance extends Action
             return ActionResponse::danger("Something went wrong");
         }
 
-        return ActionResponse::redirect("/resources/active-finances");
+        return ActionResponse::message("Success");
     }
 
     /**
