@@ -16,7 +16,27 @@ use App\Services\Voucher\Contracts\VoucherServiceContract;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use OpenApi\Annotations as OA;
 
+/**
+ * @OA\Info(
+ *     title="Voucher Money API Documentation",
+ *     version="1.0.0"
+ * )
+ *
+ * @OA\SecurityScheme(
+ *     securityScheme="BearerAuth",
+ *     type="apiKey",
+ *     in="header",
+ *     name="Authorization",
+ *     description="Enter the token as 'Bearer {token}'"
+ * )
+ *
+ * @OA\Tag(
+ *     name="Vouchers",
+ *     description="Operations related to vouchers"
+ * )
+ */
 class ApiVoucherController extends Controller
 {
     protected CustomerApiToken $user;
@@ -30,23 +50,54 @@ class ApiVoucherController extends Controller
         $this->user = $request->user();
     }
 
-//    /**
-//     * @return JsonResponse
-//     */
-//    public function index(): JsonResponse
-//    {
-//        /** @var CustomerApiToken $user */
-//        $vouchers = $this->user->customer->vouchers;
-//
-//        return response()->json([
-//            "status" => "success",
-//            "vouchers" => VoucherResource::collection($vouchers)
-//        ]);
-//    }
-
     /**
-     * @param CreateVoucherRequest $request
-     * @return JsonResponse
+     * @OA\Post(
+     *     path="/v1/vouchers/generate",
+     *     tags={"Vouchers"},
+     *     summary="Generate vouchers",
+     *     security={{"BearerAuth": {}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(ref="#/components/schemas/CreateVoucherRequest")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Vouchers generated successfully",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="status", type="string", example="success"),
+     *             @OA\Property(property="message", type="string", example="Vouchers generated successfully."),
+     *             @OA\Property(property="vouchers", type="array", @OA\Items(ref="#/components/schemas/VoucherResource"))
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="status", type="string", example="error"),
+     *             @OA\Property(property="message", type="string", example="Validation error"),
+     *             @OA\Property(
+     *                 property="errors",
+     *                 type="object",
+     *                 example={
+     *                     "amount": {"The amount field is required."},
+     *                     "count": {"The count must be at least 1."}
+     *                 }
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthorized",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="status", type="string", example="error"),
+     *             @OA\Property(property="message", type="string", example="Unauthorized")
+     *         )
+     *     ),
+     *     @OA\Response(response=400, description="Bad request")
+     * )
      */
     public function create(CreateVoucherRequest $request): JsonResponse
     {
@@ -58,7 +109,7 @@ class ApiVoucherController extends Controller
 
             $response = response()->json([
                 'status' => "success",
-                'message' => 'Vouchers created successfully.',
+                'message' => 'Vouchers generated successfully.',
                 "vouchers" => $count > 1 ? VoucherResource::collection($vouchers) : [VoucherResource::make($vouchers)]
             ]);
         } catch (Exception $exception) {
@@ -70,23 +121,35 @@ class ApiVoucherController extends Controller
             ], 400);
         }
 
-        $this->activityService->apiActivity("generate", [
-            "ip" => $request->ip(),
-            "body" => $request->all(),
-            "route" => $request->route(),
-            "headers" => $request->header()
-        ], [
-            "headers" => $response->headers,
-            "response" => $response->getData(),
-            "status" => $response->status(),
-        ]);
+        $this->activityService->apiActivity("generate", $request, $response);
 
         return $response;
     }
 
     /**
-     * @param FreezeVoucherRequest $request
-     * @return JsonResponse
+     * @OA\Put(
+     *     path="/v1/vouchers/freeze",
+     *     tags={"Vouchers"},
+     *     summary="Freeze a voucher",
+     *     security={{"BearerAuth": {}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(ref="#/components/schemas/FreezeVoucherRequest")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Voucher successfully frozen",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="status", type="string", example="success"),
+     *             @OA\Property(property="message", type="string", example="Voucher successfully frozen"),
+     *             @OA\Property(property="voucher", ref="#/components/schemas/VoucherResource")
+     *         )
+     *     ),
+     *     @OA\Response(response=404, description="Voucher not found"),
+     *     @OA\Response(response=422, description="Validation error"),
+     *     @OA\Response(response=401, description="Unauthorized")
+     * )
      */
     public function freeze(FreezeVoucherRequest $request): JsonResponse
     {
@@ -121,14 +184,35 @@ class ApiVoucherController extends Controller
             ], 400);
         }
 
-        $this->activityService->apiActivity("freeze", $request, $response, ! empty($voucher) ? ["voucher" => $voucher] : []);
+        $this->activityService->apiActivity("freeze", $request, $response);
 
         return $response;
     }
 
     /**
-     * @param FreezeVoucherRequest $request
-     * @return JsonResponse
+     * @OA\Put(
+     *     path="/v1/vouchers/activate",
+     *     tags={"Vouchers"},
+     *     summary="Activate a voucher",
+     *     security={{"BearerAuth": {}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(ref="#/components/schemas/FreezeVoucherRequest")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Voucher successfully activated",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="status", type="string", example="success"),
+     *             @OA\Property(property="message", type="string", example="Voucher successfully activated"),
+     *             @OA\Property(property="voucher", ref="#/components/schemas/VoucherResource")
+     *         )
+     *     ),
+     *     @OA\Response(response=404, description="Voucher not found"),
+     *     @OA\Response(response=422, description="Validation error"),
+     *     @OA\Response(response=401, description="Unauthorized")
+     * )
      */
     public function activate(FreezeVoucherRequest $request): JsonResponse
     {
@@ -163,14 +247,35 @@ class ApiVoucherController extends Controller
             ], 400);
         }
 
-        $this->activityService->apiActivity("activate", $request, $response, ! empty($voucher) ? ["voucher" => $voucher] : []);
+        $this->activityService->apiActivity("activate", $request, $response);
 
         return $response;
     }
 
     /**
-     * @param RedeemVoucherRequest $request
-     * @return JsonResponse
+     * @OA\Post(
+     *     path="/v1/vouchers/redeem",
+     *     tags={"Vouchers"},
+     *     summary="Redeem a voucher",
+     *     security={{"BearerAuth": {}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(ref="#/components/schemas/RedeemVoucherRequest")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Voucher redeemed successfully",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="status", type="string", example="success"),
+     *             @OA\Property(property="message", type="string", example="Voucher redeemed successfully"),
+     *             @OA\Property(property="voucher", ref="#/components/schemas/ArchivedVoucherResource")
+     *         )
+     *     ),
+     *     @OA\Response(response=404, description="Voucher not found"),
+     *     @OA\Response(response=422, description="Validation error"),
+     *     @OA\Response(response=401, description="Unauthorized")
+     * )
      */
     public function redeem(RedeemVoucherRequest $request): JsonResponse
     {
@@ -205,7 +310,7 @@ class ApiVoucherController extends Controller
             ], 400);
         }
 
-        $this->activityService->apiActivity("redeem", $request, $response, ["voucher" => $voucher ?? null,]);
+        $this->activityService->apiActivity("redeem", $request, $response);
 
         return $response;
     }

@@ -6,6 +6,8 @@ use App\Models\CustomerApiTokenActivity;
 use App\Services\Activity\Contracts\ActivityServiceContract;
 use Exception;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Spatie\Activitylog\Contracts\Activity;
 
 class ActivityService implements ActivityServiceContract
@@ -70,13 +72,21 @@ class ActivityService implements ActivityServiceContract
         return auth()->user();
     }
 
-    public function apiActivity(string $action, $request, $response, array $properties = []): CustomerApiTokenActivity
+    public function apiActivity(string $action, Request $request, JsonResponse $response, array $properties = []): CustomerApiTokenActivity
     {
         $activity = new CustomerApiTokenActivity();
         $activity->action = $action;
         $activity->token()->associate(auth()->user());
-        $activity->request = $request;
-        $activity->response = $response;
+        $activity->request = [
+            "ip" => $request->ip(),
+            "body" => $request->all(),
+            "route" => $request->route(),
+            "headers" => $request->header()
+        ];
+        $activity->response = [
+            "response" => $response->getData(),
+            "code" => $response->status(),
+        ];
 
         if (! empty($properties)) $activity->properties = $properties;
 

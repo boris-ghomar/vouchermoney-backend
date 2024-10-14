@@ -7,6 +7,14 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
+ * @OA\Schema(
+ *     schema="VoucherResource",
+ *     type="object",
+ *     @OA\Property(property="code", type="string", example="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX"),
+ *     @OA\Property(property="amount", type="number", format="float", example=100.00),
+ *     @OA\Property(property="state", type="string", example="active", description="The state of the voucher, either 'active' or 'frozen'")
+ * )
+ *
  * @mixin Voucher
  */
 class VoucherResource extends JsonResource

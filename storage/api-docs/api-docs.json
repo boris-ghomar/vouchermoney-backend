@@ -1,0 +1,400 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Voucher Money API Documentation",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "/api"
+        }
+    ],
+    "paths": {
+        "/v1/vouchers/generate": {
+            "post": {
+                "tags": [
+                    "Vouchers"
+                ],
+                "summary": "Generate vouchers",
+                "operationId": "e1ca8afae0aecf6221f12e2837a7e02c",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateVoucherRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Vouchers generated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Vouchers generated successfully."
+                                        },
+                                        "vouchers": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/VoucherResource"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "error"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Validation error"
+                                        },
+                                        "errors": {
+                                            "type": "object",
+                                            "example": {
+                                                "amount": [
+                                                    "The amount field is required."
+                                                ],
+                                                "count": [
+                                                    "The count must be at least 1."
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "error"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthorized"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/v1/vouchers/freeze": {
+            "put": {
+                "tags": [
+                    "Vouchers"
+                ],
+                "summary": "Freeze a voucher",
+                "operationId": "53de7e2e2ea6e2f2ec5009a9e094742f",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FreezeVoucherRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Voucher successfully frozen",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Voucher successfully frozen"
+                                        },
+                                        "voucher": {
+                                            "$ref": "#/components/schemas/VoucherResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Voucher not found"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/v1/vouchers/activate": {
+            "put": {
+                "tags": [
+                    "Vouchers"
+                ],
+                "summary": "Activate a voucher",
+                "operationId": "db09e56ec1bc5295e481693962437edc",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FreezeVoucherRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Voucher successfully activated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Voucher successfully activated"
+                                        },
+                                        "voucher": {
+                                            "$ref": "#/components/schemas/VoucherResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Voucher not found"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/v1/vouchers/redeem": {
+            "post": {
+                "tags": [
+                    "Vouchers"
+                ],
+                "summary": "Redeem a voucher",
+                "operationId": "76b4a0c937e24a488079d20b09fa922e",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RedeemVoucherRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Voucher redeemed successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Voucher redeemed successfully"
+                                        },
+                                        "voucher": {
+                                            "$ref": "#/components/schemas/ArchivedVoucherResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Voucher not found"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "CreateVoucherRequest": {
+                "required": [
+                    "amount"
+                ],
+                "properties": {
+                    "amount": {
+                        "description": "Amount of the voucher, minimum 1, maximum 10.000",
+                        "type": "number",
+                        "format": "float",
+                        "example": 100
+                    },
+                    "count": {
+                        "description": "Number of vouchers to create, defaults to 1, minimum 1, maximum 25",
+                        "type": "integer",
+                        "example": 1
+                    }
+                },
+                "type": "object"
+            },
+            "FreezeVoucherRequest": {
+                "required": [
+                    "code"
+                ],
+                "properties": {
+                    "code": {
+                        "description": "The voucher code to freeze",
+                        "type": "string",
+                        "example": "XXXX-XXXX-XXXX-XXXX-XXXX-XXXX"
+                    }
+                },
+                "type": "object"
+            },
+            "RedeemVoucherRequest": {
+                "required": [
+                    "code"
+                ],
+                "properties": {
+                    "code": {
+                        "description": "The voucher code to redeem",
+                        "type": "string",
+                        "example": "XXXX-XXXX-XXXX-XXXX-XXXX-XXXX"
+                    },
+                    "note": {
+                        "description": "Optional note for the voucher redemption",
+                        "type": "string",
+                        "maxLength": 200,
+                        "example": "Redeemed for a special offer"
+                    }
+                },
+                "type": "object"
+            },
+            "ArchivedVoucherResource": {
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "example": "XXXX-XXXX-XXXX-XXXX-XXXX-XXXX"
+                    },
+                    "amount": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 100
+                    },
+                    "note": {
+                        "type": "string",
+                        "example": "Redeemed for a special offer"
+                    }
+                },
+                "type": "object"
+            },
+            "VoucherResource": {
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "example": "XXXX-XXXX-XXXX-XXXX-XXXX-XXXX"
+                    },
+                    "amount": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 100
+                    },
+                    "state": {
+                        "description": "The state of the voucher, either 'active' or 'frozen'",
+                        "type": "string",
+                        "example": "active"
+                    }
+                },
+                "type": "object"
+            }
+        },
+        "securitySchemes": {
+            "BearerAuth": {
+                "type": "apiKey",
+                "description": "Enter token in format (Bearer <token>)",
+                "name": "Authorization",
+                "in": "header"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Vouchers",
+            "description": "Operations related to vouchers"
+        }
+    ]
+}
