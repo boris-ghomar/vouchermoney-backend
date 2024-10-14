@@ -25,6 +25,7 @@ use App\Nova\Resources\User\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Laravel\Nova\Actions\Action;
 use Laravel\Nova\Exceptions\HelperNotSupported;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use App\Models\User as UserModel;
@@ -69,17 +70,17 @@ abstract class Voucher extends Resource
             ID::make(__("fields.id"), "id")->onlyForAdmins(),
 
             BelongsTo::make(__("fields.customer"), "customer", Customer::class)
-                ->onlyForAdmins([Permission::CUSTOMERS_VIEW]),
+                ->onlyForAdmins([Permission::CUSTOMERS_VIEW])->exceptOnForms(),
 
-            Text::make(__("fields.code"), "code")->copyable()->filterable(),
+            Text::make(__("fields.code"), "code")->copyable()->filterable()->exceptOnForms(),
 
-            Currency::make(__("fields.amount"), "amount")->sortable(),
+            Currency::make(__("fields.amount"), "amount")->sortable()->exceptOnForms(),
 
             MorphTo::make("Creator", "creator")->onlyForAdmins([Permission::CUSTOMERS_VIEW])
                 ->types([
                     Account::class => UserModel::class,
                     CustomerApiToken::class => CustomerApiTokenModel::class
-                ]),
+                ])->exceptOnForms(),
 
             Text::link("Transaction", function () {
                 if (empty($this->transaction)) return null;
@@ -87,13 +88,18 @@ abstract class Voucher extends Resource
                 $resource = $this->transaction instanceof \App\Models\Transaction\ArchivedTransaction ? ArchivedTransaction::uriKey() : ActiveTransactions::uriKey();
 
                 return "/resources/$resource/{$this->transaction->id}";
-            }, fn () => $this->transaction?->id),
+            }, fn () => $this->transaction?->id)->exceptOnForms(),
         ];
 
         $fields[] = DateTime::createdAt()->onlyForAdmins()->sortable()->filterable();
         $fields[] = DateTime::updatedAt()->onlyForAdmins();
 
         return FieldHelper::make($fields);
+    }
+
+    public function authorizedToRunAction(NovaRequest $request, Action $action): bool
+    {
+        return $action->authorizedToRun($request, $this);
     }
 
     public static function authorizedToCreate(Request $request): bool

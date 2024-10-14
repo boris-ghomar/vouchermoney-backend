@@ -30,13 +30,13 @@ class ActiveVoucher extends Voucher
                 ->map(["info", "success"])->labels([
                     __("fields.frozen"),
                     __("fields.active")
-                ])->filterable()->sortable(),
+                ])->filterable()->sortable()->exceptOnForms(),
 
             MorphTo::make("Creator", "creator")->onlyForCustomersAdmin()
                 ->types([
                     Account::class => UserModel::class,
                     CustomerApiToken::class => CustomerApiTokenModel::class
-                ])
+                ])->exceptOnForms()
         ]);
     }
 
@@ -45,7 +45,7 @@ class ActiveVoucher extends Voucher
         return [
             RedeemVoucher::make(),
             GenerateVoucher::make(),
-            FreezeVoucher::make($this)
+            FreezeVoucher::make($this->resource)
         ];
     }
 }

@@ -72,6 +72,6 @@ class Account extends User
 
     public static function relatablePermissions(NovaRequest $request, $query)
     {
-        return $query->whereIn('name', PermissionModel::$customerPermissions);
+        return $query->where("guard_name", "web")->whereIn('name', PermissionModel::$customerPermissions);
     }
 }

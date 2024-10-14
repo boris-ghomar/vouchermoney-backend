@@ -77,8 +77,8 @@ class GenerateVoucher extends Action
     public function fields(NovaRequest $request): array
     {
         return [
-            Number::make(__("fields.count"), "count")->default(1)->rules("required", "min:1", "max:50"),
-            Currency::make(__("fields.amount"), "amount")->rules("required", "min:1", "max:1000")
+            Number::make(__("fields.count"), "count")->default(1)->rules("required",'numeric', "min:1", "max:50"),
+            Currency::make(__("fields.amount"), "amount")->rules("required",'numeric', "min:1", "max:1000")
         ];
     }
 

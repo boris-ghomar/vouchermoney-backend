@@ -45,7 +45,6 @@ class ArchivedVoucher extends AbstractVoucher
     ];
 
     protected array $additional_casts = [
-        "state" => "boolean",
         "resolved_at" => "datetime",
     ];
 
