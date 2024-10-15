@@ -1,67 +1,145 @@
 # Voucher Money
 
+A system for managing voucher transactions with Laravel and Nova.
+
+## Table of Contents
+
+- [Requirements and Details](#requirements-and-details)
+- [Installation](#installation)
+    - [Environment Configuration](#environment-configuration)
+    - [Docker Setup](#docker-setup)
+    - [Running Without Docker](#running-without-docker)
+- [Running the Application](#running-the-application)
+- [Managing Docker](#managing-docker)
+- [Troubleshooting](#troubleshooting)
+
 ## Requirements and Details
 
-- PHP - 8.2.12 (Add extension list)
-  - ext-gd
-  - ext-zip
-  - ext-intl
-  - ext-pdo_pgsql
-  - ext-pgsql
-- MySQL - MariaDB (10.4.32)
-- Laravel 11
-- Laravel Nova - v4.35.1 (Licensed)
-- Composer - 2.7.7
+- **PHP 8.2.12** (extensions: `ext-gd`, `ext-zip`, `ext-intl`, `ext-pdo_pgsql`)
+- **PostgreSQL** - v15
+- **Laravel** - 11
+- **Laravel Nova** - v4.35.2 (Licensed)
+- **Composer** - 2.8.1
 
 ## Installation
 
-### Install composer dependencies
+### Install Composer Dependencies
+
+Run the following command to install dependencies:
+
 ```shell
 composer install
 ```
 
-It will be needed to define laravel nova (nova.laravel.com) username (email address) and password (license key)
+**Note**: You will need your Laravel Nova credentials during this step.
 
-### Define environment
+### Environment Configuration
 
-Copy .env file from .env.example
+Copy the `.env` file from `.env.docker` or `.env.production`:
 
 ```shell
-cp .env.example .env
+cp .env.docker .env
 ```
 
-Write environment variables
+Edit environment variables as needed:
 
 ```dotenv
-# Define application url
+# Set to 'local' for development, 'production' for live environments
+APP_ENV=local
+# Should be set to 'false' in production
+APP_DEBUG=true
+APP_TIMEZONE=Asia/Yerevan
 APP_URL=http://localhost:8000
 
-# Define mysql connection credentials
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
+DB_CONNECTION=pgsql
+DB_HOST=pgsql
+DB_PORT=5432
 DB_DATABASE=vouchermoney
-DB_USERNAME=root
-DB_PASSWORD=
+DB_USERNAME=postgres
+DB_PASSWORD=123123123
 
-# Define Laravel Nova License Key
-NOVA_LICENSE_KEY=
+NOVA_LICENSE_USERNAME=info@test.com
+NOVA_LICENSE_KEY=your_license_key
 ```
 
-### Setup Application
+### Docker Setup
 
-Generate application key
+Run Docker Compose to build and start the containers:
+
+```shell
+docker-compose up --build -d
+```
+
+This will set up all necessary services:
+
+- **App Service** (`vouchermoney_app`):
+    - Install system dependencies
+    - Install necessary PHP extensions
+    - Install Composer dependencies (including Nova) using credentials from `.env`
+    - Set file permissions
+    - Generate the application key
+    - Create storage public link
+    - Run database migrations and seed default data
+- **Nginx Service** (`nginx_server`):
+    - Configured using `./nginx/default.conf` with port defined in `.env` (`APP_PORT`)
+- **PostgreSQL Service** (`postgres_db`):
+    - Database, user, and password from `.env` (`DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`)
+    - Port from `.env` (`DB_PORT`)
+- **Redis Service** (`redis_cache`):
+    - Port from `.env` (`REDIS_PORT`)
+
+### Running Without Docker
+
+Generate the application key:
+
 ```shell
 php artisan key:generate
 ```
 
-Create storage public link
+Create a storage link:
+
 ```shell
 php artisan storage:link
 ```
 
-Migrate database and seed it with initial necessary data
+Migrate and seed the database:
+
 ```shell
 php artisan migrate --seed
 ```
 
+## Running the Application
+
+Access the application in your browser at:
+
+```shell
+http://localhost:8000
+```
+
+## Managing Docker
+
+To stop the containers without terminating them:
+
+```shell
+docker-compose stop
+```
+
+To restart the containers:
+
+```shell
+docker-compose start
+```
+
+## Troubleshooting
+
+### Database Connection Issues
+
+Ensure PostgreSQL is running, and the credentials in `.env` are correct.
+
+### File Permissions Issues
+
+To fix file permission issues, run:
+
+```shell
+sudo chown -R www-data:www-data storage bootstrap/cache
+```
