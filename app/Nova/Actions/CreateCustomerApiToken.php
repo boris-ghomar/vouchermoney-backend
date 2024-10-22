@@ -3,7 +3,6 @@
 namespace App\Nova\Actions;
 
 use App\Exceptions\AttemptToCreateExpiredApiToken;
-use App\Models\CustomerApiToken;
 use App\Models\Permission;
 use App\Models\User;
 use App\Nova\Fields\Text;

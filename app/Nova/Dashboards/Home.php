@@ -3,7 +3,6 @@
 namespace App\Nova\Dashboards;
 
 use App\Models\Permission;
-use App\Models\User;
 use App\Nova\Metrics\CustomerAvailableBalance;
 use Illuminate\Http\Request;
 use Laravel\Nova\Dashboard;

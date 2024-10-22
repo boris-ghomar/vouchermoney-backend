@@ -2,12 +2,10 @@
 
 namespace App\Nova\Actions;
 
-use App\Models\Finance\Finance;
 use App\Models\Permission;
 use App\Models\User;
 use App\Nova\Resources\Finance\ActiveFinance;
 use App\Services\Activity\Contracts\ActivityServiceContract;
-use App\Services\Customer\Contracts\CustomerServiceContract;
 use App\Services\Finance\Contracts\FinanceServiceContract;
 use Exception;
 use Illuminate\Bus\Queueable;

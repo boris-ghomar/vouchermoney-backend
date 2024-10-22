@@ -9,7 +9,6 @@ use App\Nova\Fields\Code;
 use App\Nova\Fields\DateTime;
 use App\Nova\Fields\FieldHelper;
 use App\Nova\Fields\ID;
-use App\Nova\Fields\Text;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Laravel\Nova\Http\Requests\NovaRequest;
